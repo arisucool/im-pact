@@ -1,0 +1,104 @@
+/**
+ * アプリケーション全体のスタイルシート
+ */
+
+// ヘッダ
+
+mat-toolbar.header {
+  background: #bedbfd !important;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  width: 100%;
+  box-shadow: 0 3px 5px -1px rgba(0,0,0,.2), 0 6px 10px 0 rgba(0,0,0,.14), 0 1px 18px 0 rgba(0,0,0,.12);
+  z-index: 1000;
+}
+
+mat-toolbar.header a {
+  color: #01579b;
+}
+
+// ヘッダ > アプリ名
+
+mat-toolbar.header .app-name {
+  color: #fefefe;
+  cursor: pointer;
+  font-size: 1.5rem;
+  font-family: 'Lora', cursive;
+  margin: 0;
+  line-height: 46px;
+  user-select: none;
+  padding: 0 6rem 0 2rem;
+  text-shadow: 0px 1px 3px rgba(100, 100, 100, 0.5);
+}
+
+// ヘッダ > ボタン
+
+mat-toolbar.header a.active button.mat-button {
+  border-bottom: 1px solid #01579b85;
+}
+
+
+// フッタ
+
+mat-toolbar.footer {
+  background: #dedede !important;
+  position: fixed;
+  bottom: 0px;
+  left: 0px;
+  min-height: 32px;
+  right: 0px;
+  width: 100%;
+  box-shadow: 0 3px 5px -1px rgba(0,0,0,.2), 0 6px 10px 0 rgba(0,0,0,.14), 0 1px 18px 0 rgba(0,0,0,.12);
+  z-index: 1000;
+}
+
+mat-toolbar.footer mat-toolbar-row {
+  height: 32px;
+}
+
+// フッタ > クレジット
+
+mat-toolbar.footer .app-credit,
+mat-toolbar.footer .app-credit a,
+mat-toolbar.footer .app-credit a:link,
+mat-toolbar.footer .app-credit a:visited {
+  color: #777777;
+  font-size: 0.8rem;
+}
+
+
+// コンテンツ
+
+.content-container {
+  position: absolute;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
+  height: 90%;
+  width: 90%;
+  margin: 0 5% 0 5%;
+}
+
+@media (max-width: 599px) {
+
+  .content-container {
+    top: 72px;
+  }
+
+}
+
+@media (min-width: 600px) {
+
+  .content-container {
+    top: 85px;
+  }
+
+}
+
+// リンク
+
+a {
+  color: white;
+}

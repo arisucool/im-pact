@@ -1,0 +1,19 @@
+{
+    "name": "im pact",
+    "description": "\"im pact\" is Twitter crawler and bot for Producers and Everyone.",
+    "repository": "https://github.com/arisucool/im-pact",
+    "env": {
+        "NPM_CONFIG_PRODUCTION": {
+            "description": "We recommend that you set this value to \"true\" for faster builds.",
+            "value": "true"
+        }
+    },
+    "addons": [
+        {
+            "plan": "heroku-postgresql:hobby-dev"
+        },
+        {
+            "plan": "scheduler:standard"
+        }
+    ]
+}

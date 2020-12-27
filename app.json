@@ -6,6 +6,11 @@
         "NPM_CONFIG_PRODUCTION": {
             "description": "We recommend that you set this value to \"true\" for faster builds.",
             "value": "true"
+        },
+        "JWT_TOKEN_SECRET": {
+            "description": "A secret string to generate an authorization token.",
+            "required": true,
+            "generator": "secret"
         }
     },
     "addons": [

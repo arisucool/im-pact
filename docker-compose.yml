@@ -15,6 +15,7 @@ services:
             - appnet
         environment: 
             DATABASE_URL: postgres://im_pact:arisu15@db/im_pact
+            JWT_TOKEN_SECRET: arisu15
         ports:
             - 4200:4200
         volumes:

@@ -1,0 +1,18 @@
+# 生成されたファイル
+npm-debug.log
+node_modules/
+packages/**/node_modules/
+packages/**/dist/
+
+# バージョン管理システム関連のファイル
+.git/
+.github/
+
+# 開発環境におけるデータベース関連のファイル
+db_datas/
+
+# その他のファイル
+app.json
+docker-compose.yml
+Procfile
+README.md

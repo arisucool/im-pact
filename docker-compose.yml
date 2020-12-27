@@ -1,0 +1,40 @@
+# Docker Compose 定義ファイル (開発環境用)
+
+version: "3"
+
+services:
+
+    # アプリケーションサーバ
+    app:
+        build: .
+        command: npm run start:dev
+        depends_on:
+            - db
+        restart: always
+        networks:
+            - appnet
+        environment: 
+            DATABASE_URL: postgres://im_pact:Arisu-15@db/im_pact
+        ports:
+            - 4200:4200
+        volumes:
+            - ./.utils:/opt/app/utils
+            - ./packages:/opt/app/packages
+    
+    # PostgreSQL データベースサーバ 
+    db:
+        image: postgres
+        restart: always
+        networks:
+            - appnet
+        environment: 
+            POSTGRES_DB: im_pact
+            POSTGRES_USER: im_pact
+            POSTGRES_PASSWORD: Arisu-15
+        ports:
+            - 15432:5432
+        volumes:
+            - ./db_datas:/var/lib/postgresql/data
+
+networks:
+    appnet:

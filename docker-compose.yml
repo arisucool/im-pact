@@ -14,7 +14,7 @@ services:
         networks:
             - appnet
         environment: 
-            DATABASE_URL: postgres://im_pact:arisu15@db/im_pact
+            DATABASE_URL: postgres://im_pact:arisu15@db/im_pact?sslmode=disable
             JWT_TOKEN_SECRET: arisu15
         ports:
             - 4200:4200

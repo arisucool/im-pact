@@ -19,6 +19,9 @@ import { InitializationService } from './initialization.service';
       url: process.env.DATABASE_URL,
       autoLoadEntities: true,
       synchronize: true,
+      ssl: process.env.DATABASE_URL.match(/sslmode=disable/) ? false : {
+        rejectUnauthorized: false // Heroku Postgres 対応
+      },
     }),
     // 本番環境にて Angular アプリケーション (../../client/dist/client/) を静的ファイルとしてサーブするための設定
     ServeStaticModule.forRoot({

@@ -35,6 +35,19 @@ services:
             - 15432:5432
         volumes:
             - ./db_datas:/var/lib/postgresql/data
+    
+    # Adminer
+    adminer:
+        build: ./.utils/adminer/
+        depends_on:
+            - db
+        restart: always
+        networks:
+            - appnet
+        environment:
+            ADMINER_DEFAULT_SERVER: db
+        ports:
+            - 18080:8080
 
 networks:
     appnet:

@@ -14,7 +14,7 @@ services:
         networks:
             - appnet
         environment: 
-            DATABASE_URL: postgres://im_pact:Arisu-15@db/im_pact
+            DATABASE_URL: postgres://im_pact:arisu15@db/im_pact
         ports:
             - 4200:4200
         volumes:
@@ -30,7 +30,7 @@ services:
         environment: 
             POSTGRES_DB: im_pact
             POSTGRES_USER: im_pact
-            POSTGRES_PASSWORD: Arisu-15
+            POSTGRES_PASSWORD: arisu15
         ports:
             - 15432:5432
         volumes:

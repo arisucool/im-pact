@@ -20,5 +20,6 @@
         {
             "plan": "scheduler:standard"
         }
-    ]
+    ],
+    "stack": "container"
 }

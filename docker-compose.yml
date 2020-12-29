@@ -6,7 +6,10 @@ services:
 
     # アプリケーションサーバ
     app:
-        build: .
+        build:
+          context: ./
+          args:
+            NODE_ENV: development
         command: npm run start:dev
         depends_on:
             - db

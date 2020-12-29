@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { Helper } from './helper';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -14,15 +15,7 @@ import { InitializationService } from './initialization.service';
 @Module({
   imports: [
     // データベースへ接続するための設定
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      url: process.env.DATABASE_URL,
-      autoLoadEntities: true,
-      synchronize: true,
-      ssl: process.env.DATABASE_URL.match(/sslmode=disable/) ? false : {
-        rejectUnauthorized: false // Heroku Postgres 対応
-      },
-    }),
+    TypeOrmModule.forRoot(Helper.getDBSettings()),
     // 本番環境にて Angular アプリケーション (../../client/dist/client/) を静的ファイルとしてサーブするための設定
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'client', 'dist', 'client'),

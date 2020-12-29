@@ -1,0 +1,6 @@
+<mat-nav-list>
+  <a *ngFor="let item of items" mat-list-item (click)="onItemClick(item.name, $event)">
+    <span mat-line>{{ item.name }}</span>
+    <span mat-line>{{ item.description }}</span>
+  </a>
+</mat-nav-list>

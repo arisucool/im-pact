@@ -10,6 +10,8 @@ const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
   // ログイン
   { path: 'auth/login', component: LoginComponent },
+  // トピックス
+  { path: 'topics', loadChildren: './topics/topics.module#TopicsModule' },
 ];
 
 @NgModule({

@@ -1,11 +1,7 @@
-import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
-import { AppRoutingModule } from './app-routing.module';
-import { AppComponent } from './app.component';
-
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatBottomSheetModule } from '@angular/material/bottom-sheet';
@@ -13,7 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatListModule, MatNavList } from '@angular/material/list';
+import { MatListModule } from '@angular/material/list';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -32,23 +28,19 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { HomeComponent } from './home/home.component';
 
-import { ApiModule, Configuration } from '../.api-client';
-import { HttpClientModule } from '@angular/common/http';
-import { LoginComponent } from './auth/login.component';
-import { TopicsModule } from './topics/topics.module';
+import { TopicsRoutingModule } from './topics-routing.module';
+import { TopicEditorComponent } from './topic-editor/topic-editor.component';
+import { ModuleChooserSheetComponent } from './topic-editor/module-chooser-sheet.component';
 
 @NgModule({
-  declarations: [AppComponent, HomeComponent, LoginComponent],
+  declarations: [TopicEditorComponent, ModuleChooserSheetComponent],
   imports: [
-    BrowserModule,
+    CommonModule,
     FormsModule,
-    AppRoutingModule,
-    TopicsModule,
+    TopicsRoutingModule,
 
     // Angular Material
-    BrowserAnimationsModule,
     MatAutocompleteModule,
     MatButtonModule,
     MatBottomSheetModule,
@@ -70,17 +62,7 @@ import { TopicsModule } from './topics/topics.module';
     MatToolbarModule,
     MatTooltipModule,
     MatDatepickerModule,
-
-    // API クライアント
-    HttpClientModule,
-    ApiModule.forRoot(
-      () =>
-        new Configuration({
-          basePath: '',
-        }),
-    ),
   ],
-  providers: [],
-  bootstrap: [AppComponent],
+  exports: [TopicEditorComponent],
 })
-export class AppModule {}
+export class TopicsModule {}

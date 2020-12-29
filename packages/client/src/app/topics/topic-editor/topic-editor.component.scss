@@ -1,0 +1,97 @@
+// フォーム
+
+form {
+  padding-bottom: 5rem;
+}
+
+form mat-form-field {
+  min-width: 40%;
+}
+
+// セクション
+
+section {
+  margin-bottom: 3rem;
+}
+
+.section-caption {
+  margin-bottom: 1.5rem;
+
+  h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  h3 .section-number {
+    color: #fefefe;
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #4f4ba5;
+    text-align: center;
+    line-height: 32px;
+    margin-left: -2rem;
+    margin-right: 1rem;
+  }
+
+  span.description {
+    color: #333;
+    font-size: 0.85rem;
+  }
+}
+
+// セクションの見出し
+
+hr {
+  margin: 1.5rem 0 2.5rem 0;
+  border: none;
+  border-bottom: 1px dashed #ccc;
+}
+
+// ツイートフィルタ および アクションのモジュール設定領域
+
+.module-setting-container {
+  border: solid 1px #ccc;
+  width: 80%;
+  margin: 0 0 1.5rem 10%;
+  border-radius: 5px;
+
+  .module-setting-caption {
+    background-color: #f4f4f4;
+    margin: 0 0 2rem 0;
+    padding: 1rem 0 1rem 0;
+    position: relative;
+    width: 100%;
+
+    h4 {
+    }
+
+    // アクションの順番 (アクションのみ)
+    span.action-order-number {
+      color: #bbb;
+      font-family: 'Roboto', cursive;
+      font-size: 4rem;
+      font-weight: lighter;
+      font-style: italic;
+      display: block;
+      position: absolute;
+      line-height: initial;
+      top: 0.5rem;
+      left: 1rem;
+    }
+
+    span.description {
+      color: #333;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+    }
+
+    // ツイートフィルタまたはアクションの削除ボタン
+    .delete-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+    }
+  }
+}

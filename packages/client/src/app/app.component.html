@@ -1,7 +1,6 @@
 <!-- ヘッダ -->
 <mat-toolbar class="header" color="primary">
   <mat-toolbar-row>
-
     <!-- アプリケーション名 -->
     <span class="app-name">
       im pact
@@ -9,6 +8,36 @@
     <!---->
 
     <span style="flex: 1 1 auto;"></span>
+
+    <!-- ログインボタン -->
+    <button *ngIf="currentUserId == null" routerLink="/auth/login" class="user-btn" mat-raised-button color="primary">
+      <mat-icon style="margin-top: -3px;">login</mat-icon>
+      &nbsp;
+      ログイン
+      &nbsp;
+    </button>
+    <!---->
+
+    <!-- セッションメニューボタン -->
+    <button *ngIf="currentUserId" [matMenuTriggerFor]="sessionMenu" class="user-btn" mat-raised-button color="primary">
+      <mat-icon style="margin-top: -3px;">account_box</mat-icon>
+      &nbsp;&nbsp;
+      {{currentUserId}}
+      &nbsp;
+    </button>
+    <!---->
+
+    <!-- セッションメニュー -->
+    <mat-menu #sessionMenu="matMenu">
+      <!-- ログアウトボタン -->
+      <button mat-menu-item (click)="logout();">
+        <mat-icon>exit_to_app</mat-icon>
+        ログアウト
+        &nbsp;
+      </button>
+      <!---->
+    </mat-menu>
+    <!---->
 
   </mat-toolbar-row>
 </mat-toolbar>
@@ -23,15 +52,14 @@
 <!-- ヘッダ -->
 <mat-toolbar class="footer" color="primary">
   <mat-toolbar-row>
-
     <span style="flex: 1 1 auto;"></span>
 
     <!-- クレジット表示 (原則として削除しないでください) -->
     <span class="app-credit">
-      Powered by "im pact" by <a href="https://github.com/arisucool" target="_blank" rel="noopener">arisu.cool 🍓</a> Project.
+      Powered by "im pact" by
+      <a href="https://github.com/arisucool" target="_blank" rel="noopener">arisu.cool 🍓</a> Project.
     </span>
     <!---->
-
   </mat-toolbar-row>
 </mat-toolbar>
 <!---->

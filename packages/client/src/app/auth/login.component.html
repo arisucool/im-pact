@@ -1,0 +1,50 @@
+<div class="caption">
+  <h2>
+    <mat-icon style="margin-top: -8px;">login</mat-icon>
+    &nbsp;&nbsp;&nbsp; ログイン
+  </h2>
+</div>
+
+  <form (ngSubmit)="onSubmit()">
+  <mat-card>
+    <mat-card-content style="text-align: center;">
+      <!-- ユーザID 入力欄 -->
+      <p>
+        <mat-icon style="color: #666;">face</mat-icon>
+        &nbsp;&nbsp;
+        <mat-form-field appearance="outline">
+          <mat-label>
+            ユーザID
+          </mat-label>
+          <input name="user_id" matInput placeholder="例: arisu" [(ngModel)]="userId" />
+        </mat-form-field>
+      </p>
+      <!-- ユーザパスワード入力欄 -->
+      <p>
+        <mat-icon style="color: #666;">vpn_key</mat-icon>
+        &nbsp;&nbsp;
+        <mat-form-field appearance="outline">
+          <mat-label>
+            パスワード
+          </mat-label>
+          <input name="user_password" matInput type="password" [(ngModel)]="userPassword" />
+        </mat-form-field>
+      </p>
+      <!---->
+      <!-- エラーメッセージ -->
+      <p *ngIf="errorMessage" style="color: red;">
+        {{ errorMessage }}
+      </p>
+      <!---->
+    </mat-card-content>
+    <mat-card-actions>
+      <!-- ログインボタン -->
+      <button type="submit" mat-raised-button color="primary" style="float: right; margin-right: 1rem;">
+        ログイン &nbsp;&nbsp;
+        <mat-icon style="margin-top: -3px;">send</mat-icon>
+      </button>
+      <!---->
+      <br style="clear: both;" />
+    </mat-card-actions>
+  </mat-card>
+</form>

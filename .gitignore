@@ -2,3 +2,4 @@ npm-debug.log
 package-lock.json
 db_datas/
 node_modules/
+packages/client/src/.api-client/

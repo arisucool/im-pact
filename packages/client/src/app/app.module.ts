@@ -32,6 +32,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { HomeComponent } from './home/home.component';
 
+import { ApiModule, Configuration } from '../.api-client';
+import { HttpClientModule } from '@angular/common/http';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -60,10 +63,18 @@ import { HomeComponent } from './home/home.component';
     MatTabsModule,
     MatToolbarModule,
     MatTooltipModule,
-    MatDatepickerModule
+    MatDatepickerModule,
 
+    // API クライアント
+    HttpClientModule,
+    ApiModule.forRoot(
+      () =>
+        new Configuration({
+          basePath: '',
+        }),
+    ),
   ],
   providers: [],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {}

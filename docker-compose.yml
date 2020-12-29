@@ -22,8 +22,9 @@ services:
         ports:
             - 4200:4200
         volumes:
-            - ./.utils:/opt/app/utils
-            - ./packages:/opt/app/packages
+            - ./.utils:/opt/app/.utils
+            - ./packages/client/src/:/opt/app/packages/client/src/
+            - ./packages/server/src/:/opt/app/packages/server/src/
     
     # PostgreSQL データベースサーバ 
     db:

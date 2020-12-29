@@ -1,5 +1,8 @@
 # 開発環境および本番環境を構築するための Dockerfile
 
+FROM openapitools/openapi-generator-cli:latest-release AS build-openapi-generator
+
+
 FROM node:14-slim
 
 WORKDIR /opt/app/
@@ -9,12 +12,16 @@ EXPOSE 4200
 # Install apt packages
 RUN echo "Installing packages..." && \
     export DEBIAN_FRONTEND="noninteractive" && \
+    mkdir -p /usr/share/man/man1 && \
     apt-get update --yes && \
     apt-get install --yes --no-install-recommends --quiet \
-        build-essential curl procps \
-        ${ADDITIONAL_PACKAGES} && \
+        curl procps default-jre && \
     echo "packages installed." || exit 1 && \
     apt-get clean
+
+# Copy files related to openapi-generator from another container
+COPY --from=build-openapi-generator /opt/openapi-generator/ /opt/openapi-generator/
+COPY --from=build-openapi-generator /usr/local/bin/docker-entrypoint.sh /opt/openapi-generator/
 
 # Install npm modules for app
 COPY lerna.json package.json ./

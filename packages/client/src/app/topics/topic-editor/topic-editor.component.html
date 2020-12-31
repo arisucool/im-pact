@@ -122,17 +122,70 @@
 
       <hr />
 
-      <!-- ツイートフィルタ セクション -->
+      <!-- お手本分類 セクション -->
       <section>
         <!-- セクション 見出し -->
         <div class="section-caption">
           <h3>
             <span class="section-number">3</span>
+            お手本分類
+          </h3>
+          <span class="description">
+            ツイートを実際に検索し、検索結果のツイート (約100件) を手動で分類します。<br />
+            この手動の分類によって、AIに分類を任せるためのお手本 (教師データ) が生成されます。
+          </span>
+        </div>
+        <!---->
+
+        <!-- お手本分類ダイアログ表示ボタン -->
+        <p>
+          <button
+            (click)="openTrainingDialog()"
+            *ngIf="topic.trainingTweets.length === 0"
+            mat-stroked-button
+            color="primary"
+            matTooltip="クリックすると、お手本分類を開始します"
+          >
+            お手本分類をはじめる &nbsp;&nbsp;
+            <mat-icon style="margin-top: -3px;">find_in_page</mat-icon>
+          </button>
+          <button
+            (click)="openTrainingDialog()"
+            *ngIf="topic.trainingTweets.length !== 0"
+            mat-stroked-button
+            color="primary"
+            matTooltip="クリックすると、お手本分類を最初からやり直すことができます"
+          >
+            お手本分類をやり直す &nbsp;&nbsp;
+            <mat-icon style="margin-top: -3px;">find_in_page</mat-icon>
+          </button>
+        </p>
+        <!---->
+
+        <!-- お手本分類の結果 -->
+        <p *ngIf="topic.trainingTweets.length !== 0">
+          全 {{ topic.trainingTweets.length }} 件のツイートを対象・対象外へ手動分類しました。
+        </p>
+        <!---->
+      </section>
+      <!---->
+
+      <hr />
+
+      <!-- ツイートフィルタ セクション -->
+      <section>
+        <!-- セクション 見出し -->
+        <div class="section-caption">
+          <h3>
+            <span class="section-number">4</span>
             ツイートフィルタの設定
           </h3>
           <span class="description">
-            検索結果から必要なツイートを抽出するためのフィルタを設定します。<br />
-            但し、各フィルタの結果は直接反映されるわけではなく、あくまで AI が判断材料として使用します。
+            検索結果から必要なツイートを取捨選択できるよう、AIの判断材料を設定します。<br />
+            先ほどの "お手本分類" であなたが感じた印象から、必要そうなものを2つ以上選んでください。適当で構いません。<br />
+            例1: ツイート本文に関係ありそうなら... "TweetTextBayesianFilter"<br />
+            例2: イラストと写真を判別する必要がありそうなら... "TfIllustImageClassicationFilter"<br />
+            例3: ツイートしたユーザのプロフィールに関係ありそうなら... "TweetAuthorProfileBayesianFilter"<br />
           </span>
         </div>
         <!---->
@@ -233,19 +286,20 @@
         <!-- セクション 見出し -->
         <div class="section-caption">
           <h3>
-            <span class="section-number">4</span>
-            トレーニング
+            <span class="section-number">5</span>
+            トレーニング＆プレビュー
           </h3>
           <span class="description">
-            ツイートを一旦手動で分類することで、AIが分類方法を学習します。
+            先ほど設定した "お手本分類" (教師データ) と "ツイートフィルタ" (判断材料)を使って、<br />
+            AI が学習を行い、上手に分類できるかどうかを確認します。<br />
           </span>
         </div>
         <!---->
 
-        <!-- ツイートフィルタ追加ボタン -->
+        <!-- トレーニングボタン -->
         <p>
           <button mat-stroked-button color="primary">
-            トレーニングを実行 &nbsp;&nbsp;
+            トレーニング＆プレビューを実行 &nbsp;&nbsp;
             <mat-icon style="margin-top: -3px;">find_in_page</mat-icon>
           </button>
         </p>
@@ -260,7 +314,7 @@
         <!-- セクション 見出し -->
         <div class="section-caption">
           <h3>
-            <span class="section-number">5</span>
+            <span class="section-number">6</span>
             アクションの設定
           </h3>
           <span class="description">

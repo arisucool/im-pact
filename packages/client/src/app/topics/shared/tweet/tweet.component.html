@@ -1,0 +1,48 @@
+<mat-card>
+  <mat-card-content>
+    <div class="tweet-user">
+      <img src="{{ tweet.user.profile_image_url }}" class="user-profile-image" />
+      <p>
+        <span class="user-name">{{ tweet.user.name }}</span>
+        <br />
+        <span class="user-screen-name">@{{ tweet.user.screen_name }}</span>
+      </p>
+    </div>
+    <div class="tweet-text">
+      {{ tweet.text }}
+    </div>
+    <!-- メディア -->
+    <ul class="tweet-medias">
+      <li *ngFor="let media of tweet.entities.media">
+        <a href="{{ media.expanded_url }}" target="_blank" rel="noopener">
+          <img src="{{ media.media_url }}" />
+        </a>
+      </li>
+    </ul>
+    <!---->
+    <!-- 分類ボタン -->
+    <div class="classification-btn-container">
+      <div (click)="onClassificationButtonClicked()" class="classification-btn" [ngClass]="{ selected: isSelected }">
+        <mat-icon>thumb_up</mat-icon>
+      </div>
+    </div>
+    <!---->
+    <!-- ツイートのフッタ -->
+    <footer>
+      <!-- ツイートの日付 -->
+      <div class="tweet-date">
+        {{ tweet.created_at | date }}
+      </div>
+      <!---->
+
+      <!-- View on Twitter リンク -->
+      <div class="tweet-open-link">
+        <a href="{{ tweet.url }}" target="_blank" rel="noopener">View on Twitter</a>
+      </div>
+      <!---->
+
+      <br style="clear: both;" />
+    </footer>
+    <!---->
+  </mat-card-content>
+</mat-card>

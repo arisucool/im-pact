@@ -56,7 +56,7 @@ export class TopicsService {
     return {
       ApprovalOnDiscordAction: {
         version: '1.0.0',
-        description: 'ツイートを Discord へ投稿し、次のアクションへ遷移するか承認を得るためのアクション',
+        description: 'ツイートを Discord へ投稿し、次のアクションへ遷移するか承認を得るアクション',
         settings: [
           {
             name: 'webhook_url',
@@ -78,9 +78,9 @@ export class TopicsService {
           },
         ],
       },
-      WaitAction: {
+      WaitForSecondsAction: {
         version: '1.0.0',
-        description: '指定時間経過後に次のアクションへ遷移するアクション',
+        description: '指定した時間が経過したら次のアクションへ遷移するアクション',
         settings: [
           {
             name: 'wait_seconds',
@@ -89,6 +89,11 @@ export class TopicsService {
             placeholder: '例: 3600 (1時間)',
           },
         ],
+      },
+      ScheduleAction: {
+        version: '1.0.0',
+        description: '指定したスケジュールになったら次のアクションへ遷移するアクション',
+        settings: [],
       },
       RetweetAction: {
         version: '1.0.0',
@@ -132,5 +137,50 @@ export class TopicsService {
         ],
       },
     };
+  }
+
+  /**
+   * 学習用サンプルツイートの取得
+   */
+  async getSampleTweets(crawlAccount: string, keyword: string) {
+    let tweets = [
+      {
+        created_at: new Date('Tue Dec 29 17:01:16 +0000 2020'),
+        id_str: '1343965317978996742',
+        text: '鋭意(再)開発中 https://t.co/IGrzZhTLM5',
+        truncated: false,
+        entities: {
+          media: [
+            {
+              id_str: '1343965208755097601',
+              media_url: 'http://pbs.twimg.com/media/Eqa5PJpU0AE2Uwi.jpg',
+              media_url_https: 'https://pbs.twimg.com/media/Eqa5PJpU0AE2Uwi.jpg',
+              url: 'https://t.co/IGrzZhTLM5',
+              display_url: 'pic.twitter.com/IGrzZhTLM5',
+              expanded_url: 'https://twitter.com/mugiply/status/1343965317978996742/photo/1',
+              type: 'photo',
+            },
+          ],
+        },
+        source: '<a href="https://about.twitter.com/products/tweetdeck" rel="nofollow">TweetDeck</a>',
+        user: {
+          id_str: '1157995803937427457',
+          name: 'mugip 🍓',
+          screen_name: 'mugiply',
+          location: '上方エリア',
+          profile_image_url: 'http://pbs.twimg.com/profile_images/1289594904276922368/xX3zKqgN_normal.png',
+          profile_image_url_https: 'https://pbs.twimg.com/profile_images/1289594904276922368/xX3zKqgN_normal.png',
+          description:
+            'ニワカPですが、がんばりまー!! ...最近は #ありかつ 人力ボットと化しつつあるおじさん。 橘ありすちゃんのイラストをお届けするボットを開発しました!! ☛ @arisucool ☚ フォローしてみてください!! 　　 【デレマス】🍓 ありす 🍓 　【シャニマス】🕊️ まの 🕊️ / 👘 りんぜ 👘',
+        },
+        retweet_count: 0,
+        favorite_count: 5,
+        possibly_sensitive: false,
+        selected: false,
+        lang: 'ja',
+        url: 'https://twitter.com/mugiply/status/1343965317978996742',
+      },
+    ];
+    return tweets;
   }
 }

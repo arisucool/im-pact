@@ -1,0 +1,40 @@
+<h1 mat-dialog-title>
+  お手本分類 &nbsp;&nbsp;
+  <span style="color: #444; font-size: 0.9rem;">
+    収集したいツイートの
+    <mat-icon style="vertical-align: middle; margin-top: -4px;">thumb_up</mat-icon>
+    を押してください
+  </span>
+</h1>
+<div mat-dialog-content>
+  <!-- メッセージ -->
+  <p *ngIf="tweets === null" style="margin: 2rem;">
+    {{ status }}
+    <br />
+    <br />
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  </p>
+  <!---->
+  <!-- ツイート表示 -->
+  <div *ngIf="tweets != null" class="tweets">
+    <div *ngFor="let tweet of tweets" class="tweet-container">
+      <app-tweet [tweet]="tweet" (onSelectChangedEvent)="onTweetSelectChanged(tweet.id_str, $event)"></app-tweet>
+    </div>
+  </div>
+  <!---->
+  <div mat-dialog-actions style="margin-top: 0.5rem;">
+    <button
+      (click)="finish()"
+      mat-raised-button
+      mat-dialog-close
+      [disabled]="numOfSelectedTweets == 0"
+      color="primary"
+      style="float: right;"
+    >
+      {{ numOfSelectedTweets }} 件を収集対象として学習
+    </button>
+    <button (click)="cancel()" mat-raised-button mat-dialog-close style="float: right; margin-right: 1rem;">
+      キャンセル
+    </button>
+  </div>
+</div>

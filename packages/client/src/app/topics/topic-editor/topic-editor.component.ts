@@ -1,8 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
-import { ModuleChooserSheetComponent } from './module-chooser-sheet.component';
+import { ModuleChooserSheetComponent } from './module-chooser-sheet/module-chooser-sheet.component';
 import { TopicsService } from '../topics.service';
+import { MatDialog } from '@angular/material/dialog';
+import { TrainerDialogComponent } from './trainer-dialog/trainer-dialog.component';
 
+/**
+ * トピック作成・編集画面のコンポーネント
+ */
 @Component({
   selector: 'app-topic-editor',
   templateUrl: './topic-editor.component.html',
@@ -23,6 +28,8 @@ export class TopicEditorComponent implements OnInit {
     filters: [],
     // アクション
     actions: [],
+    // お手本分類の結果
+    trainingTweets: [],
   };
   // ツイートフィルタの設定用テンプレート
   availableTweetFilters = {};
@@ -38,7 +45,7 @@ export class TopicEditorComponent implements OnInit {
 # 【例】 7月31日の毎時0分・15分・30分・45分に実行する場合
 0,15,30,45  *  31  7  *`;
 
-  constructor(private topicsService: TopicsService, private bottomSheet: MatBottomSheet) {}
+  constructor(private topicsService: TopicsService, private dialog: MatDialog, private bottomSheet: MatBottomSheet) {}
 
   async ngOnInit() {
     await this.loadTopic();
@@ -78,6 +85,7 @@ export class TopicEditorComponent implements OnInit {
           },
         },
       ],
+      trainingTweets: [],
     };
   }
 
@@ -99,6 +107,22 @@ export class TopicEditorComponent implements OnInit {
   deleteKeyword(delete_keyword: string): void {
     this.topic.keywords = this.topic.keywords.filter(keyword => {
       return keyword !== delete_keyword;
+    });
+  }
+
+  /**
+   * 教師データ作成ダイアログの表示
+   */
+  async openTrainingDialog() {
+    const dialogRef = this.dialog.open(TrainerDialogComponent, {
+      data: {
+        crawlAccount: this.topic.crawlAccount,
+        keywords: this.topic.keywords,
+      },
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      // 手動分類の結果を取得
+      this.topic.trainingTweets = result.tweets;
     });
   }
 

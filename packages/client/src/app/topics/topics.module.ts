@@ -31,10 +31,12 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 
 import { TopicsRoutingModule } from './topics-routing.module';
 import { TopicEditorComponent } from './topic-editor/topic-editor.component';
-import { ModuleChooserSheetComponent } from './topic-editor/module-chooser-sheet.component';
+import { ModuleChooserSheetComponent } from './topic-editor/module-chooser-sheet/module-chooser-sheet.component';
+import { TrainerDialogComponent } from './topic-editor/trainer-dialog/trainer-dialog.component';
+import { TweetComponent } from './shared/tweet/tweet.component';
 
 @NgModule({
-  declarations: [TopicEditorComponent, ModuleChooserSheetComponent],
+  declarations: [TopicEditorComponent, ModuleChooserSheetComponent, TrainerDialogComponent, TweetComponent],
   imports: [
     CommonModule,
     FormsModule,

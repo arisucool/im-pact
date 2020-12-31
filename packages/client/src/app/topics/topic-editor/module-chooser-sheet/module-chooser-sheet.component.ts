@@ -1,7 +1,11 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatBottomSheetRef, MAT_BOTTOM_SHEET_DATA } from '@angular/material/bottom-sheet';
-import { TopicsService } from '../topics.service';
+import { TopicsService } from '../../topics.service';
 
+/**
+ * モジュール選択シートのコンポーネント
+ * (ツイートフィルタまたはアクションを追加するときに用いられる)
+ */
 @Component({
   selector: 'module-chooser-sheet',
   templateUrl: './module-chooser-sheet.component.html',

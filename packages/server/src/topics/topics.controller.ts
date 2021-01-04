@@ -1,6 +1,6 @@
 import { Controller, UseGuards, Post, HttpCode, Body, ValidationPipe, Get, Param, Delete, Put } from '@nestjs/common';
 import { LocalAuthGuard } from 'src/auth/guards/local-auth.guard';
-import { ApiOperation, ApiOkResponse, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiOkResponse, ApiUnauthorizedResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { TopicsService } from './topics.service';
 import { Topic } from './entities/topic.entity';
 import { CreateTopicDto } from './dto/create-topic.dto';
@@ -8,7 +8,8 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdateTopicDto } from './dto/update-topic.dto';
 
 @Controller('topics')
-//@UseGuards(JwtAuthGuard) // TODO
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class TopicsController {
   constructor(private topicsService: TopicsService) {}
 

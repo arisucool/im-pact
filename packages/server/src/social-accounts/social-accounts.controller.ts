@@ -1,10 +1,12 @@
 import { Controller, Get, HttpCode, UseGuards } from '@nestjs/common';
 import { SocialAccountsService } from './social-accounts.service';
-import { ApiOperation, ApiOkResponse, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiOkResponse, ApiUnauthorizedResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { SocialAccount } from './entities/social-account.entity';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('social-accounts')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class SocialAccountsController {
   constructor(private socialAccountsService: SocialAccountsService) {}
 

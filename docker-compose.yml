@@ -17,6 +17,8 @@ services:
         networks:
             - appnet
         environment: 
+            TWITTER_CONSUMER_KEY:
+            TWITTER_CONSUMER_SECRET: 
             DATABASE_URL: postgres://im_pact:arisu15@db/im_pact?sslmode=disable
             JWT_TOKEN_SECRET: arisu15
         ports:

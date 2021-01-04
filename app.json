@@ -11,6 +11,14 @@
             "description": "A secret string to generate an authorization token.",
             "required": true,
             "generator": "secret"
+        },
+        "TWITTER_CONSUMER_KEY": {
+            "description": "A consumer key for Twitter API.",
+            "required": true
+        },
+        "TWITTER_CONSUMER_SECRET": {
+            "description": "A consumer secret for Twitter API.",
+            "required": true
         }
     },
     "addons": [

@@ -1,5 +1,6 @@
 npm-debug.log
 package-lock.json
+docker-compose.override.yml
 db_datas/
 node_modules/
 packages/client/src/.api-client/

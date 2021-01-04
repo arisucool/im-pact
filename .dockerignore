@@ -14,5 +14,6 @@ db_datas/
 # その他のファイル
 app.json
 docker-compose.yml
+docker-compose.override.yml
 Procfile
 README.md

@@ -128,7 +128,7 @@
 
         <!-- キーワード追加ボタン -->
         <p>
-          <button (click)="addKeyword()" mat-stroked-button color="primary">
+          <button (click)="addKeyword()" type="button" mat-stroked-button color="primary">
             キーワードを追加 &nbsp;&nbsp;
             <mat-icon style="margin-top: -3px;">add</mat-icon>
           </button>
@@ -158,6 +158,7 @@
         <p>
           <button
             (click)="openTrainerDialog()"
+            type="button"
             *ngIf="topic.trainingTweets.length === 0"
             mat-stroked-button
             color="primary"
@@ -168,6 +169,7 @@
           </button>
           <button
             (click)="openTrainerDialog()"
+            type="button"
             *ngIf="topic.trainingTweets.length !== 0"
             mat-stroked-button
             color="primary"
@@ -219,6 +221,7 @@
                 <!-- ツイートフィルタ削除ボタン -->
                 <button
                   (click)="deleteTweetFilter(filterIndex)"
+                  type="button"
                   class="delete-btn"
                   matTooltip="このツイートフィルタを削除"
                   mat-icon-button
@@ -292,7 +295,7 @@
 
             <!-- ツイートフィルタ追加ボタン -->
             <p>
-              <button (click)="addTweetFilter()" mat-stroked-button color="primary">
+              <button (click)="addTweetFilter()" type="button" mat-stroked-button color="primary">
                 ツイートフィルタを追加 &nbsp;&nbsp;
                 <mat-icon style="margin-top: -3px;">add</mat-icon>
               </button>
@@ -322,7 +325,7 @@
 
         <!-- トレーニングボタン -->
         <p>
-          <button (click)="openTrainingDialog()" mat-stroked-button color="primary">
+          <button (click)="openTrainingDialog()" type="button" mat-stroked-button color="primary">
             トレーニング＆プレビューを実行 &nbsp;&nbsp;
             <mat-icon style="margin-top: -3px;">find_in_page</mat-icon>
           </button>
@@ -362,6 +365,7 @@
             <!-- アクション削除ボタン -->
             <button
               (click)="deleteAction(actionIndex)"
+              type="button"
               class="delete-btn"
               matTooltip="このアクションを削除"
               mat-icon-button
@@ -432,7 +436,7 @@
 
         <!-- アクション追加ボタン -->
         <p>
-          <button (click)="addAction()" mat-stroked-button color="primary">
+          <button (click)="addAction()" type="button" mat-stroked-button color="primary">
             アクションを追加 &nbsp;&nbsp;
             <mat-icon style="margin-top: -3px;">add</mat-icon>
           </button>

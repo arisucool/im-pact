@@ -140,6 +140,16 @@ export class TopicEditorComponent implements OnInit {
    * 教師データ作成ダイアログの表示
    */
   async openTrainerDialog() {
+    // 設定状況を確認
+    if (this.topic.keywords.length <= 0 || this.topic.keywords[0].length <= 0) {
+      // キーワードが一つも登録されていなければ、エラーを表示
+      this.snackBar.open('エラー: キーワードが一つも追加されていません。先にキーワードの追加を行ってください。', null, {
+        duration: 5000,
+      });
+      return;
+    }
+
+    // ダイアログを開く
     const dialogRef = this.dialog.open(TrainerDialogComponent, {
       data: {
         crawlSocialAccountId: this.topic.crawlSocialAccount.id,
@@ -156,6 +166,32 @@ export class TopicEditorComponent implements OnInit {
    * トレーニング＆検証ダイアログの表示
    */
   async openTrainingDialog() {
+    // 設定状況を確認
+    if (this.topic.keywords.length <= 0 || this.topic.keywords[0].length <= 0) {
+      // キーワードが一つも登録されていなければ、エラーを表示
+      this.snackBar.open('エラー: キーワードが一つも追加されていません。先にキーワードの追加を行ってください。', null, {
+        duration: 5000,
+      });
+      return;
+    } else if (this.topic.trainingTweets.length <= 0) {
+      // お手本分類が未実行ならば、エラーを表示
+      this.snackBar.open('エラー: お手本分類がまだ行われていません。先にお手本分類を行ってください。', null, {
+        duration: 5000,
+      });
+      return;
+    } else if (this.topic.filters.length <= 0) {
+      // ツイートフィルタが一つも登録されていなければ、エラーを表示
+      this.snackBar.open(
+        'エラー: ツイートフィルタが一つも追加されていません。先にツイートフィルタの追加を行ってください。',
+        null,
+        {
+          duration: 5000,
+        },
+      );
+      return;
+    }
+
+    // ダイアログを開く
     const dialogRef = this.dialog.open(TrainingDialogComponent, {
       data: {
         keywords: this.topic.keywords,

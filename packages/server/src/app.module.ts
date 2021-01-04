@@ -8,9 +8,9 @@ import { join } from 'path';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module';
-import { AuthService } from './auth/auth.service';
 import { AuthModule } from './auth/auth.module';
 import { InitializationService } from './initialization.service';
+import { SocialAccountsModule } from './social-accounts/social-accounts.module';
 
 @Module({
   imports: [
@@ -20,8 +20,10 @@ import { InitializationService } from './initialization.service';
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'client', 'dist', 'client'),
     }),
+    // 各モジュール
     UsersModule,
     AuthModule,
+    SocialAccountsModule,
   ],
   controllers: [AppController],
   providers: [AppService, InitializationService],

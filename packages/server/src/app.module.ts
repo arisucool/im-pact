@@ -10,6 +10,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { InitializationService } from './initialization.service';
+import { TopicsModule } from './topics/topics.module';
 import { SocialAccountsModule } from './social-accounts/social-accounts.module';
 
 @Module({
@@ -23,6 +24,7 @@ import { SocialAccountsModule } from './social-accounts/social-accounts.module';
     // 各モジュール
     UsersModule,
     AuthModule,
+    TopicsModule,
     SocialAccountsModule,
   ],
   controllers: [AppController],

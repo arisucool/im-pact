@@ -34,9 +34,10 @@ import { TopicEditorComponent } from './topic-editor/topic-editor.component';
 import { ModuleChooserSheetComponent } from './topic-editor/module-chooser-sheet/module-chooser-sheet.component';
 import { TrainerDialogComponent } from './topic-editor/trainer-dialog/trainer-dialog.component';
 import { TweetComponent } from './shared/tweet/tweet.component';
+import { TrainingDialogComponent } from './topic-editor/training-dialog/training-dialog.component';
 
 @NgModule({
-  declarations: [TopicEditorComponent, ModuleChooserSheetComponent, TrainerDialogComponent, TweetComponent],
+  declarations: [TopicEditorComponent, ModuleChooserSheetComponent, TrainerDialogComponent, TweetComponent, TrainingDialogComponent],
   imports: [
     CommonModule,
     FormsModule,

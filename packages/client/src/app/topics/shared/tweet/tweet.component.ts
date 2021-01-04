@@ -9,10 +9,14 @@ export class TweetComponent implements OnInit {
   @Input() tweet: any;
   @Output() onSelectChangedEvent = new EventEmitter<boolean>();
   isSelected = false;
+  // ツイートのデータ
+  rawData: any;
 
   constructor() {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.rawData = JSON.parse(this.tweet.rawJSONData);
+  }
 
   /**
    * 分類ボタンがクリックされたときに呼び出されるリスナ

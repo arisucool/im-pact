@@ -31,7 +31,7 @@
       color="primary"
       style="float: right;"
     >
-      {{ numOfSelectedTweets }} 件を収集対象として学習
+      {{ tweets.length }} 件中 {{ numOfSelectedTweets }} 件を収集対象として学習
     </button>
     <button (click)="cancel()" mat-raised-button mat-dialog-close style="float: right; margin-right: 1rem;">
       キャンセル

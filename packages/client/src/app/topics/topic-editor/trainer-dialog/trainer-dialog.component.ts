@@ -13,9 +13,10 @@ import { TopicsService } from '../../topics.service';
 export class TrainerDialogComponent implements OnInit {
   // 教師データ生成用のサンプルツイートの収集数
   public static NUM_OF_REQUEST_SAMPLE_TWEETS = 100;
-  // Twitter の検索ワード
-  public crawlAccount: string;
+  // Twitter の検索条件
+  public crawlSocialAccountId: number;
   public keywords: string[];
+  // Twitter の検索結果
   public tweets: any[];
   public numOfSelectedTweets = 0;
   // 検索の進捗状態
@@ -32,7 +33,7 @@ export class TrainerDialogComponent implements OnInit {
    */
   async ngOnInit() {
     // コンポーネントから渡された値を取得
-    this.crawlAccount = this.crawlAccount;
+    this.crawlSocialAccountId = +this.data.crawlSocialAccountId;
     this.keywords = this.data.keywords;
     // 値を初期化
     this.status = 'しばらくお待ちください...';
@@ -49,7 +50,7 @@ export class TrainerDialogComponent implements OnInit {
     let tweets = [];
     for (const keyword of this.keywords) {
       this.status = `ツイートを検索しています... ${keyword}`;
-      let keyword_tweets = await this.topicsService.getSampleTweets(this.crawlAccount, keyword);
+      let keyword_tweets = await this.topicsService.getSampleTweets(this.crawlSocialAccountId, keyword);
       tweets = tweets.concat(keyword_tweets);
     }
     this.tweets = tweets;

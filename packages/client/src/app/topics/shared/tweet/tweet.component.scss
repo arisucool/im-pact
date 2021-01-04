@@ -9,6 +9,16 @@
 .tweet-user {
   position: relative;
   height: 40px;
+  a,
+  a:link,
+  a:visited {
+    color: #555;
+    text-decoration: none;
+  }
+  a:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+  }
   .user-profile-image {
     display: inline-block;
     border-radius: 50%;

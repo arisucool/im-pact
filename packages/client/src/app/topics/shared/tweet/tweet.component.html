@@ -1,11 +1,13 @@
 <mat-card>
   <mat-card-content>
     <div class="tweet-user">
-      <img src="{{ tweet.user.profile_image_url }}" class="user-profile-image" />
+      <img src="{{ rawData.user.profile_image_url }}" class="user-profile-image" />
       <p>
-        <span class="user-name">{{ tweet.user.name }}</span>
-        <br />
-        <span class="user-screen-name">@{{ tweet.user.screen_name }}</span>
+        <a href="https://twitter.com/{{ tweet.userScreenName }}" target="_blank" rel="noopener">
+          <span class="user-name"> {{ tweet.userName }}</span>
+          <br />
+          <span class="user-screen-name">@{{ tweet.userScreenName }}</span>
+        </a>
       </p>
     </div>
     <div class="tweet-text">
@@ -13,7 +15,7 @@
     </div>
     <!-- メディア -->
     <ul class="tweet-medias">
-      <li *ngFor="let media of tweet.entities.media">
+      <li *ngFor="let media of rawData.entities.media">
         <a href="{{ media.expanded_url }}" target="_blank" rel="noopener">
           <img src="{{ media.media_url }}" />
         </a>
@@ -31,7 +33,7 @@
     <footer>
       <!-- ツイートの日付 -->
       <div class="tweet-date">
-        {{ tweet.created_at | date }}
+        {{ tweet.createdAt | date }}
       </div>
       <!---->
 

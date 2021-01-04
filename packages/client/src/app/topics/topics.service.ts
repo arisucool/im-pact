@@ -1,27 +1,68 @@
 import { Injectable } from '@angular/core';
+import { generate } from 'rxjs';
+import { NgModel } from '@angular/forms';
+import { DefaultService, GetExampleTweetsDto, CreateTopicDto, UpdateTopicDto } from 'src/.api-client';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TopicsService {
-  constructor() {}
+  constructor(private api: DefaultService) {}
 
   /**
-   * 指定されたツイートフィルタの取得
-   * @param module_name ツイートフィルタ名 (例: 'TweetTextRegExpFilter')
+   * 指定されたトピックの取得
+   * @param topicId トピックID
    */
-  async getTweetFilter(module_name: string) {
-    const filters = await this.getAvailableTweetFilters();
-    return filters[module_name];
+  async getTopic(topicId: number) {
+    return await this.api.topicsControllerFindOne(topicId).toPromise();
   }
 
   /**
-   * 指定されたアクションの取得
-   * @param module_name アクション名 (例: 'ApprovalOnDiscordAction')
+   * 指定されたトピックの保存
+   * @param topic トピック
    */
-  async getAction(module_name: string) {
-    const actions = await this.getAvailableActions();
-    return actions[module_name];
+  async saveTopic(topic: {
+    id: any;
+    name: any;
+    crawlSocialAccount: any;
+    crawlSchedule: any;
+    keywords: any[];
+    filters: any[];
+    actions: any[];
+    trainingTweets: any[];
+  }) {
+    if (topic.id === null) {
+      // 新規作成
+      let dto: CreateTopicDto = {
+        name: topic.name,
+        crawlSchedule: topic.crawlSchedule,
+        crawlSocialAccountId: +topic.crawlSocialAccount.id,
+        keywords: topic.keywords,
+        filters: topic.filters,
+        actions: topic.actions,
+        trainingTweets: topic.trainingTweets,
+      };
+      return await this.api.topicsControllerCreate(dto).toPromise();
+    } else {
+      // 編集
+      let dto: UpdateTopicDto = {
+        id: topic.id,
+        name: topic.name,
+        crawlSchedule: topic.crawlSchedule,
+        keywords: topic.keywords,
+        filters: topic.filters,
+        actions: topic.actions,
+        trainingTweets: topic.trainingTweets,
+      };
+      return await this.api.topicsControllerUpdate(topic.id, dto).toPromise();
+    }
+  }
+
+  /**
+   * 利用可能なソーシャルアカウントの取得
+   */
+  async getAvailableSocialAccounts() {
+    return await this.api.socialAccountsControllerFindAll().toPromise();
   }
 
   /**
@@ -47,6 +88,15 @@ export class TopicsService {
         ],
       },
     };
+  }
+
+  /**
+   * 指定されたツイートフィルタの取得
+   * @param module_name ツイートフィルタ名 (例: 'TweetTextRegExpFilter')
+   */
+  async getTweetFilter(module_name: string) {
+    const filters = await this.getAvailableTweetFilters();
+    return filters[module_name];
   }
 
   /**
@@ -140,47 +190,82 @@ export class TopicsService {
   }
 
   /**
+   * 指定されたアクションの取得
+   * @param module_name アクション名 (例: 'ApprovalOnDiscordAction')
+   */
+  async getAction(module_name: string) {
+    const actions = await this.getAvailableActions();
+    return actions[module_name];
+  }
+
+  /**
    * 学習用サンプルツイートの取得
    */
-  async getSampleTweets(crawlAccount: string, keyword: string) {
-    let tweets = [
-      {
-        created_at: new Date('Tue Dec 29 17:01:16 +0000 2020'),
-        id_str: '1343965317978996742',
-        text: '鋭意(再)開発中 https://t.co/IGrzZhTLM5',
-        truncated: false,
-        entities: {
-          media: [
-            {
-              id_str: '1343965208755097601',
-              media_url: 'http://pbs.twimg.com/media/Eqa5PJpU0AE2Uwi.jpg',
-              media_url_https: 'https://pbs.twimg.com/media/Eqa5PJpU0AE2Uwi.jpg',
-              url: 'https://t.co/IGrzZhTLM5',
-              display_url: 'pic.twitter.com/IGrzZhTLM5',
-              expanded_url: 'https://twitter.com/mugiply/status/1343965317978996742/photo/1',
-              type: 'photo',
-            },
-          ],
-        },
-        source: '<a href="https://about.twitter.com/products/tweetdeck" rel="nofollow">TweetDeck</a>',
-        user: {
-          id_str: '1157995803937427457',
-          name: 'mugip 🍓',
-          screen_name: 'mugiply',
-          location: '上方エリア',
-          profile_image_url: 'http://pbs.twimg.com/profile_images/1289594904276922368/xX3zKqgN_normal.png',
-          profile_image_url_https: 'https://pbs.twimg.com/profile_images/1289594904276922368/xX3zKqgN_normal.png',
-          description:
-            'ニワカPですが、がんばりまー!! ...最近は #ありかつ 人力ボットと化しつつあるおじさん。 橘ありすちゃんのイラストをお届けするボットを開発しました!! ☛ @arisucool ☚ フォローしてみてください!! 　　 【デレマス】🍓 ありす 🍓 　【シャニマス】🕊️ まの 🕊️ / 👘 りんぜ 👘',
-        },
-        retweet_count: 0,
-        favorite_count: 5,
-        possibly_sensitive: false,
-        selected: false,
-        lang: 'ja',
-        url: 'https://twitter.com/mugiply/status/1343965317978996742',
-      },
-    ];
+  async getSampleTweets(crawlSocialAccountId: number, keyword: string) {
+    const dto: GetExampleTweetsDto = {
+      crawlSocialAccountId: crawlSocialAccountId,
+      keyword: keyword,
+    };
+    let tweets: any[] = await this.api.mlControllerGetExampleTweets(dto).toPromise();
+    for (let tweet of tweets) {
+      tweet.selected = false;
+    }
     return tweets;
   }
+
+  /**
+   * 学習の実行
+   * (お手本分類の結果と、ツイートフィルタ設定をもとにデータセットを生成し、分類器のモデルを生成する)
+   * @param trainingTweets お手本分類の結果
+   * @param filterSettings ツイートフィルタ設定
+   * @return 生成されたモデル
+   */
+  async train(trainingTweets: any[], filterSettings: any[]) {
+    // データセットを生成
+    let [trainingDataset, validationDataset] = await this.getTrainingDataset(trainingTweets, filterSettings);
+    // 学習モデルの生成
+    const generated_model = await this.trainModel(trainingDataset, validationDataset);
+    return generated_model;
+  }
+
+  /**
+   * 学習のためのデータセットの生成
+   * @param trainingTweets お手本分類の結果
+   * @param filterSettings ツイートフィルタ設定
+   * @return 学習用データセットおよび検証用データセット
+   */
+  protected async getTrainingDataset(trainingTweets: any[], filterSettings: any[]) {
+    // 各ツイートに対して、ツイートフィルタを実行し、分類のための変数を取得
+    const datasets = [];
+    let tweetFiltersResult = {};
+    for (let tweet of trainingTweets) {
+      datasets.push();
+    }
+    let trainingDataset = [];
+    let validationDataset = [];
+    return [trainingDataset, validationDataset];
+  }
+
+  /**
+   * 学習モデルの検証
+   * @param trained_model 学習モデル
+   * @param trainingTweets お手本分類の結果
+   */
+  async validate(trained_model: any, trainingTweets: any[]) {
+    let tweets = JSON.parse(JSON.stringify(trainingTweets));
+    // TODO
+    for (let tweet of tweets) {
+      tweet.expectedSeleted = tweet.selected;
+      tweet.selected = true;
+    }
+    return tweets;
+  }
+
+  /**
+   * 学習モデルの生成
+   * @param trainingDataset 学習用データセット
+   * @param validationDataset 検証用データセット
+   * @return 生成されたモデル
+   */
+  protected async trainModel(trainingDataset: any, validationDataset: any) {}
 }

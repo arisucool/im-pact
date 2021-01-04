@@ -5,7 +5,7 @@
   </h2>
 </div>
 
-<form>
+<form (ngSubmit)="save()">
   <mat-card>
     <mat-card-content style="text-align: center;">
       <!-- 基本設定 セクション -->
@@ -45,8 +45,14 @@
             <mat-label>
               収集アカウント (Twitter)
             </mat-label>
-            <mat-select placeholder="アカウントを選択してください">
-              <mat-option value="arisucool">@arisucool</mat-option>
+            <mat-select
+              name="crawl_account_id"
+              placeholder="アカウントを選択してください"
+              [(ngModel)]="topic.crawlSocialAccount.id"
+            >
+              <mat-option *ngFor="let socialAccount of availableSocialAccounts" [value]="socialAccount.id">{{
+                socialAccount.displayName
+              }}</mat-option>
             </mat-select>
           </mat-form-field>
         </p>
@@ -60,7 +66,13 @@
             <mat-label>
               収集スケジュール (Cron 書式)
             </mat-label>
-            <textarea matInput placeholder="{{ topicSchedulePlaceholder }}" rows="7"></textarea>
+            <textarea
+              name="crawl_schedule"
+              matInput
+              [(ngModel)]="topic.crawlSchedule"
+              placeholder="{{ topicSchedulePlaceholder }}"
+              rows="7"
+            ></textarea>
           </mat-form-field>
         </p>
         <!---->
@@ -86,14 +98,19 @@
         <!---->
 
         <!-- キーワード欄 -->
-        <p *ngFor="let keyword of topic.keywords">
+        <p *ngFor="let keyword of topic.keywords; let keywordIndex = index; trackBy: myTrackBy">
           <mat-icon style="color: #666;">search</mat-icon>
           &nbsp;&nbsp;
           <mat-form-field appearance="outline" floatLabel="auto">
             <mat-label>
               キーワード
             </mat-label>
-            <input name="keyword" matInput placeholder="例: ありす" value="{{ keyword }}" />
+            <input
+              name="keyword_{{ keywordIndex }}"
+              [(ngModel)]="topic.keywords[keywordIndex]"
+              matInput
+              placeholder="例: ありす"
+            />
             <!-- キーワード削除ボタン -->
             <button
               (click)="deleteKeyword(keyword)"
@@ -140,7 +157,7 @@
         <!-- お手本分類ダイアログ表示ボタン -->
         <p>
           <button
-            (click)="openTrainingDialog()"
+            (click)="openTrainerDialog()"
             *ngIf="topic.trainingTweets.length === 0"
             mat-stroked-button
             color="primary"
@@ -150,7 +167,7 @@
             <mat-icon style="margin-top: -3px;">find_in_page</mat-icon>
           </button>
           <button
-            (click)="openTrainingDialog()"
+            (click)="openTrainerDialog()"
             *ngIf="topic.trainingTweets.length !== 0"
             mat-stroked-button
             color="primary"
@@ -190,92 +207,99 @@
         </div>
         <!---->
 
-        <!-- 各ツイートフィルタ設定領域 -->
-        <div class="module-setting-container" *ngFor="let moduleSetting of topic.filters; let filterIndex = index">
-          <!-- 見出し -->
-          <div class="module-setting-caption">
-            <h4>{{ moduleSetting.name }}</h4>
-            <span class="description">{{ availableTweetFilters[moduleSetting.name]?.description }}</span>
+        <mat-tab-group dynamicHeight>
+          <mat-tab label="パターンA (？点)">
+            <!-- 各ツイートフィルタ設定領域 -->
+            <div class="module-setting-container" *ngFor="let moduleSetting of topic.filters; let filterIndex = index">
+              <!-- 見出し -->
+              <div class="module-setting-caption">
+                <h4>{{ moduleSetting.name }}</h4>
+                <span class="description">{{ availableTweetFilters[moduleSetting.name]?.description }}</span>
 
-            <!-- ツイートフィルタ削除ボタン -->
-            <button
-              (click)="deleteTweetFilter(filterIndex)"
-              class="delete-btn"
-              matTooltip="このツイートフィルタを削除"
-              mat-icon-button
-              color="warn"
-            >
-              <mat-icon>delete</mat-icon>
-            </button>
+                <!-- ツイートフィルタ削除ボタン -->
+                <button
+                  (click)="deleteTweetFilter(filterIndex)"
+                  class="delete-btn"
+                  matTooltip="このツイートフィルタを削除"
+                  mat-icon-button
+                  color="warn"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+                <!---->
+              </div>
+              <!---->
+              <!-- エラー (モジュールが存在しない場合) -->
+              <p style="margin: -1rem 0 1rem 0;" *ngIf="!availableTweetFilters[moduleSetting.name]">
+                <span style="font-size: 0.8rem;"
+                  >このツイートフィルタは、インストールされていないか、致命的なエラーが発生しているため、無効化されています</span
+                >
+              </p>
+              <!-- 設定項目領域 -->
+              <div *ngIf="availableTweetFilters[moduleSetting.name]">
+                <!-- 各設定項目 -->
+                <p *ngFor="let settingItem of availableTweetFilters[moduleSetting.name]?.settings">
+                  <!-- テキスト入力欄 -->
+                  <mat-form-field
+                    *ngIf="
+                      settingItem.type === 'text' ||
+                      settingItem.type === 'url' ||
+                      settingItem.type === 'number' ||
+                      settingItem.type === 'email' ||
+                      settingItem.type === 'tel' ||
+                      settingItem.type === 'password' ||
+                      settingItem.type === 'date'
+                    "
+                    appearance="outline"
+                    floatLabel="always"
+                  >
+                    <mat-label>{{ settingItem.title }}</mat-label>
+                    <input
+                      name="filter_{{ filterIndex }}_{{ settingItem.name }}"
+                      type="{{ settingItem.type }}"
+                      matInput
+                      placeholder="{{ settingItem.placeholder }}"
+                      [(ngModel)]="moduleSetting.settings[settingItem.name]"
+                    />
+                  </mat-form-field>
+                  <!---->
+                  <!-- テキストエリア入力欄 -->
+                  <mat-form-field *ngIf="settingItem.type === 'textarea'" appearance="outline" floatLabel="always">
+                    <mat-label>{{ settingItem.title }}</mat-label>
+                    <textarea
+                      name="filter_{{ filterIndex }}_{{ settingItem.name }}"
+                      matInput
+                      placeholder="{{ settingItem.placeholder }}"
+                      rows="{{ settingItem.rows }}"
+                      [(ngModel)]="moduleSetting.settings[settingItem.name]"
+                    ></textarea>
+                  </mat-form-field>
+                  <!---->
+                </p>
+                <!---->
+                <!-- 設定項目 (一つも存在しない場合) -->
+                <p
+                  *ngIf="availableTweetFilters[moduleSetting.name]?.settings.length === 0"
+                  style="margin: -1rem 0 1rem 0;"
+                >
+                  <span style="font-size: 0.8rem;">設定項目はありません</span>
+                </p>
+                <!---->
+              </div>
+              <!---->
+            </div>
             <!---->
-          </div>
-          <!---->
-          <!-- エラー (モジュールが存在しない場合) -->
-          <p style="margin: -1rem 0 1rem 0;" *ngIf="!availableTweetFilters[moduleSetting.name]">
-            <span style="font-size: 0.8rem;"
-              >このツイートフィルタは、インストールされていないか、致命的なエラーが発生しているため、無効化されています</span
-            >
-          </p>
-          <!-- 設定項目領域 -->
-          <div *ngIf="availableTweetFilters[moduleSetting.name]">
-            <!-- 各設定項目 -->
-            <p *ngFor="let settingItem of availableTweetFilters[moduleSetting.name]?.settings">
-              <!-- テキスト入力欄 -->
-              <mat-form-field
-                *ngIf="
-                  settingItem.type === 'text' ||
-                  settingItem.type === 'url' ||
-                  settingItem.type === 'number' ||
-                  settingItem.type === 'email' ||
-                  settingItem.type === 'tel' ||
-                  settingItem.type === 'password' ||
-                  settingItem.type === 'date'
-                "
-                appearance="outline"
-                floatLabel="always"
-              >
-                <mat-label>{{ settingItem.title }}</mat-label>
-                <input
-                  name="filter_{{ filterIndex }}_{{ settingItem.name }}"
-                  type="{{ settingItem.type }}"
-                  matInput
-                  placeholder="{{ settingItem.placeholder }}"
-                  [(ngModel)]="moduleSetting.settings[settingItem.name]"
-                />
-              </mat-form-field>
-              <!---->
-              <!-- テキストエリア入力欄 -->
-              <mat-form-field *ngIf="settingItem.type === 'textarea'" appearance="outline" floatLabel="always">
-                <mat-label>{{ settingItem.title }}</mat-label>
-                <textarea
-                  name="filter_{{ filterIndex }}_{{ settingItem.name }}"
-                  matInput
-                  placeholder="{{ settingItem.placeholder }}"
-                  rows="{{ settingItem.rows }}"
-                  [(ngModel)]="moduleSetting.settings[settingItem.name]"
-                ></textarea>
-              </mat-form-field>
-              <!---->
+
+            <!-- ツイートフィルタ追加ボタン -->
+            <p>
+              <button (click)="addTweetFilter()" mat-stroked-button color="primary">
+                ツイートフィルタを追加 &nbsp;&nbsp;
+                <mat-icon style="margin-top: -3px;">add</mat-icon>
+              </button>
             </p>
             <!---->
-            <!-- 設定項目 (一つも存在しない場合) -->
-            <p *ngIf="availableTweetFilters[moduleSetting.name]?.settings.length === 0" style="margin: -1rem 0 1rem 0;">
-              <span style="font-size: 0.8rem;">設定項目はありません</span>
-            </p>
-            <!---->
-          </div>
-          <!---->
-        </div>
-        <!---->
-
-        <!-- ツイートフィルタ追加ボタン -->
-        <p>
-          <button (click)="addTweetFilter()" mat-stroked-button color="primary">
-            ツイートフィルタを追加 &nbsp;&nbsp;
-            <mat-icon style="margin-top: -3px;">add</mat-icon>
-          </button>
-        </p>
-        <!---->
+          </mat-tab>
+        </mat-tab-group>
       </section>
       <!---->
 
@@ -287,18 +311,18 @@
         <div class="section-caption">
           <h3>
             <span class="section-number">5</span>
-            トレーニング＆プレビュー
+            トレーニング＆検証
           </h3>
           <span class="description">
             先ほど設定した "お手本分類" (教師データ) と "ツイートフィルタ" (判断材料)を使って、<br />
-            AI が学習を行い、上手に分類できるかどうかを確認します。<br />
+            AI が学習を行い、上手に分類できるかどうかを検証します。<br />
           </span>
         </div>
         <!---->
 
         <!-- トレーニングボタン -->
         <p>
-          <button mat-stroked-button color="primary">
+          <button (click)="openTrainingDialog()" mat-stroked-button color="primary">
             トレーニング＆プレビューを実行 &nbsp;&nbsp;
             <mat-icon style="margin-top: -3px;">find_in_page</mat-icon>
           </button>

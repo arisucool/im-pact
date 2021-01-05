@@ -11,7 +11,7 @@ import { TopicsService } from './topics.service';
 import { ExtractedTweet } from './ml/entities/extracted-tweet.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([CrawledTweet, SocialAccount, Topic]), SocialAccountsModule],
+  imports: [TypeOrmModule.forFeature([CrawledTweet, ExtractedTweet, SocialAccount, Topic]), SocialAccountsModule],
   controllers: [TopicsController, MlController],
   providers: [MlService, TopicsService],
 })

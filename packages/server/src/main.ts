@@ -1,12 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { AppModule } from './app.module';
+import { AppModule } from './app.module'
+import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // URLのプレフィックスが /api となるように設定
   app.setGlobalPrefix('api');
+
+  // リクエストの容量制限を緩和
+  app.use(bodyParser.json({limit: '5mb'}));
 
   // アプリケーション名の取得
   let package_name = null, package_version = null;

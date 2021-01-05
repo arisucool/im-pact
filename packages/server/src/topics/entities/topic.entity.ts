@@ -7,10 +7,12 @@ import {
   PrimaryGeneratedColumn,
   OneToMany,
   ManyToOne,
+  ManyToMany,
 } from 'typeorm';
 import { IsNotEmpty } from 'class-validator';
 import { CrawledTweet } from 'src/topics/ml/entities/crawled-tweet.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
+import { ExtractedTweet } from '../ml/entities/extracted-tweet.entity';
 
 /**
  * トピックのエンティティ
@@ -32,6 +34,13 @@ export class Topic extends BaseEntity {
     socialAccount => socialAccount.topics,
   )
   crawlSocialAccount: SocialAccount;
+
+  // 収集アカウント
+  @OneToMany(
+    () => ExtractedTweet,
+    extractedTweet => extractedTweet.topic,
+  )
+  extractedTweets: ExtractedTweet[];
 
   // 収集スケジュール (Cron 書式)
   @Column()

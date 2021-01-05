@@ -90,25 +90,7 @@ export class TopicsService {
    * 利用可能なツイートフィルタの取得
    */
   async getAvailableTweetFilters() {
-    return {
-      TfIllustImageClassicationFilter: {
-        version: '1.0.0',
-        description: 'Tensorflow によるイラスト判定フィルタ　/　適用対象: ツイートの添付画像',
-        settings: [],
-      },
-      TweetTextRegExpFilter: {
-        version: '1.0.0',
-        description: 'ツイートの本文に対する正規表現によるフィルタ　/　適用対象: ツイートの本文',
-        settings: [
-          {
-            name: 'regexp_pattern',
-            title: '正規表現パターン',
-            type: 'text',
-            placeholder: '例: (ー|[ァ-ン])+・{0,1}タチバナ',
-          },
-        ],
-      },
-    };
+    return await this.api.mlControllerGetAvailableTweetFilters().toPromise();
   }
 
   /**

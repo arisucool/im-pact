@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TrainAndValidateDto } from './dto/train-and-validate.dto';
 import { CrawledTweet } from './entities/crawled-tweet.entity';
+import { TweetFilterManager } from './tweet-filters';
 
 @Injectable()
 export class MlService {
@@ -16,6 +17,39 @@ export class MlService {
     @InjectRepository(CrawledTweet)
     private crawledTweetRepository: Repository<CrawledTweet>,
   ) {}
+
+  /**
+   * 利用可能なツイートフィルタの取得
+   */
+  async getAvailableTweetFilters() {
+    const manager = new TweetFilterManager();
+    const filterNames = await manager.getAvailableModuleNames();
+
+    let filters = {};
+    for (const filterName of filterNames) {
+      let mod = null;
+      try {
+        mod = manager.getModule(filterName, {});
+      } catch (e) {
+        console.warn(`[MlService] getAvailableTweetFilters - Error = `, e);
+        continue;
+      }
+
+      if (mod === null) {
+        console.warn(`[MlService] getAvailableTweetFilters - This module is null... `, filterName);
+        continue;
+      }
+
+      filters[filterName] = {
+        version: '1.0.0', // TODO
+        description: mod.getDescription(),
+        scope: mod.getScope(),
+        settings: mod.getSettingsDefinition(),
+      };
+    }
+
+    return filters;
+  }
 
   /**
    * トレーニングおよび検証

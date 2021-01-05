@@ -49,4 +49,22 @@ export class MlController {
   getExampleTweets(@Body(ValidationPipe) dto: GetExampleTweetsDto): Promise<CrawledTweet[]> {
     return this.mlService.getExampleTweets(dto);
   }
+
+  /**
+   * 利用可能なツイートフィルタの取得
+   */
+  @Get('availableTweetFilters')
+  @HttpCode(200)
+  // ドキュメントの設定
+  @ApiOperation({ summary: '利用可能なツイートフィルタの取得' })
+  @ApiOkResponse({
+    type: Object,
+    description: 'ツイートフィルタの連想配列',
+  })
+  @ApiUnauthorizedResponse({
+    description: '権限のエラー',
+  })
+  getAvailableTweetFilters() {
+    return this.mlService.getAvailableTweetFilters();
+  }
 }

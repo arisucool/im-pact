@@ -162,6 +162,9 @@ export class MlService {
     // 元ツイートにリツイートのID文字列を残す
     if (!original_tweets[0].crawledRetweetIdStrs) {
       original_tweets[0].crawledRetweetIdStrs = [];
+    } else if (original_tweets[0].crawledRetweetIdStrs.indexOf(retweetIdStr) !== -1) {
+      // 既にこのリツイートが含まれているならば、何もしない
+      return;
     }
     original_tweets[0].crawledRetweetIdStrs.push(retweetIdStr);
 

@@ -9,7 +9,7 @@ import {
   ManyToOne,
 } from 'typeorm';
 import { IsNotEmpty } from 'class-validator';
-import { CrawledTweet } from 'src/topics/ml/entities/crawled-tweets.entity';
+import { CrawledTweet } from 'src/topics/ml/entities/crawled-tweet.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
 
 /**

@@ -3,7 +3,7 @@ import { LocalAuthGuard } from 'src/auth/guards/local-auth.guard';
 import { ApiOperation, ApiOkResponse, ApiUnauthorizedResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { GetExampleTweetsDto } from './dto/get-example-tweets.dto';
 import { MlService } from './ml.service';
-import { CrawledTweet } from './entities/crawled-tweets.entity';
+import { CrawledTweet } from './entities/crawled-tweet.entity';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('ml')

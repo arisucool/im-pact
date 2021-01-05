@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryColumn, BeforeInsert, BaseEntity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { IsNotEmpty } from 'class-validator';
-import { CrawledTweet } from 'src/topics/ml/entities/crawled-tweets.entity';
+import { CrawledTweet } from 'src/topics/ml/entities/crawled-tweet.entity';
 import { Topic } from 'src/topics/entities/topic.entity';
 
 export enum SocialService {

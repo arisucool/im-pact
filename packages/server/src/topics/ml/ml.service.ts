@@ -5,7 +5,7 @@ import * as Twitter from 'twitter';
 import { SocialAccount } from '../../social-accounts/entities/social-account.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CrawledTweet } from './entities/crawled-tweets.entity';
+import { CrawledTweet } from './entities/crawled-tweet.entity';
 
 @Injectable()
 export class MlService {

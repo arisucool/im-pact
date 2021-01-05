@@ -4,7 +4,7 @@ import { ModuleChooserSheetComponent } from './module-chooser-sheet/module-choos
 import { TopicsService } from '../topics.service';
 import { MatDialog } from '@angular/material/dialog';
 import { TrainerDialogComponent } from './trainer-dialog/trainer-dialog.component';
-import { TrainingDialogComponent } from './training-dialog/training-dialog.component';
+import { TrainingAndValidationDialogComponent } from './training-and-validation-dialog/training-and-validation-dialog.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
@@ -165,7 +165,7 @@ export class TopicEditorComponent implements OnInit {
   /**
    * トレーニング＆検証ダイアログの表示
    */
-  async openTrainingDialog() {
+  async openTrainingAndValidationDialog() {
     // 設定状況を確認
     if (this.topic.keywords.length <= 0 || this.topic.keywords[0].length <= 0) {
       // キーワードが一つも登録されていなければ、エラーを表示
@@ -192,9 +192,9 @@ export class TopicEditorComponent implements OnInit {
     }
 
     // ダイアログを開く
-    const dialogRef = this.dialog.open(TrainingDialogComponent, {
+    const dialogRef = this.dialog.open(TrainingAndValidationDialogComponent, {
       data: {
-        keywords: this.topic.keywords,
+        topicId: this.topic.id,
         filters: this.topic.filters,
         trainingTweets: this.topic.trainingTweets,
       },

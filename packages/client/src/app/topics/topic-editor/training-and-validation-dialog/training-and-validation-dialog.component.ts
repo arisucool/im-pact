@@ -1,25 +1,27 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { TopicsService } from '../../topics.service';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { TrainerDialogComponent } from '../trainer-dialog/trainer-dialog.component';
 
 /**
  * トレーニング＆検証ダイアログのコンポーネント
  */
 @Component({
-  selector: 'app-training-dialog',
-  templateUrl: './training-dialog.component.html',
-  styleUrls: ['./training-dialog.component.scss'],
+  selector: 'app-training-and-validation-dialog',
+  templateUrl: './training-and-validation-dialog.component.html',
+  styleUrls: ['./training-and-validation-dialog.component.scss'],
 })
-export class TrainingDialogComponent implements OnInit {
+export class TrainingAndValidationDialogComponent implements OnInit {
   // 進捗状況
   status: string;
+
+  // 検証結果
+  validationResult = null;
 
   // 分類結果のツイート
   resultTweets: any[];
 
-  // キーワード設定
-  keywords: [];
+  // トピックID
+  topicId: number;
 
   // フィルタ設定
   filters: [];
@@ -28,16 +30,19 @@ export class TrainingDialogComponent implements OnInit {
   trainingTweets: [];
 
   constructor(
-    private dialogRef: MatDialogRef<TrainerDialogComponent>,
+    private dialogRef: MatDialogRef<TrainingAndValidationDialogComponent>,
     private topicsService: TopicsService,
     @Inject(MAT_DIALOG_DATA) public data: any,
   ) {}
 
   async ngOnInit() {
     // コンポーネントから渡された値を取得
+    this.topicId = this.data.topicId;
     this.trainingTweets = this.data.trainingTweets;
-    this.keywords = this.data.keywords;
     this.filters = this.data.filters;
+    // 初期化
+    this.status = null;
+    this.validationResult = null;
     // 学習＆検証を実行
     await this.trainAndValidate();
   }
@@ -45,12 +50,10 @@ export class TrainingDialogComponent implements OnInit {
   async trainAndValidate() {
     // 値を初期化
     this.resultTweets = null;
-    // 学習を実行
+    // トレーニングおよび検証を実行
     this.status = 'AIが学習しています...';
-    const trainedModel = await this.topicsService.train(this.trainingTweets, this.filters);
-    // 検証を実行
-    this.status = 'AIの学習結果を検証しています...';
-    this.resultTweets = await this.topicsService.validate(trainedModel, this.trainingTweets);
+    const result = (await this.topicsService.trainAndValidate(this.topicId, this.trainingTweets, this.filters)) as any;
+    this.validationResult = result.validationResult;
     // 完了
     this.status = null;
   }

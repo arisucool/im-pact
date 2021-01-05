@@ -1,0 +1,28 @@
+<h1 mat-dialog-title>
+  トレーニング＆検証 &nbsp;&nbsp;
+  <span *ngIf="validationResult" style="color: #444; font-size: 0.9rem;">
+    N/A 点
+  </span>
+</h1>
+<div mat-dialog-content>
+  <!-- メッセージ -->
+  <p *ngIf="validationResult === null" style="margin: 2rem;">
+    {{ status }}
+    <br />
+    <br />
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  </p>
+  <!---->
+  <!-- ツイート表示 -->
+  <div *ngIf="resultTweets != null" class="tweets">
+    <div *ngFor="let tweet of resultTweets" class="tweet-container">
+      <app-tweet [tweet]="tweet"></app-tweet>
+    </div>
+  </div>
+  <!---->
+  <div mat-dialog-actions style="margin-top: 0.5rem;">
+    <button (click)="finish()" mat-raised-button color="primary" mat-dialog-close style="float: right;">
+      OK
+    </button>
+  </div>
+</div>

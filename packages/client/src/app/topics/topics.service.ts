@@ -1,7 +1,13 @@
 import { Injectable } from '@angular/core';
 import { generate } from 'rxjs';
 import { NgModel } from '@angular/forms';
-import { DefaultService, GetExampleTweetsDto, CreateTopicDto, UpdateTopicDto } from 'src/.api-client';
+import {
+  DefaultService,
+  GetExampleTweetsDto,
+  CreateTopicDto,
+  UpdateTopicDto,
+  TrainAndValidateDto,
+} from 'src/.api-client';
 
 @Injectable({
   providedIn: 'root',
@@ -214,58 +220,18 @@ export class TopicsService {
   }
 
   /**
-   * 学習の実行
-   * (お手本分類の結果と、ツイートフィルタ設定をもとにデータセットを生成し、分類器のモデルを生成する)
+   * トレーニングおよび検証
+   * @param topicId トピックID
    * @param trainingTweets お手本分類の結果
    * @param filterSettings ツイートフィルタ設定
-   * @return 生成されたモデル
+   * @return トレーニングおよび検証の結果
    */
-  async train(trainingTweets: any[], filterSettings: any[]) {
-    // データセットを生成
-    let [trainingDataset, validationDataset] = await this.getTrainingDataset(trainingTweets, filterSettings);
-    // 学習モデルの生成
-    const generated_model = await this.trainModel(trainingDataset, validationDataset);
-    return generated_model;
+  async trainAndValidate(topicId: number, trainingTweets: any[], filterSettings: any[]) {
+    const dto: TrainAndValidateDto = {
+      topicId: topicId,
+      trainingTweets: trainingTweets,
+      filters: filterSettings,
+    };
+    return await this.api.mlControllerTrainAndValidate(dto).toPromise();
   }
-
-  /**
-   * 学習のためのデータセットの生成
-   * @param trainingTweets お手本分類の結果
-   * @param filterSettings ツイートフィルタ設定
-   * @return 学習用データセットおよび検証用データセット
-   */
-  protected async getTrainingDataset(trainingTweets: any[], filterSettings: any[]) {
-    // 各ツイートに対して、ツイートフィルタを実行し、分類のための変数を取得
-    const datasets = [];
-    let tweetFiltersResult = {};
-    for (let tweet of trainingTweets) {
-      datasets.push();
-    }
-    let trainingDataset = [];
-    let validationDataset = [];
-    return [trainingDataset, validationDataset];
-  }
-
-  /**
-   * 学習モデルの検証
-   * @param trained_model 学習モデル
-   * @param trainingTweets お手本分類の結果
-   */
-  async validate(trained_model: any, trainingTweets: any[]) {
-    let tweets = JSON.parse(JSON.stringify(trainingTweets));
-    // TODO
-    for (let tweet of tweets) {
-      tweet.expectedSeleted = tweet.selected;
-      tweet.selected = true;
-    }
-    return tweets;
-  }
-
-  /**
-   * 学習モデルの生成
-   * @param trainingDataset 学習用データセット
-   * @param validationDataset 検証用データセット
-   * @return 生成されたモデル
-   */
-  protected async trainModel(trainingDataset: any, validationDataset: any) {}
 }

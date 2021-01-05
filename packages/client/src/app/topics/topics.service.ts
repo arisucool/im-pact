@@ -20,7 +20,22 @@ export class TopicsService {
    * @param topicId トピックID
    */
   async getTopic(topicId: number) {
-    return await this.api.topicsControllerFindOne(topicId).toPromise();
+    let topic: any = await this.api.topicsControllerFindOne(topicId).toPromise();
+
+    // JSON でシリアライズされた項目をパース
+    // TODO: APIクライアント側でどうにかする方法がないのかを考える
+    for (let i = 0, l = topic.filters.length; i < l; i++) {
+      topic.filters[i] = JSON.parse(topic.filters[i]);
+    }
+    for (let i = 0, l = topic.trainingTweets.length; i < l; i++) {
+      topic.trainingTweets[i] = JSON.parse(topic.trainingTweets[i]);
+    }
+    for (let i = 0, l = topic.actions.length; i < l; i++) {
+      topic.actions[i] = JSON.parse(topic.actions[i]);
+    }
+
+    // 返す
+    return topic;
   }
 
   /**

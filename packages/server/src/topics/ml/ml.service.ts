@@ -2,12 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { GetExampleTweetsDto } from './dto/get-example-tweets.dto';
 import { createDeflateRaw } from 'zlib';
 import * as Twitter from 'twitter';
+import * as tf from '@tensorflow/tfjs-node';
 import { SocialAccount } from '../../social-accounts/entities/social-account.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TrainAndValidateDto } from './dto/train-and-validate.dto';
 import { CrawledTweet } from './entities/crawled-tweet.entity';
+import { validate } from 'class-validator';
 import { TweetFilterManager } from './tweet-filters';
+import * as fs from 'fs';
 
 @Injectable()
 export class MlService {
@@ -58,44 +61,310 @@ export class MlService {
    */
   async trainAndValidate(dto: TrainAndValidateDto) {
     // データセットを生成
-    let [trainingDataset, validationDataset] = await this.getTrainingDataset(dto.trainingTweets, dto.filters);
+    let generatedDatasets = await this.getTrainingDatasets(dto.trainingTweets, dto.filters);
+
+    // データセットの変数の数を取得
+    const numOfFeatures = generatedDatasets.numOfFeatures;
+
+    // データセットに対してバッチを実行
+    const BATCH_SIZE = 16;
+    console.log(`[MlService] trainAndValidate - Applying batch to dataset...`);
+    const trainingDataset = generatedDatasets.trainingDataset.batch(BATCH_SIZE);
+    const validationDataset = generatedDatasets.validationDataset.batch(BATCH_SIZE);
+    console.log(
+      `[MlService] trainAndValidate - batch applied... ${JSON.stringify(trainingDataset)}, ${JSON.stringify(
+        validationDataset,
+      )}`,
+    );
 
     // 学習モデルの生成
-    const generated_model = await this.trainModel(trainingDataset, validationDataset);
+    const trainingResult = await this.trainModel(trainingDataset, validationDataset, numOfFeatures);
+    const trainedModel = trainingResult.model;
+
+    // 検証用データセット(バッチ加工済み)による検証の実行
+    const scoreByValidationDataset = await this.validate(trainedModel, validationDataset, numOfFeatures);
+
+    // 学習用データセット(バッチ加工済み)による検証の実行
+    const scoreByTrainingDataset = await this.validate(trainedModel, trainingDataset, numOfFeatures);
+
+    // お手本分類の結果による検証の実行
+    const resultOfTrainingTweets = await this.validateByTrainingTweets(
+      trainedModel,
+      dto.trainingTweets,
+      numOfFeatures,
+      dto.filters,
+      false,
+    );
+    const scoreByTrainingTweets = resultOfTrainingTweets.score;
+
+    // お手本分類の結果のうち、選択済みのツイートのみによる検証の実行
+    const resultOfTrainingTweetsExceptUnselect = await this.validateByTrainingTweets(
+      trainedModel,
+      dto.trainingTweets,
+      numOfFeatures,
+      dto.filters,
+      true,
+    );
+    const scoreByTrainingTweetsExceptUnselect = resultOfTrainingTweetsExceptUnselect.score;
 
     // 結果を返す
-    return {
-      trainingResult: {},
-      validationResult: {},
+    const result = {
+      trainingResult: {
+        logs: trainingResult.logs,
+      },
+      validationResult: {
+        score: Math.min(
+          scoreByValidationDataset,
+          scoreByTrainingDataset,
+          scoreByTrainingTweets,
+          scoreByTrainingTweetsExceptUnselect,
+        ),
+        scoreByValidationDataset: scoreByValidationDataset,
+        scoreByTrainingDataset: scoreByTrainingDataset,
+        scoreByTrainingTweets: scoreByTrainingTweets,
+        scoreByTrainingTweetsExceptUnselect: scoreByTrainingTweetsExceptUnselect,
+        classifiedTweets: resultOfTrainingTweets.tweets,
+      },
     };
+    console.log(`[MlService] trainAndValidate - Result =`, result);
+    return result;
   }
 
   /**
-   * 学習のためのデータセットの生成
+   * トレーニングのためのデータセットの生成
    * @param trainingTweets お手本分類の結果
    * @param filterSettings ツイートフィルタ設定
    * @return 学習用データセットおよび検証用データセット
    */
-  protected async getTrainingDataset(trainingTweets: any[], filterSettings: any[]) {
-    // 各ツイートに対して、ツイートフィルタを実行し、分類のための変数を取得
-    const datasets = [];
-    let tweetFiltersResult = {};
+  protected async getTrainingDatasets(trainingTweets: any[], filterSettings: any[]) {
+    // 検証用にデータセットを分割する割合
+    const VALIDATION_FRACTION = 0.01;
+
+    // 変数の数を代入する変数
+    let numOfFeatures = 0;
+
+    // ツイートフィルタを管理するモジュールを初期化
+    const filterManager = new TweetFilterManager();
+
+    // 各ツイートを反復
+    let rawDataset = [];
     for (let tweet of trainingTweets) {
-      // TODO
-      datasets.push();
+      console.log(`[MlService] getTrainingDatasets - Tweet: ${tweet.idStr}, ${tweet.selected}`);
+      // 当該ツイートに対してツイートフィルタを実行し、分類のための変数を取得
+      let allFiltersResult = await filterManager.filterTweetByFilterSettings(tweet, filterSettings);
+      numOfFeatures = allFiltersResult.length;
+      // 生データセットの行を生成
+      let rawDataRow = [];
+      rawDataRow = rawDataRow.concat(allFiltersResult);
+      rawDataRow.push(tweet.selected);
+      // 生データセットへ追加
+      rawDataset.push(rawDataRow);
     }
-    let trainingDataset = [];
-    let validationDataset = [];
-    return [trainingDataset, validationDataset];
+
+    // 生データセットを複製してシャッフル
+    let shuffledRawDataset = rawDataset.slice();
+    tf.util.shuffle(shuffledRawDataset);
+
+    // データセットを学習用と検証用へ分割
+    const numofValidationExamples = Math.round(rawDataset.length * VALIDATION_FRACTION);
+    const numofTrainingExamples = rawDataset.length - numofValidationExamples;
+    const trainingRawDataset = shuffledRawDataset.slice(0, numofTrainingExamples);
+    const validationRawDataset = shuffledRawDataset.slice(numofTrainingExamples);
+
+    // データセットを X および Y へ分割し、feature mapping transformations を適用
+    console.log(`[MlService] getTrainingDatasets - Applying feature mapping transformations...`);
+    const trainingX = tf.data.array(trainingRawDataset.map(r => r.slice(0, numOfFeatures)));
+    const validationX = tf.data.array(validationRawDataset.map(r => r.slice(0, numOfFeatures)));
+    const trainingY = tf.data.array(trainingRawDataset.map(r => this.flatOneHot(r[numOfFeatures])));
+    const validationY = tf.data.array(validationRawDataset.map(r => this.flatOneHot(r[numOfFeatures])));
+
+    // x および y をデータセットへ再結合
+    console.log(`[MlService] getTrainingDatasets - Recombine...`);
+    const trainingDataset = tf.data.zip({ xs: trainingX, ys: trainingY });
+    const validationDataset = tf.data.zip({ xs: validationX, ys: validationY });
+
+    // デバッグ出力
+    console.log(`[MlService] getTrainingDatasets - Dataset:`);
+    (await trainingDataset.toArray()).forEach(row => {
+      console.log(row);
+    });
+    console.log(`[MlService] getTrainingDatasets - Training dataset: ${JSON.stringify(trainingDataset)}`);
+    console.log(`[MlService] getTrainingDatasets - Validation dataset: ${JSON.stringify(validationDataset)}`);
+
+    // データセットを返す
+    return {
+      trainingDataset: trainingDataset,
+      validationDataset: validationDataset,
+      numOfFeatures: numOfFeatures,
+    };
+  }
+
+  protected flatOneHot(index: any) {
+    return Array.from(tf.oneHot([index], 3).dataSync());
   }
 
   /**
    * 学習モデルの生成
    * @param trainingDataset 学習用データセット
    * @param validationDataset 検証用データセット
+   * @param numOfFeatures データセットの変数の数
    * @return 生成されたモデル
    */
-  protected async trainModel(trainingDataset: any, validationDataset: any) {}
+  protected async trainModel(trainingDataset: any, validationDataset: any, numOfFeatures: number) {
+    // トレーニングのためのパラメータ
+    const TRAIN_EPOCHS = 30;
+    const LEARNING_RATE = 0.01;
+
+    // 学習モデルのトポロジを定義
+    console.log(`[MlService] trainModel - Making toporogy...`);
+    const model = tf.sequential();
+    model.add(
+      tf.layers.dense({
+        units: 10,
+        activation: 'sigmoid',
+        inputShape: [numOfFeatures],
+      }),
+    );
+    model.add(tf.layers.dense({ units: 3, activation: 'softmax' }));
+    model.summary();
+
+    console.log(`[MlService] trainModel - Compiling model...`);
+    const optimizer = tf.train.adam(LEARNING_RATE);
+    model.compile({
+      optimizer: optimizer,
+      loss: 'categoricalCrossentropy',
+      metrics: ['accuracy'],
+    });
+
+    // 学習の実行
+    console.log(`[MlService] trainModel - Executing fit datset...`);
+    const logs: tf.Logs[] = [];
+    await model.fitDataset(trainingDataset, {
+      epochs: TRAIN_EPOCHS,
+      validationData: validationDataset,
+      callbacks: {
+        onEpochEnd: async (epoch, epoch_log) => {
+          logs.push(epoch_log);
+        },
+      },
+    });
+
+    // 学習モデルおよび学習結果を返す
+    return { model: model, logs: logs };
+  }
+
+  /**
+   * 指定されたデータセットによる学習モデルの検証
+   * @param trainedModel 学習モデル
+   * @param validationDataset 検証用データセット
+   * @param numOfFeatures データセットの変数の数
+   * @return スコア
+   */
+  protected async validate(
+    trainedModel: tf.Sequential,
+    validationDataset: any,
+    numOfFeatures: number,
+  ): Promise<number> {
+    const [{ xs: xTest, ys: yTest }] = await validationDataset.toArray();
+    // 検証用データセットの値を取得
+    const xData = xTest.dataSync();
+    // 検証用データセットの正しい答えを取得
+    const yTrue = yTest.argMax(-1).dataSync();
+    let predictOutRaw = trainedModel.predict(xTest) as tf.Tensor;
+    // 検証用データセットの予測した答えを取得
+    const yPred = predictOutRaw.argMax(-1).dataSync();
+    //let predictOut = predictOutRaw.dataSync();
+
+    // 検証用データセットを反復
+    let numOfValidationDataset = yTrue.length;
+    let score = 0.0;
+    for (let i = 0; i < numOfValidationDataset; ++i) {
+      /*for (let j = 0; j < numOfFeatures; ++j) {
+        console.log(xData[numOfFeatures * i + j]);
+      }*/
+      console.log(`[MlService] validate - [${i}] - Truth = ${yTrue[i]}, Pred = ${yPred[i]}`);
+
+      // 予測した答えが正しいか判定
+      if (yTrue[i] != yPred[i]) {
+        // 不正解ならば、次へ
+        continue;
+      }
+
+      // 点数を加点
+      score += 100 / numOfValidationDataset;
+    }
+    return Math.ceil(score);
+  }
+
+  /**
+   * 指定されたお手本分類の結果による学習モデルの検証・分類
+   * @param trainedModel 学習モデル
+   * @param tweets お手本分類の結果
+   * @param numOfFeatures データセットの変数の数
+   * @param excludeUnselectedTweets お手本分類でユーザによって選択されなかったツイートを検証から除外するか
+   * @return 検証および分類の結果
+   */
+  protected async validateByTrainingTweets(
+    trainedModel: tf.Sequential,
+    tweets: any[],
+    numOfFeatures: number,
+    filterSettings: any[],
+    excludeUnselectedTweets: boolean = false,
+  ): Promise<{ score: number; tweets: any[] }> {
+    // 検証するツイートを抽出
+    let validationTweets: any[] = [];
+    for (let tweet of tweets) {
+      if (excludeUnselectedTweets) {
+        if (tweet.selected) {
+          validationTweets.push(tweet);
+        }
+      } else {
+        validationTweets.push(tweet);
+      }
+    }
+
+    // 変数を初期化
+    let score = 0,
+      numOfTweets = validationTweets.length;
+
+    // フィルタマネージャを初期化
+    const filterManager = new TweetFilterManager();
+
+    // 検証するツイートを反復
+    let i = 0;
+    for (let tweet of validationTweets) {
+      // 当該ツイートに対してツイートフィルタを実行し、分類のための変数を取得
+      let allFiltersResult = await filterManager.filterTweetByFilterSettings(tweet, filterSettings);
+      // 予測を実行
+      const predictedClass = (trainedModel.predict(tf.tensor2d(allFiltersResult, [1, numOfFeatures])) as tf.Tensor)
+        .argMax(-1)
+        .dataSync()[0];
+
+      // 予測した答えを追加
+      validationTweets[i].predictedSelect = predictedClass == 1;
+      i++;
+
+      // 予測した答えが正しいか判定
+      const correctClass = tweet.selected ? 1 : 0;
+
+      console.log(
+        `[MlService] validateByTrainingTweets - tweet = ${tweet.idStr}, predictedClass = ${predictedClass}, correctClass = ${correctClass}`,
+      );
+      const isCorrect = correctClass === predictedClass;
+      if (!isCorrect) {
+        // 不正解ならば、次へ
+        continue;
+      }
+
+      // 検証の点数を加点
+      score += 100 / numOfTweets;
+    }
+
+    return {
+      score: Math.ceil(score),
+      tweets: validationTweets,
+    };
+  }
 
   /**
    * 学習用サンプルツイートの取得

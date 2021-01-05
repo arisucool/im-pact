@@ -5,7 +5,7 @@ export class TweetRetweetsFilter implements TweetFilter {
   constructor(private filterSettings: any) {}
 
   getDescription() {
-    return 'ツイートのリツイート数によるフィルタ';
+    return 'ツイートのリツイート数に対するフィルタ';
   }
 
   getScope() {

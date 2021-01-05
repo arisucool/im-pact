@@ -15,7 +15,7 @@ RUN echo "Installing packages..." && \
     mkdir -p /usr/share/man/man1 && \
     apt-get update --yes && \
     apt-get install --yes --no-install-recommends --quiet \
-        curl procps default-jre && \
+        build-essential curl default-jre procps python && \
     echo "packages installed." || exit 1 && \
     apt-get clean
 

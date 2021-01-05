@@ -5,7 +5,7 @@ export class TweetLikesFilter implements TweetFilter {
   constructor(private filterSettings: any) {}
 
   getDescription() {
-    return 'ツイートのいいね数によるフィルタ';
+    return 'ツイートのいいね数に対するフィルタ';
   }
 
   getScope() {

@@ -22,9 +22,16 @@
       </li>
     </ul>
     <!---->
-    <!-- 分類ボタン -->
-    <div class="classification-btn-container">
+    <!-- 分類ボタン (お手本分類用) -->
+    <div class="classification-btn-container" *ngIf="mode == 'training'">
       <div (click)="onClassificationButtonClicked()" class="classification-btn" [ngClass]="{ selected: isSelected }">
+        <mat-icon>thumb_up</mat-icon>
+      </div>
+    </div>
+    <!---->
+    <!-- 分類ボタン (読み取り専用) (トレーニング＆検証用) -->
+    <div class="classification-btn-container" *ngIf="mode == 'validation'">
+      <div class="classification-btn" [ngClass]="{ selected: tweet?.predictedSelect }">
         <mat-icon>thumb_up</mat-icon>
       </div>
     </div>

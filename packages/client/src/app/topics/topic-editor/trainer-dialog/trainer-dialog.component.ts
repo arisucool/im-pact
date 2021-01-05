@@ -69,8 +69,9 @@ export class TrainerDialogComponent implements OnInit {
     }
 
     this.tweets.find((tweet: any) => {
-      if (tweet.id_str === tweetIdStr) {
-        tweet.isSelected = isSelected;
+      if (tweet.idStr === tweetIdStr) {
+        tweet.selected = isSelected;
+        console.log(tweetIdStr, tweet);
       }
     });
   }

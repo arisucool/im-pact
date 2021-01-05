@@ -9,6 +9,10 @@ export class TweetComponent implements OnInit {
   @Input() tweet: any;
   @Output() onSelectChangedEvent = new EventEmitter<boolean>();
   isSelected = false;
+
+  // モード
+  mode: any;
+
   // ツイートのデータ
   rawData: any;
 
@@ -16,6 +20,7 @@ export class TweetComponent implements OnInit {
 
   ngOnInit(): void {
     this.rawData = JSON.parse(this.tweet.rawJSONData);
+    this.mode = this.tweet.predictedSelect ? 'validation' : 'training';
   }
 
   /**

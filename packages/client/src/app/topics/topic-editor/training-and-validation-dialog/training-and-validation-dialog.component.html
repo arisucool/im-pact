@@ -1,8 +1,6 @@
 <h1 mat-dialog-title>
   トレーニング＆検証 &nbsp;&nbsp;
-  <span *ngIf="validationResult" style="color: #444; font-size: 0.9rem;">
-    N/A 点
-  </span>
+  <span *ngIf="validationResult" style="color: #444; font-size: 0.9rem;"> {{ validationResult.score }} 点 </span>
 </h1>
 <div mat-dialog-content>
   <!-- メッセージ -->
@@ -10,12 +8,14 @@
     {{ status }}
     <br />
     <br />
-    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    <!-- プログレスバー -->
+    <mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+    <!---->
   </p>
   <!---->
   <!-- ツイート表示 -->
-  <div *ngIf="resultTweets != null" class="tweets">
-    <div *ngFor="let tweet of resultTweets" class="tweet-container">
+  <div *ngIf="validationResult?.classifiedTweets != null" class="tweets">
+    <div *ngFor="let tweet of validationResult?.classifiedTweets" class="tweet-container">
       <app-tweet [tweet]="tweet"></app-tweet>
     </div>
   </div>

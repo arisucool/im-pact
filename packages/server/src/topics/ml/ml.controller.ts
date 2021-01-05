@@ -1,4 +1,4 @@
-import { Controller, UseGuards, Post, HttpCode, Body, ValidationPipe, Get } from '@nestjs/common';
+import { Controller, UseGuards, Post, HttpCode, Body, ValidationPipe, Get, BadRequestException } from '@nestjs/common';
 import { LocalAuthGuard } from 'src/auth/guards/local-auth.guard';
 import { ApiOperation, ApiOkResponse, ApiUnauthorizedResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { GetExampleTweetsDto } from './dto/get-example-tweets.dto';
@@ -27,8 +27,13 @@ export class MlController {
   @ApiUnauthorizedResponse({
     description: '権限のエラー',
   })
-  trainAndValidate(@Body(ValidationPipe) dto: TrainAndValidateDto): Promise<any> {
-    return this.mlService.trainAndValidate(dto);
+  async trainAndValidate(@Body(ValidationPipe) dto: TrainAndValidateDto): Promise<any> {
+    try {
+      return await this.mlService.trainAndValidate(dto);
+    } catch (e) {
+      console.warn(e.stack);
+      throw new BadRequestException(e.toString());
+    }
   }
 
   /**

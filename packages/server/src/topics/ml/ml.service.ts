@@ -11,6 +11,7 @@ import { CrawledTweet } from './entities/crawled-tweet.entity';
 import { validate } from 'class-validator';
 import { TweetFilterManager } from './tweet-filters';
 import * as fs from 'fs';
+import { ModuleStorage } from './entities/module-storage.entity';
 
 @Injectable()
 export class MlService {
@@ -19,20 +20,22 @@ export class MlService {
     private socialAccountRepository: Repository<SocialAccount>,
     @InjectRepository(CrawledTweet)
     private crawledTweetRepository: Repository<CrawledTweet>,
+    @InjectRepository(ModuleStorage)
+    private moduleStorageRepository: Repository<ModuleStorage>,
   ) {}
 
   /**
    * 利用可能なツイートフィルタの取得
    */
   async getAvailableTweetFilters() {
-    const manager = new TweetFilterManager();
-    const filterNames = await manager.getAvailableModuleNames();
+    const filterManager = new TweetFilterManager(this.moduleStorageRepository);
+    const filterNames = await filterManager.getAvailableModuleNames();
 
     let filters = {};
     for (const filterName of filterNames) {
       let mod = null;
       try {
-        mod = manager.getModule(filterName, {});
+        mod = filterManager.getModule(filterName, {});
       } catch (e) {
         console.warn(`[MlService] getAvailableTweetFilters - Error = `, e);
         continue;
@@ -126,7 +129,7 @@ export class MlService {
         classifiedTweets: resultOfTrainingTweets.tweets,
       },
     };
-    console.log(`[MlService] trainAndValidate - Result =`, result);
+    //console.log(`[MlService] trainAndValidate - Result =`, result);
     return result;
   }
 
@@ -144,7 +147,13 @@ export class MlService {
     let numOfFeatures = 0;
 
     // ツイートフィルタを管理するモジュールを初期化
-    const filterManager = new TweetFilterManager();
+    const filterManager = new TweetFilterManager(this.moduleStorageRepository);
+
+    // 各ツイートフィルタによる学習処理を実行
+    // (学習が必要なツイートフィルタがあるため、先に全ツイートに対する学習を行っておく)
+    for (const tweet of trainingTweets) {
+      await filterManager.trainTweet(tweet, tweet.selected, filterSettings);
+    }
 
     // 各ツイートを反復
     let rawDataset = [];
@@ -328,7 +337,7 @@ export class MlService {
       numOfTweets = validationTweets.length;
 
     // フィルタマネージャを初期化
-    const filterManager = new TweetFilterManager();
+    const filterManager = new TweetFilterManager(this.moduleStorageRepository);
 
     // 検証するツイートを反復
     let i = 0;

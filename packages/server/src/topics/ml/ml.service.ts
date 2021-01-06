@@ -165,7 +165,7 @@ export class MlService {
       // 生データセットの行を生成
       let rawDataRow = [];
       rawDataRow = rawDataRow.concat(allFiltersResult);
-      rawDataRow.push(tweet.selected);
+      rawDataRow.push(tweet.selected ? 1 : 0);
       // 生データセットへ追加
       rawDataset.push(rawDataRow);
     }

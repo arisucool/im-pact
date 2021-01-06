@@ -72,7 +72,8 @@ export class TweetTextBayesianFilter implements TweetFilter {
     // ベイジアンフィルタを初期化
     await this.initBayes();
     // ベイジアンフィルタでツイートの本文からカテゴリを予測
-    const category = this.bayes.categorize(tweet.text);
+    const category = await this.bayes.categorize(tweet.text);
+    console.log(`[TweetTextBayesianFilter] filter - Categorized... ${category}, ${tweet.text}`);
     // カテゴリに応じた数値を返す
     return category === 'accept' ? 1 : 0;
   }
@@ -82,7 +83,7 @@ export class TweetTextBayesianFilter implements TweetFilter {
     await this.initBayes();
     // ベイジアンフィルタでツイートの本文を学習
     const label = isSelected ? 'accept' : 'reject';
-    this.bayes.learn(tweet.text, label);
+    await this.bayes.learn(tweet.text, label);
     // ベイジアンフィルタを保存
     this.storage.set('storedClassifier', this.bayes.toJson());
   }

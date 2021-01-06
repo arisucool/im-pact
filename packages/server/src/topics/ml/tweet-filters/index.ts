@@ -115,6 +115,9 @@ export class TweetFilterManager {
       case 'TweetRetweetsFilter':
         this.modules[filterName] = new TweetRetweetsFilter(filterSetting, moduleStorage);
         return this.modules[filterName];
+      case 'TweetTextBayesianFilter':
+        this.modules[filterName] = new TweetTextBayesianFilter(filterSetting, moduleStorage);
+        return this.modules[filterName];
     }
 
     return null;

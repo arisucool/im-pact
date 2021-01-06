@@ -73,6 +73,14 @@
     }
   }
 
+  .classification-btn.correct {
+    background: #52c155;
+  }
+
+  .classification-btn.incorrect {
+    background: #c15252;
+  }
+
   .classification-btn.selected {
     background: #bedbfd;
   }

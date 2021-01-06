@@ -20,7 +20,7 @@ export class TweetComponent implements OnInit {
 
   ngOnInit(): void {
     this.rawData = JSON.parse(this.tweet.rawJSONData);
-    this.mode = this.tweet.predictedSelect ? 'validation' : 'training';
+    this.mode = this.tweet.predictedSelect !== undefined ? 'validation' : 'training';
   }
 
   /**

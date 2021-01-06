@@ -351,6 +351,8 @@ export class MlService {
 
       // 予測した答えを追加
       validationTweets[i].predictedSelect = predictedClass == 1;
+      // ツイートフィルタの実行結果を追加
+      validationTweets[i].filtersResult = allFiltersResult;
       i++;
 
       // 予測した答えが正しいか判定

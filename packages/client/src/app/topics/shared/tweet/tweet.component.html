@@ -47,6 +47,10 @@
       </div>
       <!---->
 
+      <!-- フィルタの実行結果 (トレーニング＆検証用) -->
+      <div class="filters-result" *ngIf="tweet.filtersResult">[ {{ tweet.filtersResult?.join(', ') }} ]</div>
+      <!---->
+
       <!-- View on Twitter リンク -->
       <div class="tweet-open-link">
         <a href="{{ tweet.url }}" target="_blank" rel="noopener">View on Twitter</a>

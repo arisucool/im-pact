@@ -53,6 +53,10 @@ export class TrainerDialogComponent implements OnInit {
       let keyword_tweets = await this.topicsService.getSampleTweets(this.crawlSocialAccountId, keyword);
       tweets = tweets.concat(keyword_tweets);
     }
+    // リツイート数でソート
+    tweets = tweets.sort((a: any, b: any) => {
+      return b.crawledRetweetCount - a.crawledRetweetCount;
+    });
     this.tweets = tweets;
   }
 

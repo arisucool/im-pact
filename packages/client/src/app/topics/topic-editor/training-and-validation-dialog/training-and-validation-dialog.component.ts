@@ -45,7 +45,6 @@ export class TrainingAndValidationDialogComponent implements OnInit {
     this.filters = this.data.filters;
     // 初期化
     this.status = null;
-    this.validationResult = null;
     this.isLoading = true;
     // 学習＆検証を実行
     await this.trainAndValidate();
@@ -54,15 +53,17 @@ export class TrainingAndValidationDialogComponent implements OnInit {
   async trainAndValidate() {
     // 値を初期化
     this.resultTweets = null;
+    this.validationResult = null;
     // トレーニングおよび検証を実行
     this.status = 'AIがトレーニングしています...';
+    let validationResult = null;
     try {
       const result = (await this.topicsService.trainAndValidate(
         this.topicId,
         this.trainingTweets,
         this.filters,
       )) as any;
-      this.validationResult = result.validationResult;
+      validationResult = result.validationResult;
     } catch (e) {
       this.isLoading = false;
       this.status = `エラー: ${e.error?.message}`;
@@ -71,6 +72,11 @@ export class TrainingAndValidationDialogComponent implements OnInit {
       });
       return;
     }
+    // リツイート数でソート
+    validationResult.classifiedTweets = validationResult.classifiedTweets.sort((a: any, b: any) => {
+      return b.crawledRetweetCount - a.crawledRetweetCount;
+    });
+    this.validationResult = validationResult;
     // 完了
     this.isLoading = false;
     this.status = null;

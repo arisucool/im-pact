@@ -7,7 +7,19 @@ export class ModuleStorage {
    * @param moduleName モジュール名 (例: 'TweetTextBayesianFilter')
    * @param repository モジュールストレージのリポジトリ
    */
-  constructor(private moduleName: string, private repository: Repository<ModuleStorageEntity.ModuleStorage>) {}
+  private constructor(private moduleName: string, private repository: Repository<ModuleStorageEntity.ModuleStorage>) {}
+
+  /**
+   * ファクトリメソッド
+   * @param moduleName モジュール名 (例: 'TweetTextBayesianFilter')
+   * @param repository モジュールストレージのリポジトリ
+   */
+  static readonly factory = (
+    moduleName: string,
+    repository: Repository<ModuleStorageEntity.ModuleStorage>,
+  ): Readonly<ModuleStorage> => {
+    return new ModuleStorage(moduleName, repository);
+  };
 
   /**
    * 指定されたキーによる値の取得

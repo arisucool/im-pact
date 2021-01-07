@@ -8,9 +8,7 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TrainAndValidateDto } from './dto/train-and-validate.dto';
 import { CrawledTweet } from './entities/crawled-tweet.entity';
-import { validate } from 'class-validator';
 import { TweetFilterManager } from './tweet-filters';
-import * as fs from 'fs';
 import { ModuleStorage } from './entities/module-storage.entity';
 
 @Injectable()
@@ -28,14 +26,14 @@ export class MlService {
    * 利用可能なツイートフィルタの取得
    */
   async getAvailableTweetFilters() {
-    const filterManager = new TweetFilterManager(this.moduleStorageRepository);
+    const filterManager = new TweetFilterManager(this.moduleStorageRepository, this.socialAccountRepository);
     const filterNames = await filterManager.getAvailableModuleNames();
 
     let filters = {};
     for (const filterName of filterNames) {
       let mod = null;
       try {
-        mod = filterManager.getModule(filterName, {});
+        mod = await filterManager.getModule(filterName, {});
       } catch (e) {
         console.warn(`[MlService] getAvailableTweetFilters - Error = `, e);
         continue;
@@ -147,18 +145,25 @@ export class MlService {
     let numOfFeatures = 0;
 
     // ツイートフィルタを管理するモジュールを初期化
-    const filterManager = new TweetFilterManager(this.moduleStorageRepository);
+    const filterManager = new TweetFilterManager(this.moduleStorageRepository, this.socialAccountRepository);
+
+    // 各ツイートフィルタによるバッチ処理を実行
+    // (バッチ処理が必要なツイートフィルタがあるため、先にバッチ処理を行っておく)
+    await filterManager.batchByFilterSettings(filterSettings);
 
     // 各ツイートフィルタによる学習処理を実行
     // (学習が必要なツイートフィルタがあるため、先に全ツイートに対する学習を行っておく)
     for (const tweet of trainingTweets) {
       await filterManager.trainTweet(tweet, tweet.selected, filterSettings);
+      if (tweet.selected) {
+        await filterManager.trainTweet(tweet, tweet.selected, filterSettings);
+      }
     }
 
     // 各ツイートを反復
     let rawDataset = [];
     for (let tweet of trainingTweets) {
-      console.log(`[MlService] getTrainingDatasets - Tweet: ${tweet.idStr}, ${tweet.selected}`);
+      //console.log(`[MlService] getTrainingDatasets - Tweet: ${tweet.idStr}, ${tweet.selected}`);
       // 当該ツイートに対してツイートフィルタを実行し、分類のための変数を取得
       let allFiltersResult = await filterManager.filterTweetByFilterSettings(tweet, filterSettings);
       numOfFeatures = allFiltersResult.length;
@@ -337,7 +342,7 @@ export class MlService {
       numOfTweets = validationTweets.length;
 
     // フィルタマネージャを初期化
-    const filterManager = new TweetFilterManager(this.moduleStorageRepository);
+    const filterManager = new TweetFilterManager(this.moduleStorageRepository, this.socialAccountRepository);
 
     // 検証するツイートを反復
     let i = 0;

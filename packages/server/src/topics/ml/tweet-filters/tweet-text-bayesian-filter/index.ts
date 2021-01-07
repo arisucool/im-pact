@@ -2,7 +2,7 @@ import { CrawledTweet } from '../../entities/crawled-tweet.entity';
 import { TweetFilter } from '../interfaces/tweet-filter.interface';
 import * as TinySegmenter from 'tiny-segmenter';
 import * as Bayes from 'bayes';
-import { ModuleStorage } from '../module-storage';
+import { ModuleHelper } from '../module-helper';
 
 export class TweetTextBayesianFilter implements TweetFilter {
   // 形態素解析器
@@ -11,7 +11,7 @@ export class TweetTextBayesianFilter implements TweetFilter {
   // ベイジアンフィルタ
   private bayes: any;
 
-  constructor(private filterSettings: any, private storage: ModuleStorage) {
+  constructor(private helper: Readonly<ModuleHelper>) {
     this.segmenter = new TinySegmenter();
     this.bayes = null;
   }
@@ -58,7 +58,7 @@ export class TweetTextBayesianFilter implements TweetFilter {
     });
 
     // 学習データの読み込み
-    const storedClassifier = await this.storage.get('storedClassifier');
+    const storedClassifier = await this.helper.getStorage().get('storedClassifier');
     if (!storedClassifier) return;
     try {
       this.bayes = Bayes.fromJson(storedClassifier);
@@ -73,7 +73,7 @@ export class TweetTextBayesianFilter implements TweetFilter {
     await this.initBayes();
     // ベイジアンフィルタでツイートの本文からカテゴリを予測
     const category = await this.bayes.categorize(tweet.text);
-    console.log(`[TweetTextBayesianFilter] filter - Categorized... ${category}, ${tweet.text}`);
+    //console.log(`[TweetTextBayesianFilter] filter - Categorized... ${category}, ${tweet.text}`);
     // カテゴリに応じた数値を返す
     return category === 'accept' ? 1 : 0;
   }
@@ -85,6 +85,6 @@ export class TweetTextBayesianFilter implements TweetFilter {
     const label = isSelected ? 'accept' : 'reject';
     await this.bayes.learn(tweet.text, label);
     // ベイジアンフィルタを保存
-    this.storage.set('storedClassifier', this.bayes.toJson());
+    this.helper.getStorage().set('storedClassifier', this.bayes.toJson());
   }
 }

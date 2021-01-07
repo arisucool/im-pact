@@ -5,12 +5,17 @@ import { TweetAuthorProfileLikeFoloweeBayesianFilter } from './tweet-author-prof
 import { TweetTextBayesianFilter } from './tweet-text-bayesian-filter';
 import { Repository } from 'typeorm';
 import * as ModuleStorageEntity from '../entities/module-storage.entity';
+import { ModuleHelper } from './module-helper';
 import { ModuleStorage } from './module-storage';
+import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
 
 export class TweetFilterManager {
   private modules: any[] = [];
 
-  constructor(private repository: Repository<ModuleStorageEntity.ModuleStorage>) {
+  constructor(
+    private moduleStorageRepository: Repository<ModuleStorageEntity.ModuleStorage>,
+    private socialAccountRepository: Repository<SocialAccount>,
+  ) {
     this.modules = [];
   }
 
@@ -52,7 +57,7 @@ export class TweetFilterManager {
     // フィルタ設定を反復
     for (const filter of filterSettings) {
       // ツイートフィルタを初期化
-      const mod = this.getModule(filter.name, filter.setting);
+      const mod = await this.getModule(filter.name, filter.setting);
       if (mod === null) {
         console.log(`[TweetFilters] - trainTweet - This filter was invalid... ${filter.name}`);
         continue;
@@ -74,6 +79,26 @@ export class TweetFilterManager {
     }
   }
 
+  async batchByFilterSettings(filterSettings: any[]) {
+    // フィルタ設定を反復
+    for (const filter of filterSettings) {
+      // ツイートフィルタを初期化
+      const mod = await this.getModule(filter.name, filter.setting);
+      if (mod === null) {
+        console.log(`[TweetFilters] - batchByFilterSettings - This filter was invalid... ${filter.name}`);
+        continue;
+      }
+
+      if (typeof mod.batch !== 'function') {
+        // 関数でなければ
+        continue;
+      }
+
+      // 当該ツイートフィルタでバッチを実行
+      await mod.batch();
+    }
+  }
+
   async filterTweetByFilterSettings(tweet: any, filterSettings: any[]) {
     // 当該ツイートに対する全フィルタの適用結果を代入するための配列
     let allFiltersResults = [];
@@ -81,7 +106,7 @@ export class TweetFilterManager {
     // フィルタ設定を反復
     for (const filter of filterSettings) {
       // ツイートフィルタを初期化
-      const mod = this.getModule(filter.name, filter.setting);
+      const mod = await this.getModule(filter.name, filter.setting);
       if (mod === null) {
         console.log(`[TweetFilters] - filterTweetByFilterSettings - This filter was invalid... ${filter.name}`);
         continue;
@@ -98,25 +123,33 @@ export class TweetFilterManager {
     return allFiltersResults;
   }
 
-  getModule(filterName: string, filterSetting: any) {
+  async getModule(filterName: string, filterSetting: any) {
     if (this.modules[filterName]) return this.modules[filterName];
 
     // ModuleStorage の初期化
-    const moduleStorage = new ModuleStorage(filterName, this.repository);
+    const moduleStorage = ModuleStorage.factory(filterName, this.moduleStorageRepository);
+
+    // ソーシャルアカウントの取得
+    // TODO: 複数アカウントの対応
+    const socialAccounts = await this.socialAccountRepository.find();
+    const socialAccount = socialAccounts[0];
+
+    // ヘルパの初期化
+    const moduleHelper = ModuleHelper.factory(filterName, moduleStorage, filterSetting, socialAccount);
 
     // モジュールの初期化
     switch (filterName) {
       case 'TweetAuthorProfileLikeFoloweeBayesianFilter':
-        this.modules[filterName] = new TweetAuthorProfileLikeFoloweeBayesianFilter(filterSetting, moduleStorage);
+        this.modules[filterName] = new TweetAuthorProfileLikeFoloweeBayesianFilter(moduleHelper);
         return this.modules[filterName];
       case 'TweetLikesFilter':
-        this.modules[filterName] = new TweetLikesFilter(filterSetting, moduleStorage);
+        this.modules[filterName] = new TweetLikesFilter(moduleHelper);
         return this.modules[filterName];
       case 'TweetRetweetsFilter':
-        this.modules[filterName] = new TweetRetweetsFilter(filterSetting, moduleStorage);
+        this.modules[filterName] = new TweetRetweetsFilter(moduleHelper);
         return this.modules[filterName];
       case 'TweetTextBayesianFilter':
-        this.modules[filterName] = new TweetTextBayesianFilter(filterSetting, moduleStorage);
+        this.modules[filterName] = new TweetTextBayesianFilter(moduleHelper);
         return this.modules[filterName];
     }
 

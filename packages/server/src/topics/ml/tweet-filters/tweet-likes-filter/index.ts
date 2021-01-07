@@ -1,9 +1,11 @@
 import { CrawledTweet } from '../../entities/crawled-tweet.entity';
 import { TweetFilter } from '../interfaces/tweet-filter.interface';
-import { ModuleStorage } from '../module-storage';
+import { ModuleHelper } from '../module-helper';
 
 export class TweetLikesFilter implements TweetFilter {
-  constructor(private filterSettings: any, private storage: ModuleStorage) {}
+  constructor(private helper: Readonly<ModuleHelper>) {
+    helper.toString();
+  }
 
   getDescription() {
     return 'ツイートのいいね数に対するフィルタ';

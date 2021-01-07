@@ -64,6 +64,13 @@ export class CrawledTweet extends BaseEntity {
   @Column()
   url: string;
 
+  // ツイートのハッシュタグ
+  @Column({
+    type: 'text',
+    array: true,
+  })
+  hashtags: string[];
+
   // ツイートのリツイート数
   // (クロール済みツイートからリツイート (引用リツイートを除く) を独自にカウントしたもの)
   @Column({

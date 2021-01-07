@@ -457,6 +457,9 @@ export class MlService {
     crawledTweet.url = `https://twitter.com/${tweet.user.id_str}/status/${tweet.id_str}`;
     crawledTweet.crawledRetweetIdStrs = [];
 
+    // ツイートのハッシュタグを付加
+    crawledTweet.hashtags = this.getHashTagsByTweet(crawledTweet);
+
     // リツイート (引用リツイートを除く) のための処理
     if (tweet.retweeted_status) {
       if (should_integrate_rt) {
@@ -609,5 +612,37 @@ export class MlService {
         resolve(tweets.statuses);
       });
     });
+  }
+
+  /**
+   * 指定されたツイートからのハッシュタグの取得
+   * @param tweet ツイート
+   * @return ハッシュタグ配列
+   */
+  protected getHashTagsByTweet(tweet: CrawledTweet): string[] {
+    // ツイートの生データを取得
+    const tweetRawData = JSON.parse(tweet.rawJSONData);
+
+    // ハッシュタグを抽出するための配列を初期化
+    let hashtags = [];
+
+    // ハッシュタグが存在するか判定
+    if (!tweetRawData.entities || !tweetRawData.entities.hashtags) {
+      return [];
+    }
+
+    // ハッシュタグを反復
+    for (const hashtag of tweetRawData.entities.hashtags) {
+      // 当該ハッシュタグを配列へ追加
+      hashtags.push(hashtag.text);
+    }
+
+    // ハッシュタグの重複除去
+    hashtags = hashtags.filter((x, i, self) => {
+      return self.indexOf(x) === i;
+    });
+
+    // ハッシュタグの配列を返す
+    return hashtags;
   }
 }

@@ -99,6 +99,7 @@ ul.tweet-medias {
     list-style-type: none;
     img {
       width: 64px;
+      margin-bottom: 1rem;
     }
     img:hover {
       opacity: 0.8;
@@ -112,6 +113,17 @@ footer {
   margin: 0 0 1rem 0;
   .tweet-date {
     float: right;
+  }
+  .tweet-engagement {
+    color: #555;
+    float: left;
+    margin-left: 1rem;
+    mat-icon {
+      font-size: 1.1rem;
+      vertical-align: top;
+      height: auto;
+      margin-top: 2px;
+    }
   }
   .filters-result {
     float: right;

@@ -57,6 +57,18 @@
       </div>
       <!---->
 
+      <!-- いいね数 / リツイート数 -->
+      <div class="tweet-engagement">
+        <mat-icon>star</mat-icon>
+        &nbsp;
+        {{ rawData.favorite_count }}
+        &nbsp; &nbsp;
+        <mat-icon>sync</mat-icon>
+        &nbsp;
+        {{ tweet.crawledRetweetCount }}
+      </div>
+      <!---->
+
       <br style="clear: both;" />
     </footer>
     <!---->

@@ -1,6 +1,9 @@
 <h1 mat-dialog-title>
   トレーニング＆検証 &nbsp;&nbsp;
-  <span *ngIf="validationResult" style="color: #444; font-size: 0.9rem;"> {{ validationResult.score }} 点 </span>
+  <span *ngIf="validationResult" style="color: #444; font-size: 0.9rem;">
+    {{ validationResult.score }} 点 &nbsp;&nbsp; (お手本分類全件に対して:
+    {{ validationResult.scoreByTrainingTweets }} 点)
+  </span>
 </h1>
 <div mat-dialog-content>
   <!-- メッセージ -->

@@ -39,10 +39,21 @@ export class MlService {
       }
 
       filters[filterName] = {
+        // フィルタのバージョン
         version: '1.0.0', // TODO
+        // フィルタの説明
         description: mod.getDescription(),
+        // フィルタの適用範囲
         scope: mod.getScope(),
+        // フィルタ設定の定義
         settings: mod.getSettingsDefinition(),
+        // フィルタで提供される機能
+        features: {
+          // 学習を行うか否か
+          train: typeof mod.train === 'function',
+          // バッチ処理を行うか否か
+          batch: typeof mod.batch === 'function',
+        },
       };
     }
 

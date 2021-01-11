@@ -22,17 +22,19 @@ export class TwitterCrawlerService {
    * @return 検索結果のツイート配列
    */
   async getExampleTweets(dto: GetExampleTweetsDto) {
+    const NUM_OF_REQUIRED_TWEETS = 400;
+
     // 収集されたツイートを検索
     let crawledTweets = await this.crawledTweetRepository.find({
       crawlKeyword: dto.keyword,
     });
-    if (100 <= crawledTweets.length) {
-      // 100件以上あれば
+    if (NUM_OF_REQUIRED_TWEETS <= crawledTweets.length) {
+      // データベース上に指定件数以上あれば、そのまま返す
       return crawledTweets;
     }
 
     // 新たにツイートを収集
-    await this.crawlExampleTweets(dto.crawlSocialAccountId, dto.keyword);
+    await this.crawlExampleTweets(dto.crawlSocialAccountId, dto.keyword, NUM_OF_REQUIRED_TWEETS);
 
     // 収集されたツイートを再検索
     crawledTweets = await this.crawledTweetRepository.find({
@@ -45,12 +47,11 @@ export class TwitterCrawlerService {
    * 学習用サンプルツイートの収集
    * @param socialAccountId 検索に使用するソーシャルアカウントのID
    * @param keyword キーワード
+   * @param minNumOfTweets 検索する最低ツイート数 (このツイートを満たせるまでループする)
    */
-  protected async crawlExampleTweets(socialAccountId: number, keyword: string) {
+  protected async crawlExampleTweets(socialAccountId: number, keyword: string, minNumOfTweets: number) {
     // Twitter上でツイートを検索
-    // (RTはまとめられるのでこの数より少なくなる)
-    const MIN_NUM_OF_TWEETS = 300;
-    const tweets = await this.searchTweetsByKeyword(socialAccountId, keyword, MIN_NUM_OF_TWEETS);
+    const tweets = await this.searchTweetsByKeyword(socialAccountId, keyword, minNumOfTweets);
     console.log(`[MlService] getExampleTweets - Found ${tweets.length} tweets... ${keyword}`);
 
     // ツイートを反復
@@ -218,13 +219,11 @@ export class TwitterCrawlerService {
     // 検索を実行
     let tweets = [];
     for (let i = 0; i < 5; i++) {
-      console.log(keyword, i);
       let tweetsofPage = await this.searchTweets(socialAccountId, searchCondition);
       tweets = tweets.concat(tweetsofPage);
 
       if (tweetsofPage.length == 0) {
         // ツイートがなければ、ループを終了
-        console.log('end');
         break;
       } else if (minNumOfTweets <= tweets.length) {
         // 指定件数以上取得できたら、ループを終了
@@ -233,7 +232,6 @@ export class TwitterCrawlerService {
 
       // 次ページを取得するために、最後のツイートのIDから1引いて、maxIdに指定
       searchCondition.max_id = tweetsofPage[tweetsofPage.length - 1].id_str;
-      console.log(`next is ${searchCondition.max_id} ${keyword}`);
     }
     return tweets;
   }

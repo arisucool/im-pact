@@ -1,9 +1,18 @@
 <mat-card>
   <mat-card-content>
     <div class="tweet-user">
-      <img src="{{ rawData.user.profile_image_url }}" class="user-profile-image" />
+      <img
+        src="{{ rawData.user.profile_image_url }}"
+        class="user-profile-image"
+        matTooltip="{{ rawData.user.description }}"
+      />
       <p>
-        <a href="https://twitter.com/{{ tweet.userScreenName }}" target="_blank" rel="noopener">
+        <a
+          href="https://twitter.com/{{ tweet.userScreenName }}"
+          target="_blank"
+          rel="noopener"
+          matTooltip="クリックすると、新しいタブでユーザを表示します"
+        >
           <span class="user-name"> {{ tweet.userName }}</span>
           <br />
           <span class="user-screen-name">@{{ tweet.userScreenName }}</span>
@@ -16,7 +25,12 @@
     <!-- メディア -->
     <ul class="tweet-medias">
       <li *ngFor="let media of rawData.entities.media">
-        <a href="{{ media.expanded_url }}" target="_blank" rel="noopener">
+        <a
+          href="{{ media.expanded_url }}"
+          target="_blank"
+          rel="noopener"
+          matTooltip="クリックすると、新しいタブで画像を表示します"
+        >
           <img src="{{ media.media_url }}" />
         </a>
       </li>

@@ -64,6 +64,7 @@ import { TrainingAndValidationDialogComponent } from './topic-editor/training-an
     MatMenuModule,
     MatProgressBarModule,
     MatProgressSpinnerModule,
+    MatRadioModule,
     MatSelectModule,
     MatSidenavModule,
     MatSnackBarModule,

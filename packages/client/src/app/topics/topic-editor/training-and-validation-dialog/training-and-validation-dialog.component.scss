@@ -1,19 +1,32 @@
 :host {
 }
 
-.tweets {
-  display: flex;
-  flex-wrap: wrap;
-  height: 70vh;
-  overflow: auto;
-  width: 70vw;
-  justify-content: space-between;
-  overflow: auto;
-  background-color: #eee;
-  padding: 1rem;
-  .tweet-container {
-    position: relative;
-    width: 49%;
-    box-sizing: border-box;
+.tweets-container {
+  .filter {
+    mat-radio-group {
+      display: inline-flex;
+      flex-direction: row;
+      margin: 15px 0;
+      mat-radio-button {
+        margin: 5px;
+      }
+    }
+  }
+  .tweets {
+    display: flex;
+    flex-wrap: wrap;
+    height: 60vh;
+    overflow: auto;
+    width: 70vw;
+    justify-content: space-between;
+    overflow: auto;
+    background-color: #eee;
+    padding: 1rem;
+
+    .tweet-container {
+      position: relative;
+      width: 49%;
+      box-sizing: border-box;
+    }
   }
 }

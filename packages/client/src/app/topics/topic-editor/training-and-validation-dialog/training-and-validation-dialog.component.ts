@@ -18,9 +18,13 @@ export class TrainingAndValidationDialogComponent implements OnInit {
 
   // 検証結果
   validationResult = null;
+  numOfTweets = 0;
+  numOfCorrectTweets = 0;
+  numOfIncorrectTweets = 0;
+  tweets: any[];
 
-  // 分類結果のツイート
-  resultTweets: any[];
+  // 絞り込みモード
+  filterMode: string = 'all';
 
   // トピックID
   topicId: number;
@@ -50,10 +54,26 @@ export class TrainingAndValidationDialogComponent implements OnInit {
     await this.trainAndValidate();
   }
 
-  async trainAndValidate() {
+  async onChangeFilterMode(event: any) {
+    this.loadTweets();
+  }
+
+  finish() {
+    this.dialogRef.close();
+  }
+
+  cancel() {
+    this.dialogRef.close();
+  }
+
+  protected async trainAndValidate() {
     // 値を初期化
-    this.resultTweets = null;
+    this.tweets = null;
     this.validationResult = null;
+    this.numOfTweets = 0;
+    this.numOfCorrectTweets = 0;
+    this.numOfIncorrectTweets = 0;
+
     // トレーニングおよび検証を実行
     this.status = 'AIがトレーニングしています...';
     let validationResult = null;
@@ -72,21 +92,57 @@ export class TrainingAndValidationDialogComponent implements OnInit {
       });
       return;
     }
-    // リツイート数でソート
-    validationResult.classifiedTweets = validationResult.classifiedTweets.sort((a: any, b: any) => {
-      return b.crawledRetweetCount - a.crawledRetweetCount;
-    });
     this.validationResult = validationResult;
+    this.numOfTweets = this.validationResult.classifiedTweets.length;
+
+    // 正解数・不正解数の算出
+    for (const tweet of this.validationResult.classifiedTweets) {
+      if (tweet.predictedSelect === tweet.selected) {
+        this.numOfCorrectTweets++;
+      } else {
+        this.numOfIncorrectTweets++;
+      }
+    }
+
+    // デフォルトの絞り込みモードの選択
+    if (1 <= this.numOfIncorrectTweets) {
+      // 不正解が1件でもあれば
+      this.filterMode = 'incorrect';
+    } else {
+      this.filterMode = 'all';
+    }
+
+    // 絞り込みおよびソートの適用
+    this.loadTweets();
+
     // 完了
     this.isLoading = false;
     this.status = null;
   }
 
-  finish() {
-    this.dialogRef.close();
-  }
+  protected loadTweets() {
+    // 検証結果からツイートを取得
+    let tweets = this.validationResult.classifiedTweets;
 
-  cancel() {
-    this.dialogRef.close();
+    // 絞り込み
+    if (this.filterMode == 'correct') {
+      // 正解ツイートのみならば
+      tweets = tweets.filter((tweet: any) => {
+        return tweet.predictedSelect === tweet.selected;
+      });
+    } else if (this.filterMode === 'incorrect') {
+      // 不正解ツイートのみならば
+      tweets = tweets.filter((tweet: any) => {
+        return tweet.predictedSelect !== tweet.selected;
+      });
+    }
+
+    // リツイート数でソート
+    tweets = tweets.sort((a: any, b: any) => {
+      return b.crawledRetweetCount - a.crawledRetweetCount;
+    });
+
+    // ツイートの表示
+    this.tweets = tweets;
   }
 }

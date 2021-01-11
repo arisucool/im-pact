@@ -16,16 +16,43 @@
     <!---->
   </p>
   <!---->
-  <!-- ツイート表示 -->
-  <div *ngIf="validationResult?.classifiedTweets != null" class="tweets">
-    <div *ngFor="let tweet of validationResult?.classifiedTweets" class="tweet-container">
-      <app-tweet [tweet]="tweet"></app-tweet>
+
+  <!-- ツイート一覧領域 -->
+  <div *ngIf="tweets != null" class="tweets-container">
+    <!-- 絞り込み領域 -->
+    <div class="filter">
+      絞り込み: &nbsp;
+      <mat-radio-group [(ngModel)]="filterMode" (ngModelChange)="onChangeFilterMode($event)" aria-label="絞り込み">
+        <mat-radio-button value="all">
+          すべて
+          <span style="font-size: 0.8rem;">({{ numOfTweets }} 件)</span>
+        </mat-radio-button>
+        <mat-radio-button value="correct">
+          正解のみ
+          <span style="font-size: 0.8rem;">({{ numOfCorrectTweets }} 件)</span>
+        </mat-radio-button>
+        <mat-radio-button value="incorrect">
+          不正解のみ
+          <span style="font-size: 0.8rem;">({{ numOfIncorrectTweets }} 件)</span>
+        </mat-radio-button>
+      </mat-radio-group>
     </div>
+    <!---->
+    <!-- ツイート一覧 -->
+    <div class="tweets">
+      <div *ngFor="let tweet of tweets" class="tweet-container">
+        <app-tweet [tweet]="tweet"></app-tweet>
+      </div>
+    </div>
+    <!---->
   </div>
   <!---->
+
+  <!-- OK ボタン-->
   <div mat-dialog-actions style="margin-top: 0.5rem;">
     <button (click)="finish()" mat-raised-button color="primary" mat-dialog-close style="float: right;">
       OK
     </button>
   </div>
+  <!---->
 </div>

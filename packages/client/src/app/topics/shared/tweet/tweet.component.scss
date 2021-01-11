@@ -85,7 +85,7 @@
     background: #bedbfd;
   }
 
-  .classification-btn:hover {
+  .classification-btn:not(.readonly):hover {
     cursor: pointer;
     opacity: 1;
     box-shadow: 0px 0px 8px 0px #bdbdbd;

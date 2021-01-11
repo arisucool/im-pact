@@ -31,10 +31,18 @@
     <!---->
     <!-- 分類ボタン (読み取り専用) (トレーニング＆検証用) -->
     <div class="classification-btn-container" *ngIf="mode == 'validation'">
-      <div class="classification-btn correct" matTooltip="正解" *ngIf="tweet.predictedSelect === tweet.selected">
+      <div
+        class="classification-btn readonly correct"
+        matTooltip="正解"
+        *ngIf="tweet.predictedSelect === tweet.selected"
+      >
         <mat-icon *ngIf="tweet.selected">thumb_up</mat-icon>
       </div>
-      <div class="classification-btn incorrect" matTooltip="不正解" *ngIf="tweet.predictedSelect !== tweet.selected">
+      <div
+        class="classification-btn readonly incorrect"
+        matTooltip="不正解"
+        *ngIf="tweet.predictedSelect !== tweet.selected"
+      >
         <mat-icon *ngIf="tweet.selected">thumb_up</mat-icon>
       </div>
     </div>

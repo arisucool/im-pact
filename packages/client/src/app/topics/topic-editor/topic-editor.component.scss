@@ -49,6 +49,43 @@ hr {
   border-bottom: 1px dashed #ccc;
 }
 
+// セクション - トレーニング＆検証
+
+section.training-and-validation {
+  .summary {
+    table {
+      margin: 0 auto 1rem auto;
+      max-width: 500px;
+      border: 1px solid #ddd;
+      border-collapse: collapse;
+      border-spacing: 0;
+      box-shadow: 0 5px 5px -3px rgba(0, 0, 0, 0.2), 0 8px 10px 1px rgba(0, 0, 0, 0), 0 3px 14px 2px rgba(0, 0, 0, 0);
+      font-size: 0.9rem;
+    }
+    table tr {
+      border-top: 1px solid #ddd;
+      border-bottom: 1px solid #ddd;
+      padding: 0.5rem 0 0.5rem 0;
+    }
+    table th {
+      font-weight: normal;
+      font-size: 0.8rem;
+    }
+    table th,
+    table td {
+      padding: 1rem 1.5rem 1rem 1.5rem;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    .hint-for-score {
+      color: #333;
+      font-size: 0.85rem;
+      margin-top: 2.5rem;
+    }
+  }
+}
+
 // ツイートフィルタ および アクションのモジュール設定領域
 
 .module-setting-container {

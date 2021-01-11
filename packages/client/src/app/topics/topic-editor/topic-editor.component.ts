@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { ModuleChooserSheetComponent } from './module-chooser-sheet/module-chooser-sheet.component';
 import { TopicsService } from '../topics.service';
@@ -7,6 +7,7 @@ import { TrainerDialogComponent } from './trainer-dialog/trainer-dialog.componen
 import { TrainingAndValidationDialogComponent } from './training-and-validation-dialog/training-and-validation-dialog.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTabGroup } from '@angular/material/tabs';
 
 /**
  * トピック作成・編集画面のコンポーネント
@@ -36,7 +37,7 @@ export class TopicEditorComponent implements OnInit {
     // ツイートフィルタ
     filterPatterns: [
       {
-        name: 'パターン1',
+        name: 'パターン 1',
         score: null,
         filters: [],
       },
@@ -62,6 +63,10 @@ export class TopicEditorComponent implements OnInit {
 
 # 【例】 7月31日の毎時0分・15分・30分・45分に実行する場合
 0,15,30,45  *  31  7  *`;
+
+  // ツイートフィルタのパターンのタブを制御するための変数
+  @ViewChild(MatTabGroup) tabGroup: MatTabGroup;
+  currentShowingFilterPatternTabIndex = 0;
 
   constructor(
     private topicsService: TopicsService,
@@ -98,7 +103,13 @@ export class TopicEditorComponent implements OnInit {
    */
   async loadTopic(topicId: number) {
     try {
+      // トピックを読み込み
       this.topic = (await this.topicsService.getTopic(topicId)) as any;
+
+      // ツイートフィルタパターンのタブを切り替え
+      this.tabGroup.selectedIndex = this.topic.enabledFilterPatternIndex;
+
+      // メッセージを表示
       this.snackBar.open('トピックを読み込みました', null, { duration: 1000 });
     } catch (e) {
       if (e.error?.message.join) {
@@ -179,8 +190,13 @@ export class TopicEditorComponent implements OnInit {
 
   /**
    * トレーニング＆検証ダイアログの表示
+   * @param filterPatternIndex 使用するツイートフィルタパターンのインデックス番号
    */
-  async openTrainingAndValidationDialog() {
+  async openTrainingAndValidationDialog(filterPatternIndex: number = null) {
+    if (filterPatternIndex == -1) {
+      filterPatternIndex = this.topic.enabledFilterPatternIndex;
+    }
+
     // 設定状況を確認
     if (this.topic.keywords.length <= 0 || this.topic.keywords[0].length <= 0) {
       // キーワードが一つも登録されていなければ、エラーを表示
@@ -210,7 +226,7 @@ export class TopicEditorComponent implements OnInit {
     const dialogRef = this.dialog.open(TrainingAndValidationDialogComponent, {
       data: {
         topicId: this.topic.id,
-        filters: this.topic.filterPatterns[this.topic.enabledFilterPatternIndex].filters,
+        filters: this.topic.filterPatterns[filterPatternIndex].filters,
         topicKeywords: this.topic.keywords,
         trainingTweets: this.topic.trainingTweets,
       },
@@ -219,10 +235,10 @@ export class TopicEditorComponent implements OnInit {
       // 検証結果のスコアを取得
       const score = result.score;
       // 当該ツイートフィルタパターンにスコアとして登録
-      if (!this.topic.filterPatterns[this.topic.enabledFilterPatternIndex]) {
+      if (!this.topic.filterPatterns[filterPatternIndex]) {
         return;
       }
-      this.topic.filterPatterns[this.topic.enabledFilterPatternIndex].score = score;
+      this.topic.filterPatterns[filterPatternIndex].score = score;
     });
   }
 
@@ -249,13 +265,20 @@ export class TopicEditorComponent implements OnInit {
       }
     }
     filterPatternNameNumber++;
+
     // トピックへツイートフィルタパターンを追加
     this.topic.filterPatterns.push({
       name: `パターン ${filterPatternNameNumber}`,
       score: null,
       filters: currentFilters,
     });
-    this.topic.enabledFilterPatternIndex = this.topic.filterPatterns.length - 1;
+
+    // ツイートフィルタパターンのタブを切り替え
+    this.tabGroup.selectedIndex = this.topic.filterPatterns.length - 1;
+  }
+
+  onChangeShowingFilterPatternTabIndex(index: number): void {
+    this.currentShowingFilterPatternTabIndex = index;
   }
 
   /**
@@ -297,8 +320,8 @@ export class TopicEditorComponent implements OnInit {
       .subscribe(choosedFilterName => {
         if (!choosedFilterName) return;
 
-        // 現在のツイートフィルタパターンへ当該ツイートフィルタを追加
-        this.topic.filterPatterns[this.topic.enabledFilterPatternIndex].filters.push({
+        // 現在表示中のツイートフィルタパターンへ当該ツイートフィルタを追加
+        this.topic.filterPatterns[this.currentShowingFilterPatternTabIndex].filters.push({
           name: choosedFilterName,
           settings: {},
         });
@@ -336,6 +359,9 @@ export class TopicEditorComponent implements OnInit {
   deleteTweetFilterPattern(filterIndex: number) {
     // 当該ツイートフィルタパターンを削除
     this.topic.filterPatterns.splice(filterIndex, 1);
+
+    // ツイートフィルタパターンのタブを切り替え
+    this.tabGroup.selectedIndex = this.topic.filterPatterns.length - 1;
   }
 
   /**
@@ -343,8 +369,8 @@ export class TopicEditorComponent implements OnInit {
    * @param filterIndex ツイートフィルタのインデックス番号
    */
   deleteTweetFilter(filterIndex: number) {
-    // 現在のツイートフィルタパターンから当該ツイートフィルタを削除
-    this.topic.filterPatterns[this.topic.enabledFilterPatternIndex].filters.splice(filterIndex, 1);
+    // 現在表示中のツイートフィルタパターンから当該ツイートフィルタを削除
+    this.topic.filterPatterns[this.currentShowingFilterPatternTabIndex].filters.splice(filterIndex, 1);
 
     // 現在のツイートフィルタパターンのスコアをリセット
     this.cleanScoreOfTweetFilterPattern(null);

@@ -216,7 +216,10 @@
               <!-- 見出し -->
               <div class="module-setting-caption">
                 <h4>{{ moduleSetting.name }}</h4>
-                <span class="description">{{ availableTweetFilters[moduleSetting.name]?.description }}</span>
+                <span class="description">
+                  {{ availableTweetFilters[moduleSetting.name]?.description }}&nbsp;&nbsp;/&nbsp;&nbsp;
+                  適用範囲:&nbsp;{{ availableTweetFilters[moduleSetting.name]?.scope }}
+                </span>
 
                 <!-- ツイートフィルタ削除ボタン -->
                 <button

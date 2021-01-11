@@ -3,6 +3,7 @@ import { TweetRetweetsFilter } from './tweet-retweets-filter';
 import { TweetLikesFilter } from './tweet-likes-filter';
 import { TweetAuthorProfileLikeFoloweeBayesianFilter } from './tweet-author-profile-like-folowee-bayesian-filter';
 import { TweetTextBayesianFilter } from './tweet-text-bayesian-filter';
+import { TfIllustImageClassificationFilter } from './tf-illust-image-classification-filter';
 import { Repository } from 'typeorm';
 import * as ModuleStorageEntity from '../entities/module-storage.entity';
 import { ModuleHelper } from './module-helper';
@@ -15,6 +16,7 @@ export class TweetFilterManager {
   constructor(
     private moduleStorageRepository: Repository<ModuleStorageEntity.ModuleStorage>,
     private socialAccountRepository: Repository<SocialAccount>,
+    private filterSettings: any[],
   ) {
     this.modules = [];
   }
@@ -22,6 +24,7 @@ export class TweetFilterManager {
   /**
    * 利用可能なモジュール名の取得
    */
+
   async getAvailableModuleNames(): Promise<string[]> {
     // ツイートフィルタのモジュールディレクトリからディレクトリを列挙
     let moduleDirNames: string[] = await new Promise((resolve, reject) => {
@@ -53,11 +56,11 @@ export class TweetFilterManager {
     return moduleDirNames;
   }
 
-  async trainTweet(tweet: any, isSelected: boolean, filterSettings: any[]) {
+  async trainTweet(tweet: any, isSelected: boolean) {
     // フィルタ設定を反復
-    for (const filter of filterSettings) {
+    for (const filter of this.filterSettings) {
       // ツイートフィルタを初期化
-      const mod = await this.getModule(filter.name, filter.setting);
+      const mod = await this.getModule(filter.name);
       if (mod === null) {
         console.log(`[TweetFilters] - trainTweet - This filter was invalid... ${filter.name}`);
         continue;
@@ -79,11 +82,11 @@ export class TweetFilterManager {
     }
   }
 
-  async batchByFilterSettings(filterSettings: any[]) {
+  async batch() {
     // フィルタ設定を反復
-    for (const filter of filterSettings) {
+    for (const filter of this.filterSettings) {
       // ツイートフィルタを初期化
-      const mod = await this.getModule(filter.name, filter.setting);
+      const mod = await this.getModule(filter.name);
       if (mod === null) {
         console.log(`[TweetFilters] - batchByFilterSettings - This filter was invalid... ${filter.name}`);
         continue;
@@ -99,14 +102,14 @@ export class TweetFilterManager {
     }
   }
 
-  async filterTweetByFilterSettings(tweet: any, filterSettings: any[]) {
+  async filterTweet(tweet: any) {
     // 当該ツイートに対する全フィルタの適用結果を代入するための配列
     let allFiltersResults = [];
 
     // フィルタ設定を反復
-    for (const filter of filterSettings) {
+    for (const filter of this.filterSettings) {
       // ツイートフィルタを初期化
-      const mod = await this.getModule(filter.name, filter.setting);
+      const mod = await this.getModule(filter.name);
       if (mod === null) {
         console.log(`[TweetFilters] - filterTweetByFilterSettings - This filter was invalid... ${filter.name}`);
         continue;
@@ -123,7 +126,7 @@ export class TweetFilterManager {
     return allFiltersResults;
   }
 
-  async getModule(filterName: string, filterSetting: any) {
+  async getModule(filterName: string) {
     if (this.modules[filterName]) return this.modules[filterName];
 
     // ModuleStorage の初期化
@@ -134,11 +137,20 @@ export class TweetFilterManager {
     const socialAccounts = await this.socialAccountRepository.find();
     const socialAccount = socialAccounts[0];
 
+    // フィルタ設定の取得
+    let filterSetting = {};
+    this.filterSettings.find(item => {
+      if (item.name === filterName) return true;
+    });
+
     // ヘルパの初期化
     const moduleHelper = ModuleHelper.factory(filterName, moduleStorage, filterSetting, socialAccount);
 
     // モジュールの初期化
     switch (filterName) {
+      case 'TfIllustImageClassificationFilter':
+        this.modules[filterName] = new TfIllustImageClassificationFilter(moduleHelper);
+        return this.modules[filterName];
       case 'TweetAuthorProfileLikeFoloweeBayesianFilter':
         this.modules[filterName] = new TweetAuthorProfileLikeFoloweeBayesianFilter(moduleHelper);
         return this.modules[filterName];

@@ -6,12 +6,13 @@ import { MlService } from './ml.service';
 import { CrawledTweet } from './entities/crawled-tweet.entity';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { TrainAndValidateDto } from './dto/train-and-validate.dto';
+import { TwitterCrawlerService } from './twitter-crawler.service';
 
 @Controller('ml')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class MlController {
-  constructor(private mlService: MlService) {}
+  constructor(private mlService: MlService, private twitterCrawlerService: TwitterCrawlerService) {}
 
   /**
    * 指定されたお手本分類結果とフィルタ設定による学習および学習結果の検証
@@ -52,7 +53,7 @@ export class MlController {
     description: '権限のエラー',
   })
   getExampleTweets(@Body(ValidationPipe) dto: GetExampleTweetsDto): Promise<CrawledTweet[]> {
-    return this.mlService.getExampleTweets(dto);
+    return this.twitterCrawlerService.getExampleTweets(dto);
   }
 
   /**

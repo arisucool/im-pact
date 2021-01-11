@@ -10,6 +10,7 @@ import { Topic } from './entities/topic.entity';
 import { TopicsService } from './topics.service';
 import { ExtractedTweet } from './ml/entities/extracted-tweet.entity';
 import { ModuleStorage } from './ml/entities/module-storage.entity';
+import { TwitterCrawlerService } from './ml/twitter-crawler.service';
 
 @Module({
   imports: [
@@ -17,6 +18,6 @@ import { ModuleStorage } from './ml/entities/module-storage.entity';
     SocialAccountsModule,
   ],
   controllers: [TopicsController, MlController],
-  providers: [MlService, TopicsService],
+  providers: [MlService, TopicsService, TwitterCrawlerService],
 })
 export class TopicsModule {}

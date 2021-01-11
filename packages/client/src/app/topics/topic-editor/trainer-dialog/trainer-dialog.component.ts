@@ -35,12 +35,22 @@ export class TrainerDialogComponent implements OnInit {
     // コンポーネントから渡された値を取得
     this.crawlSocialAccountId = +this.data.crawlSocialAccountId;
     this.keywords = this.data.keywords;
+    this.tweets = this.data.tweets || null;
     // 値を初期化
     this.status = 'しばらくお待ちください...';
-    this.tweets = null;
     this.numOfSelectedTweets = 0;
-    // 教師データ生成用のサンプルツイートを収集
-    this.getSampleTweets();
+    // ツイートの初期化
+    if (this.tweets === null) {
+      // 教師データ生成用のサンプルツイートを収集
+      this.getSampleTweets();
+    } else {
+      // コンポーネントから渡されたお手本分類の結果から復元
+      for (const tweet of this.tweets) {
+        if (tweet.selected) {
+          this.numOfSelectedTweets++;
+        }
+      }
+    }
   }
 
   /**

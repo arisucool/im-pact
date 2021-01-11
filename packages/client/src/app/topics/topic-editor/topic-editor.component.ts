@@ -137,7 +137,7 @@ export class TopicEditorComponent implements OnInit {
   }
 
   /**
-   * 教師データ作成ダイアログの表示
+   * お手本分類ダイアログの表示
    */
   async openTrainerDialog() {
     // 設定状況を確認
@@ -154,6 +154,8 @@ export class TopicEditorComponent implements OnInit {
       data: {
         crawlSocialAccountId: this.topic.crawlSocialAccount.id,
         keywords: this.topic.keywords,
+        // 前回のお手本分類の結果 (お手本分類の編集を行う場合のために)
+        tweets: this.topic.trainingTweets || null,
       },
     });
     dialogRef.afterClosed().subscribe(result => {

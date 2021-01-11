@@ -38,9 +38,10 @@ import { ApiModule, Configuration } from '../.api-client';
 import { HttpClientModule } from '@angular/common/http';
 import { LoginComponent } from './auth/login.component';
 import { TopicsModule } from './topics/topics.module';
+import { ConfirmDialogComponent } from './shared/confirm-dialog.component';
 
 @NgModule({
-  declarations: [AppComponent, HomeComponent, LoginComponent],
+  declarations: [AppComponent, HomeComponent, LoginComponent, ConfirmDialogComponent],
   imports: [
     BrowserModule,
     FormsModule,

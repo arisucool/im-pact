@@ -1,6 +1,7 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { TopicsService } from '../../topics.service';
+import { DialogService } from 'src/app/shared/dialog.service';
 
 /**
  * お手本分類ダイアログのコンポーネント
@@ -13,10 +14,13 @@ import { TopicsService } from '../../topics.service';
 export class TrainerDialogComponent implements OnInit {
   // 教師データ生成用のサンプルツイートの収集数
   public static NUM_OF_REQUEST_SAMPLE_TWEETS = 100;
+  // 少なくとも幾つのツイートを選択すべきか
+  public static RECOMMENDED_MIN_NUM_OF_SELECTED_TWEETS = 50;
   // Twitter の検索条件
   public crawlSocialAccountId: number;
   public keywords: string[];
   // Twitter の検索結果
+  public isLoading: boolean = false;
   public tweets: any[];
   public numOfSelectedTweets = 0;
   // 検索の進捗状態
@@ -25,6 +29,7 @@ export class TrainerDialogComponent implements OnInit {
   constructor(
     private dialogRef: MatDialogRef<TrainerDialogComponent>,
     private topicsService: TopicsService,
+    private dialogService: DialogService,
     @Inject(MAT_DIALOG_DATA) public data: any,
   ) {}
 
@@ -42,7 +47,7 @@ export class TrainerDialogComponent implements OnInit {
     // ツイートの初期化
     if (this.tweets === null) {
       // 教師データ生成用のサンプルツイートを収集
-      this.getSampleTweets();
+      await this.getSampleTweets();
     } else {
       // コンポーネントから渡されたお手本分類の結果から復元
       for (const tweet of this.tweets) {
@@ -54,20 +59,53 @@ export class TrainerDialogComponent implements OnInit {
   }
 
   /**
-   * 教師データ生成用のサンプルツイートの収集
+   * 教師データ生成用のサンプルツイートの取得
    */
   async getSampleTweets() {
+    this.isLoading = true;
     let tweets = [];
     for (const keyword of this.keywords) {
       this.status = `ツイートを検索しています... ${keyword}`;
       let keyword_tweets = await this.topicsService.getSampleTweets(this.crawlSocialAccountId, keyword);
       tweets = tweets.concat(keyword_tweets);
     }
+    this.status = `お待ちください...`;
     // リツイート数でソート
     tweets = tweets.sort((a: any, b: any) => {
       return b.crawledRetweetCount - a.crawledRetweetCount;
     });
+    // 完了
     this.tweets = tweets;
+    this.isLoading = false;
+  }
+
+  /**
+   * 教師データ生成用のサンプルツイートの追加取得
+   */
+  async getMoreSampleTweets() {
+    this.isLoading = true;
+    let tweets = this.tweets;
+    for (const keyword of this.keywords) {
+      this.status = `ツイートを追加検索しています... ${keyword}`;
+      let keyword_tweets = await this.topicsService.getSampleTweets(this.crawlSocialAccountId, keyword);
+      tweets = tweets.concat(keyword_tweets);
+    }
+    this.status = `お待ちください...`;
+    // 重複を除去
+    tweets = tweets.filter((item, i, self) => {
+      return (
+        self.findIndex(item_ => {
+          return item.idStr == item_.idStr;
+        }) === i
+      );
+    });
+    // リツイート数でソート
+    tweets = tweets.sort((a: any, b: any) => {
+      return b.crawledRetweetCount - a.crawledRetweetCount;
+    });
+    // 完了
+    this.tweets = tweets;
+    this.isLoading = false;
   }
 
   /**
@@ -93,9 +131,22 @@ export class TrainerDialogComponent implements OnInit {
   /**
    * 完了
    */
-  finish() {
+  async finish() {
+    // 選択状況を確認
     if (this.numOfSelectedTweets <= 0) {
       return;
+    } else if (this.numOfSelectedTweets <= TrainerDialogComponent.RECOMMENDED_MIN_NUM_OF_SELECTED_TWEETS) {
+      // 選択が不十分ならば、追加取得を勧める
+      const result = await this.dialogService.openConfirm(
+        'お手本分類',
+        `現在、${this.numOfSelectedTweets} 件しか選択されていません。
+精度を確保するためには、最低でも ${TrainerDialogComponent.RECOMMENDED_MIN_NUM_OF_SELECTED_TWEETS} 件は選択することをおすすめします。\n\nさらに多くのツイートを取得しますか？`,
+      );
+      if (result) {
+        // ツイートの追加取得
+        this.getMoreSampleTweets();
+        return;
+      }
     }
 
     this.dialogRef.close({
@@ -106,7 +157,13 @@ export class TrainerDialogComponent implements OnInit {
   /**
    * キャンセル
    */
-  cancel() {
+  async cancel() {
+    const result = await this.dialogService.openConfirm(
+      'お手本分類のキャンセル',
+      '選択状況が元に戻ります。よろしいですか？',
+    );
+    if (!result) return;
+
     this.dialogRef.close();
   }
 }

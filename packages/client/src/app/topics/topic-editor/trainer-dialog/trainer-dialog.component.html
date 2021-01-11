@@ -8,7 +8,7 @@
 </h1>
 <div mat-dialog-content>
   <!-- メッセージ -->
-  <p *ngIf="tweets === null" style="margin: 2rem;">
+  <p *ngIf="isLoading" style="margin: 2rem;">
     {{ status }}
     <br />
     <br />
@@ -16,7 +16,7 @@
   </p>
   <!---->
   <!-- ツイート表示 -->
-  <div *ngIf="tweets != null" class="tweets">
+  <div *ngIf="!isLoading && tweets != null" class="tweets">
     <div *ngFor="let tweet of tweets" class="tweet-container">
       <app-tweet [tweet]="tweet" (onSelectChangedEvent)="onTweetSelectChanged(tweet.idStr, $event)"></app-tweet>
     </div>
@@ -26,15 +26,23 @@
     <button
       (click)="finish()"
       mat-raised-button
-      mat-dialog-close
-      [disabled]="numOfSelectedTweets == 0"
+      [disabled]="numOfSelectedTweets == 0 || isLoading"
       color="primary"
       style="float: right;"
     >
       {{ tweets.length }} 件中 {{ numOfSelectedTweets }} 件を収集対象として学習
     </button>
-    <button (click)="cancel()" mat-raised-button mat-dialog-close style="float: right; margin-right: 1rem;">
+    <button (click)="cancel()" mat-raised-button style="float: right; margin-right: 1rem;">
       キャンセル
+    </button>
+    <button
+      (click)="getMoreSampleTweets()"
+      mat-raised-button
+      mat-dialog-close
+      style="float: right; margin-right: 1rem;"
+      color="accent"
+    >
+      追加取得
     </button>
   </div>
 </div>

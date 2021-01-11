@@ -39,6 +39,7 @@ export class TopicEditorComponent implements OnInit {
       {
         name: 'パターン 1',
         score: null,
+        trainedModelId: null,
         filters: [],
       },
     ],
@@ -232,12 +233,15 @@ export class TopicEditorComponent implements OnInit {
       },
     });
     dialogRef.afterClosed().subscribe(result => {
+      // 学習結果の学習モデルIDを取得
+      const trainedModelId = result.trainedModelId;
       // 検証結果のスコアを取得
       const score = result.score;
-      // 当該ツイートフィルタパターンにスコアとして登録
+      // 当該ツイートフィルタパターンに登録
       if (!this.topic.filterPatterns[filterPatternIndex]) {
         return;
       }
+      this.topic.filterPatterns[filterPatternIndex].trainedModelId = trainedModelId;
       this.topic.filterPatterns[filterPatternIndex].score = score;
     });
   }
@@ -269,6 +273,7 @@ export class TopicEditorComponent implements OnInit {
     // トピックへツイートフィルタパターンを追加
     this.topic.filterPatterns.push({
       name: `パターン ${filterPatternNameNumber}`,
+      trainedModelId: null,
       score: null,
       filters: currentFilters,
     });

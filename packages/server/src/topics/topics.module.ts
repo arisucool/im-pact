@@ -11,10 +11,11 @@ import { TopicsService } from './topics.service';
 import { ExtractedTweet } from './ml/entities/extracted-tweet.entity';
 import { ModuleStorage } from './ml/entities/module-storage.entity';
 import { TwitterCrawlerService } from './ml/twitter-crawler.service';
+import { MlModel } from './ml/entities/ml-model.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CrawledTweet, ExtractedTweet, SocialAccount, Topic, ModuleStorage]),
+    TypeOrmModule.forFeature([CrawledTweet, ExtractedTweet, SocialAccount, Topic, ModuleStorage, MlModel]),
     SocialAccountsModule,
   ],
   controllers: [TopicsController, MlController],

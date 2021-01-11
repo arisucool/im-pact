@@ -13,6 +13,7 @@ import { IsNotEmpty, IsArray } from 'class-validator';
 import { CrawledTweet } from 'src/topics/ml/entities/crawled-tweet.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
 import { ExtractedTweet } from '../ml/entities/extracted-tweet.entity';
+import { MlModel } from '../ml/entities/ml-model.entity';
 
 /**
  * トピックのエンティティ
@@ -41,6 +42,13 @@ export class Topic extends BaseEntity {
     extractedTweet => extractedTweet.topic,
   )
   extractedTweets: ExtractedTweet[];
+
+  // 学習モデル
+  @OneToMany(
+    () => MlModel,
+    mlModel => mlModel.topic,
+  )
+  mlModels: MlModel;
 
   // 収集スケジュール (Cron 書式)
   @Column()

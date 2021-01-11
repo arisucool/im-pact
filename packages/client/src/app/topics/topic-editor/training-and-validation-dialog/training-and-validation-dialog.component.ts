@@ -16,6 +16,9 @@ export class TrainingAndValidationDialogComponent implements OnInit {
   isLoading: boolean;
   status: string;
 
+  // 学習結果
+  trainingResult = null;
+
   // 検証結果
   validationResult = null;
   numOfTweets = 0;
@@ -63,6 +66,8 @@ export class TrainingAndValidationDialogComponent implements OnInit {
 
   finish() {
     this.dialogRef.close({
+      // 学習モデルIDを呼び出し元のコンポーネントへ渡す
+      trainedModelId: this.trainingResult.trainedModelId,
       // 点数を呼び出し元のコンポーネントへ渡す
       score: this.validationResult.score,
     });
@@ -82,7 +87,8 @@ export class TrainingAndValidationDialogComponent implements OnInit {
 
     // トレーニングおよび検証を実行
     this.status = 'AIがトレーニングしています...';
-    let validationResult = null;
+    let trainingResult,
+      validationResult = null;
     try {
       const result = (await this.topicsService.trainAndValidate(
         this.topicId,
@@ -90,6 +96,7 @@ export class TrainingAndValidationDialogComponent implements OnInit {
         this.filters,
         this.topicKeywords,
       )) as any;
+      trainingResult = result.trainingResult;
       validationResult = result.validationResult;
     } catch (e) {
       this.isLoading = false;
@@ -99,6 +106,7 @@ export class TrainingAndValidationDialogComponent implements OnInit {
       });
       return;
     }
+    this.trainingResult = trainingResult;
     this.validationResult = validationResult;
     this.numOfTweets = this.validationResult.classifiedTweets.length;
 

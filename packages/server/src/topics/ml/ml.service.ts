@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import * as tf from '@tensorflow/tfjs-node';
+import * as fs from 'fs';
 import { SocialAccount } from '../../social-accounts/entities/social-account.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TrainAndValidateDto } from './dto/train-and-validate.dto';
 import { TweetFilterManager } from './tweet-filters/tweet-filter-manager';
 import { ModuleStorage } from './entities/module-storage.entity';
+import { MlModel } from './entities/ml-model.entity';
+import { Topic } from '../entities/topic.entity';
 
 @Injectable()
 export class MlService {
@@ -14,6 +17,8 @@ export class MlService {
     private socialAccountRepository: Repository<SocialAccount>,
     @InjectRepository(ModuleStorage)
     private moduleStorageRepository: Repository<ModuleStorage>,
+    @InjectRepository(MlModel)
+    private mlModelRepository: Repository<MlModel>,
   ) {}
 
   /**
@@ -62,7 +67,7 @@ export class MlService {
 
   /**
    * トレーニングおよび検証
-   * (お手本分類の結果と、ツイートフィルタ設定をもとにデータセットを生成し、分類器のモデルを生成し、検証を行う)
+   * (お手本分類の結果と、ツイートフィルタ設定をもとにデータセットを生成し、分類器の学習モデルを生成・保存し、検証を行う)
    * @return トレーニングおよび検証の結果
    */
   async trainAndValidate(dto: TrainAndValidateDto) {
@@ -72,28 +77,28 @@ export class MlService {
     // データセットの変数の数を取得
     const numOfFeatures = generatedDatasets.numOfFeatures;
 
-    // データセットに対してバッチを実行
-    const BATCH_SIZE = 16;
-    console.log(`[MlService] trainAndValidate - Applying batch to dataset...`);
-    const trainingDataset = generatedDatasets.trainingDataset.batch(BATCH_SIZE);
-    const validationDataset = generatedDatasets.validationDataset.batch(BATCH_SIZE);
-    console.log(
-      `[MlService] trainAndValidate - batch applied... ${JSON.stringify(trainingDataset)}, ${JSON.stringify(
-        validationDataset,
-      )}`,
+    // 学習モデルを生成
+    const trainingResult = await this.trainModel(
+      generatedDatasets.trainingDataset,
+      generatedDatasets.validationDataset,
+      numOfFeatures,
     );
-
-    // 学習モデルの生成
-    const trainingResult = await this.trainModel(trainingDataset, validationDataset, numOfFeatures);
     const trainedModel = trainingResult.model;
 
-    // 検証用データセット(バッチ加工済み)による検証の実行
-    const scoreByValidationDataset = await this.validate(trainedModel, validationDataset, numOfFeatures);
+    // 学習モデルをデータベースへ保存
+    const trainedModelId = await this.saveTrainedModel(dto.topicId, trainedModel);
 
-    // 学習用データセット(バッチ加工済み)による検証の実行
-    const scoreByTrainingDataset = await this.validate(trainedModel, trainingDataset, numOfFeatures);
+    // 検証用データセット(バッチ加工済み)による検証を実行
+    const scoreByValidationDataset = await this.validate(
+      trainedModel,
+      generatedDatasets.validationDataset,
+      numOfFeatures,
+    );
 
-    // お手本分類の結果による検証の実行
+    // 学習用データセット(バッチ加工済み)による検証を実行
+    const scoreByTrainingDataset = await this.validate(trainedModel, generatedDatasets.trainingDataset, numOfFeatures);
+
+    // お手本分類の結果による検証を実行
     const resultOfTrainingTweets = await this.validateByTrainingTweets(
       trainedModel,
       dto.trainingTweets,
@@ -104,7 +109,7 @@ export class MlService {
     );
     const scoreByTrainingTweets = resultOfTrainingTweets.score;
 
-    // お手本分類の結果のうち、選択済みのツイートのみによる検証の実行
+    // お手本分類の結果のうち、選択済みのツイートのみによる検証を実行
     const resultOfTrainingTweetsExceptUnselect = await this.validateByTrainingTweets(
       trainedModel,
       dto.trainingTweets,
@@ -119,6 +124,7 @@ export class MlService {
     const result = {
       trainingResult: {
         logs: trainingResult.logs,
+        trainedModelId: trainedModelId,
       },
       validationResult: {
         score: Math.min(
@@ -139,11 +145,46 @@ export class MlService {
   }
 
   /**
+   * 学習モデルの保存
+   * @param topicId トピックのID
+   * @param trainedModel 学習モデル
+   */
+  protected async saveTrainedModel(topicId: number, trainedModel: tf.Sequential): Promise<number> {
+    // ファイルを一時ディレクトリへ保存
+    const TEMP_DIR_PATH = `/tmp/im-pact-model-save-${new Date().getTime()}`;
+    await trainedModel.save(`file://${TEMP_DIR_PATH}`);
+
+    // データベースへ保存するための項目を初期化
+    const topic: Topic = new Topic();
+    topic.id = topicId;
+    const saveModel: MlModel = new MlModel();
+    saveModel.topic = topic;
+
+    // 一時ディレクトリからファイルを読みこみ
+    saveModel.modelData = await new Promise((resolve, reject) => {
+      fs.readFile(`${TEMP_DIR_PATH}/model.json`, (err, data) => {
+        if (err) throw reject(err);
+        return resolve(data);
+      });
+    });
+    saveModel.modelWeightsData = await new Promise((resolve, reject) => {
+      fs.readFile(`${TEMP_DIR_PATH}/weights.bin`, (err, data) => {
+        if (err) throw reject(err);
+        return resolve(data);
+      });
+    });
+
+    // データベースへ保存
+    const saved = await this.mlModelRepository.save(saveModel);
+    return saved.id;
+  }
+
+  /**
    * トレーニングのためのデータセットの生成
    * @param trainingTweets お手本分類の結果
    * @param filterSettings ツイートフィルタ設定
    * @param topicKeywords トピックのキーワード (実際に検索が行われるわけではない。ベイジアンフィルタ等で学習からキーワードを除いて精度を上げる場合などに使用される。)
-   * @return 学習用データセットおよび検証用データセット
+   * @return バッチ加工された学習用データセットおよび検証用データセット
    */
   protected async getTrainingDatasets(trainingTweets: any[], filterSettings: any[], topicKeywords: string[]) {
     // 検証用にデータセットを分割する割合
@@ -207,8 +248,8 @@ export class MlService {
 
     // x および y をデータセットへ再結合
     console.log(`[MlService] getTrainingDatasets - Recombine...`);
-    const trainingDataset = tf.data.zip({ xs: trainingX, ys: trainingY });
-    const validationDataset = tf.data.zip({ xs: validationX, ys: validationY });
+    let trainingDataset = tf.data.zip({ xs: trainingX, ys: trainingY });
+    let validationDataset = tf.data.zip({ xs: validationX, ys: validationY });
 
     // デバッグ出力
     console.log(`[MlService] getTrainingDatasets - Dataset:`);
@@ -217,6 +258,17 @@ export class MlService {
     });
     console.log(`[MlService] getTrainingDatasets - Training dataset: ${JSON.stringify(trainingDataset)}`);
     console.log(`[MlService] getTrainingDatasets - Validation dataset: ${JSON.stringify(validationDataset)}`);
+
+    // データセットに対してバッチを実行
+    const BATCH_SIZE = 16;
+    console.log(`[MlService] trainAndValidate - Applying batch to dataset...`);
+    trainingDataset = trainingDataset.batch(BATCH_SIZE);
+    validationDataset = validationDataset.batch(BATCH_SIZE);
+    console.log(
+      `[MlService] getTrainingDatasets - batch applied... ${JSON.stringify(trainingDataset)}, ${JSON.stringify(
+        validationDataset,
+      )}`,
+    );
 
     // データセットを返す
     return {
@@ -401,5 +453,64 @@ export class MlService {
       score: Math.ceil(score),
       tweets: validationTweets,
     };
+  }
+
+  /**
+   * 指定されたツイートの分類
+   * @param trainedModelId 学習モデルのID (データベースに保存されたもの)
+   * @param tweets 分類するツイート
+   * @return 検証および分類の結果
+   */
+  async predictTweets(
+    trainedModelId: number,
+    tweets: any[],
+    filterSettings: any[],
+    topicKeywords: string[],
+  ): Promise<any[]> {
+    // 学習モデルを一時ディレクトリへ書き出し
+    const mlModel = await this.mlModelRepository.findOne(trainedModelId);
+    if (!mlModel) {
+      throw new Error('Invalid trainedModelId');
+    }
+    const TEMP_DIR_PATH = `/tmp/im-pact-model-load-${trainedModelId}`;
+    if (!fs.existsSync(TEMP_DIR_PATH)) {
+      fs.mkdirSync(TEMP_DIR_PATH);
+      fs.writeFileSync(`${TEMP_DIR_PATH}/model.json`, mlModel.modelData);
+      fs.writeFileSync(`${TEMP_DIR_PATH}/weights.bin`, mlModel.modelWeightsData);
+    }
+
+    // 学習モデルの読み込み
+    const trainedModel = await tf.loadLayersModel(`file://${TEMP_DIR_PATH}/model.json`);
+
+    // フィルタマネージャを初期化
+    const filterManager = new TweetFilterManager(
+      this.moduleStorageRepository,
+      this.socialAccountRepository,
+      filterSettings,
+      topicKeywords,
+    );
+
+    // 分類するツイートを反復
+    let i = 0;
+    for (let tweet of tweets) {
+      // 当該ツイートに対してツイートフィルタを実行し、分類のための変数を取得
+      let allFiltersResult = await filterManager.filterTweet(tweet);
+      // 指定された学習モデルにより予測を実行
+      const predictedClass = (trainedModel.predict(
+        tf.tensor2d(allFiltersResult, [1, allFiltersResult.length]),
+      ) as tf.Tensor)
+        .argMax(-1)
+        .dataSync()[0];
+
+      // 予測した答えを追加
+      tweets[i].predictedSelect = predictedClass == 1;
+      // ツイートフィルタの実行結果を追加
+      tweets[i].filtersResult = allFiltersResult;
+      i++;
+
+      console.log(`[MlService] predictTweets - tweet = ${tweet.idStr}, predictedClass = ${predictedClass}`);
+    }
+
+    return tweets;
   }
 }

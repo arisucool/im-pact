@@ -16,12 +16,36 @@ export class TwitterCrawlerService {
   ) {}
 
   /**
+   * ツイートの収集
+   * @param socialAccountId 検索に使用するソーシャルアカウントのID
+   * @param keyword キーワード
+   * @param minNumOfTweets 検索する最低ツイート数 (このツイートを満たせるまでループする)
+   * @return 保存されたツイートの配列
+   */
+  async crawlTweets(socialAccountId: number, keyword: string, minNumOfTweets: number): Promise<CrawledTweet[]> {
+    // Twitter上でツイートを検索
+    const tweets = await this.searchTweetsByKeyword(socialAccountId, keyword, minNumOfTweets);
+    console.log(`[MlService] crawlTweets - Found ${tweets.length} tweets... ${keyword}`);
+
+    // ツイートを反復
+    const savedTweets: CrawledTweet[] = [];
+    for (const tweet of tweets) {
+      // 当該ツイートをデータベースへ保存
+      const savedTweet = await this.saveTweet(keyword, tweet, true);
+      if (!savedTweet) continue;
+      savedTweets.push(savedTweet);
+    }
+
+    return savedTweets;
+  }
+
+  /**
    * 学習用サンプルツイートの取得
    * (未収集ならば、収集もあわせて行う)
    * @param dto 学習用サンプルツイートを収集するための情報
    * @return 検索結果のツイート配列
    */
-  async getExampleTweets(dto: GetExampleTweetsDto) {
+  async getExampleTweets(dto: GetExampleTweetsDto): Promise<any[]> {
     const NUM_OF_REQUIRED_TWEETS = 400;
 
     // 収集されたツイートを検索
@@ -66,8 +90,9 @@ export class TwitterCrawlerService {
    * @param keyword 検索時のキーワード
    * @param tweet  ツイート
    * @param should_integrate_rt リツイート (引用リツイートを除く) を元ツイートへ統合するか
+   * @return 保存されたツイート
    */
-  protected async saveTweet(keyword: string, tweet: any, should_integrate_rt: boolean) {
+  protected async saveTweet(keyword: string, tweet: any, should_integrate_rt: boolean): Promise<CrawledTweet> {
     // 当該ツイートがデータベースに存在しないか確認
     const exists_tweet =
       0 <
@@ -78,7 +103,7 @@ export class TwitterCrawlerService {
       ).length;
     if (exists_tweet) {
       // 既に存在するならば、スキップ
-      return;
+      return null;
     }
 
     // ツイートのオブジェクトを初期化
@@ -102,9 +127,7 @@ export class TwitterCrawlerService {
       if (should_integrate_rt) {
         // リツイートの統合が有効ならば、元ツイートのリツイート数を増加
         // (当該ツイート自体は残さず、元ツイートのみを残す)
-        this.incrementRetweetCountOfOriginalTweet(keyword, tweet.id_str, tweet.retweeted_status);
-        // 完了
-        return;
+        return await this.incrementRetweetCountOfOriginalTweet(keyword, tweet.id_str, tweet.retweeted_status);
       } else {
         // 元ツイートの情報を付加
         crawledTweet.originalIdStr = tweet.retweeted_status.id_str;
@@ -133,8 +156,8 @@ export class TwitterCrawlerService {
     crawledTweet.userScreenName = tweet.user.screen_name;
 
     // 追加
-    console.log(`[MlService] getExampleTweets - Inserting tweet... ${crawledTweet.idStr}`);
-    await this.crawledTweetRepository.insert(crawledTweet);
+    console.log(`[MlService] saveTweet - Inserting tweet... ${crawledTweet.idStr}`);
+    return await this.crawledTweetRepository.save(crawledTweet);
   }
 
   /**
@@ -142,13 +165,13 @@ export class TwitterCrawlerService {
    * @param keyword 検索時のキーワード
    * @param retweetIdStr リツイートのID文字列
    * @param originalTweet 元ツイートのオブジェクト
-   * @return 元ツイートのリツイート数
+   * @return 元ツイート
    */
   protected async incrementRetweetCountOfOriginalTweet(
     keyword: string,
     retweetIdStr: string,
     originalTweet: any,
-  ): Promise<number> {
+  ): Promise<CrawledTweet> {
     // 元ツイートを検索
     let original_tweets = await this.crawledTweetRepository.find({
       idStr: originalTweet.id_str,
@@ -183,8 +206,8 @@ export class TwitterCrawlerService {
     // 元ツイートを保存
     await original_tweets[0].save();
 
-    // 元ツイートのリツイート数を返す
-    return original_tweets[0].crawledRetweetCount;
+    // 元ツイートを返す
+    return original_tweets[0];
   }
 
   /**

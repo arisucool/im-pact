@@ -11,28 +11,33 @@ import {
   IsNull,
   Index,
 } from 'typeorm';
-import { IsNotEmpty, IsEmpty } from 'class-validator';
+import { IsNotEmpty, IsEmpty, IsArray } from 'class-validator';
 import { SocialAccount } from '../../../social-accounts/entities/social-account.entity';
 import { Topic } from 'src/topics/entities/topic.entity';
+import { CrawledTweet } from './crawled-tweet.entity';
+import { Tweet } from './tweet.entity';
 
 /**
  * 抽出済みツイートのエンティティ
  */
 @Entity()
 @Index(['topic', 'idStr'], { unique: true })
-export class ExtractedTweet extends BaseEntity {
+@Index(['topic', 'predictedClass', 'completeActionIndex'], { unique: false })
+export class ExtractedTweet extends Tweet {
   @PrimaryGeneratedColumn()
   id: number;
-
-  // 収集日時
-  @Column()
-  @IsNotEmpty()
-  crawledAt: Date;
 
   // 抽出日時
   @CreateDateColumn()
   @IsNotEmpty()
   extractedAt: Date;
+
+  // 収集時に使用されたソーシャルアカウント
+  @ManyToOne(
+    () => SocialAccount,
+    socialAccount => socialAccount.crawledTweets,
+  )
+  socialAccount: SocialAccount;
 
   // トピック
   @ManyToOne(
@@ -41,75 +46,34 @@ export class ExtractedTweet extends BaseEntity {
   )
   topic: Topic;
 
-  // ツイートの本文
-  @Column()
-  text: string;
-
-  // ツイートのID文字列
+  // ツイートの分類クラス ('accept' or 'reject')
   @Column()
   @IsNotEmpty()
-  idStr: string;
+  predictedClass: string;
 
-  // ツイートの投稿日時
-  @Column()
-  @IsNotEmpty()
-  createdAt: Date;
+  // ツイートフィルタの結果
+  @Column({
+    type: 'text',
+    array: true,
+  })
+  filtersResult: string[];
 
-  // ツイート投稿者のID文字列
-  @Column()
-  userIdStr: string;
+  // ツイートのアクション実行状況 (完了したアクションのインデックス番号)
+  @Column({
+    default: -1,
+  })
+  completeActionIndex: number;
 
-  // ツイート投稿者の名前 (例: 'arisu.cool')
-  @Column()
-  userName: string;
-
-  // ツイート投稿者のスクリーンネーム (例: 'arisucool')
-  @Column()
-  userScreenName: string;
-
-  // ツイートのURL
-  @Column()
-  url: string;
-
-  // 元ツイートのID文字列　(リツイートの場合)
+  // 最後のアクション実行日時
   @Column({
     nullable: true,
   })
-  originalIdStr: string;
+  lastActionExecutedAt: Date;
 
-  // 元ツイートの投稿日時
+  // 最後のアクション実行結果
   @Column({
+    type: 'text',
     nullable: true,
   })
-  originalCreatedAt: Date;
-
-  // 元ツイート投稿者のID文字列
-  @Column({
-    nullable: true,
-  })
-  originalUserIdStr: string;
-
-  // 元ツイート投稿者の名前
-  @Column({
-    nullable: true,
-  })
-  originalUserName: string;
-
-  // 元ツイート投稿者のスクリーンネーム
-  @Column({
-    nullable: true,
-  })
-  originalUserScreenName: string;
-
-  // 収集時に使用されたソーシャルアカウント
-  @ManyToOne(
-    () => SocialAccount,
-    socialAccount => socialAccount.extractedTweets,
-  )
-  socialAccount: SocialAccount;
-
-  // JSONデータ
-  @Column()
-  @IsNotEmpty()
-  rawJSONData: string;
+  lastActionError: string;
 }

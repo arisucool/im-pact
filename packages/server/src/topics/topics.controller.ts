@@ -1,11 +1,11 @@
 import { Controller, UseGuards, Post, HttpCode, Body, ValidationPipe, Get, Param, Delete, Put } from '@nestjs/common';
-import { LocalAuthGuard } from 'src/auth/guards/local-auth.guard';
 import { ApiOperation, ApiOkResponse, ApiUnauthorizedResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { TopicsService } from './topics.service';
 import { Topic } from './entities/topic.entity';
 import { CreateTopicDto } from './dto/create-topic.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdateTopicDto } from './dto/update-topic.dto';
+import { ExtractedTweet } from './ml/entities/extracted-tweet.entity';
 
 @Controller('topics')
 @UseGuards(JwtAuthGuard)
@@ -97,5 +97,25 @@ export class TopicsController {
   @ApiOperation({ summary: '指定されたトピックの削除' })
   remove(@Param('id') id: number) {
     return this.topicsService.remove(id);
+  }
+
+  /**
+   * 指定されたトピックにおけるツイートの収集
+   * @param id トピックID
+   */
+  @Post(':id/crawl')
+  @HttpCode(200)
+  // ドキュメントの設定
+  @ApiOperation({ summary: '指定されたトピックにおけるツイートの収集' })
+  @ApiOkResponse({
+    type: ExtractedTweet,
+    description: 'ログ',
+    isArray: true,
+  })
+  @ApiUnauthorizedResponse({
+    description: '権限のエラー',
+  })
+  crawl(@Param('id') id: number) {
+    return this.topicsService.crawl(id);
   }
 }

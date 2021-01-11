@@ -24,8 +24,8 @@ export class TopicsService {
 
     // JSON でシリアライズされた項目をパース
     // TODO: APIクライアント側でどうにかする方法がないのかを考える
-    for (let i = 0, l = topic.filters.length; i < l; i++) {
-      topic.filters[i] = JSON.parse(topic.filters[i]);
+    for (let i = 0, l = topic.filterPatterns.length; i < l; i++) {
+      topic.filterPatterns[i] = JSON.parse(topic.filterPatterns[i]);
     }
     for (let i = 0, l = topic.trainingTweets.length; i < l; i++) {
       topic.trainingTweets[i] = JSON.parse(topic.trainingTweets[i]);
@@ -48,7 +48,8 @@ export class TopicsService {
     crawlSocialAccount: any;
     crawlSchedule: any;
     keywords: any[];
-    filters: any[];
+    filterPatterns: any[];
+    enabledFilterPatternIndex: number;
     actions: any[];
     trainingTweets: any[];
   }) {
@@ -59,7 +60,8 @@ export class TopicsService {
         crawlSchedule: topic.crawlSchedule,
         crawlSocialAccountId: +topic.crawlSocialAccount.id,
         keywords: topic.keywords,
-        filters: topic.filters,
+        filterPatterns: topic.filterPatterns,
+        enabledFilterPatternIndex: topic.enabledFilterPatternIndex,
         actions: topic.actions,
         trainingTweets: topic.trainingTweets,
       };
@@ -71,7 +73,8 @@ export class TopicsService {
         name: topic.name,
         crawlSchedule: topic.crawlSchedule,
         keywords: topic.keywords,
-        filters: topic.filters,
+        filterPatterns: topic.filterPatterns,
+        enabledFilterPatternIndex: topic.enabledFilterPatternIndex,
         actions: topic.actions,
         trainingTweets: topic.trainingTweets,
       };

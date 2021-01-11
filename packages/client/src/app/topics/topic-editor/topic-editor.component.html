@@ -209,10 +209,35 @@
         </div>
         <!---->
 
-        <mat-tab-group dynamicHeight>
-          <mat-tab label="パターンA (？点)">
+        <mat-tab-group dynamicHeight [(selectedIndex)]="topic.enabledFilterPatternIndex">
+          <!-- フィルタパターン -->
+          <mat-tab *ngFor="let tweetFilterPattern of topic.filterPatterns; let filterPatternIndex = index">
+            <ng-template mat-tab-label style>
+              {{ tweetFilterPattern.name }}
+              &nbsp;
+              <span style="font-size: 0.8rem;">
+                ({{ !tweetFilterPattern.score ? '未検証' : tweetFilterPattern.score + ' 点' }})
+              </span>
+              <button
+                (click)="deleteTweetFilterPattern(topic.enabledFilterPatternIndex)"
+                *ngIf="filterPatternIndex === topic.enabledFilterPatternIndex"
+                type="button"
+                mat-icon-button
+                color="warn"
+                matTooltip="クリックすると、このパターンを削除します。"
+                style="margin: 0 0 0 1rem"
+              >
+                <mat-icon style="margin: -2px 0 0 0;">delete</mat-icon>
+              </button>
+            </ng-template>
+
+            <br style="margin: 2rem;" />
+
             <!-- 各ツイートフィルタ設定領域 -->
-            <div class="module-setting-container" *ngFor="let moduleSetting of topic.filters; let filterIndex = index">
+            <div
+              class="module-setting-container"
+              *ngFor="let moduleSetting of topic.filterPatterns[filterPatternIndex].filters; let filterIndex = index"
+            >
               <!-- 見出し -->
               <div class="module-setting-caption">
                 <h4>{{ moduleSetting.name }}</h4>
@@ -305,6 +330,22 @@
             </p>
             <!---->
           </mat-tab>
+
+          <!-- フィルタパターン追加ボタン -->
+          <mat-tab disabled>
+            <ng-template mat-tab-label>
+              <button
+                (click)="addTweetFilterPattern()"
+                type="button"
+                mat-icon-button
+                color="primary"
+                matTooltip="クリックすると、ツイートフィルタ一式のパターンを追加し、効果を比較できます。"
+              >
+                <mat-icon>add_circle</mat-icon>
+              </button>
+            </ng-template>
+          </mat-tab>
+          <!---->
         </mat-tab-group>
       </section>
       <!---->
@@ -321,7 +362,7 @@
           </h3>
           <span class="description">
             先ほど設定した "お手本分類" (教師データ) と "ツイートフィルタ" (判断材料)を使って、<br />
-            AI が学習を行い、上手に分類できるかどうかを検証します。<br />
+            AI が学習を行い、上手に分類できるかどうか、効果を検証します。<br />
           </span>
         </div>
         <!---->

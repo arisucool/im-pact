@@ -34,7 +34,14 @@ export class TopicEditorComponent implements OnInit {
     // キーワード
     keywords: [],
     // ツイートフィルタ
-    filters: [],
+    filterPatterns: [
+      {
+        name: 'パターン1',
+        score: null,
+        filters: [],
+      },
+    ],
+    enabledFilterPatternIndex: 0,
     // アクション
     actions: [],
     // お手本分類の結果
@@ -94,7 +101,11 @@ export class TopicEditorComponent implements OnInit {
       this.topic = (await this.topicsService.getTopic(topicId)) as any;
       this.snackBar.open('トピックを読み込みました', null, { duration: 1000 });
     } catch (e) {
-      this.snackBar.open(`エラー: ${e.error?.message?.join(' / ')}`, null, { duration: 5000 });
+      if (e.error?.message.join) {
+        this.snackBar.open(`エラー: ${e.error?.message?.join(' / ')}`, null, { duration: 5000 });
+      } else {
+        this.snackBar.open(`エラー: ${e.error?.message}`, null, { duration: 5000 });
+      }
     }
   }
 
@@ -161,6 +172,8 @@ export class TopicEditorComponent implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       // 手動分類の結果を取得
       this.topic.trainingTweets = result.tweets;
+      // 全てのツイートフィルタパターンのスコアをリセット
+      this.cleanScoreOfAllTweetFilterPatterns();
     });
   }
 
@@ -181,7 +194,7 @@ export class TopicEditorComponent implements OnInit {
         duration: 5000,
       });
       return;
-    } else if (this.topic.filters.length <= 0) {
+    } else if (this.topic.filterPatterns[this.topic.enabledFilterPatternIndex].filters.length <= 0) {
       // ツイートフィルタが一つも登録されていなければ、エラーを表示
       this.snackBar.open(
         'エラー: ツイートフィルタが一つも追加されていません。先にツイートフィルタの追加を行ってください。',
@@ -197,15 +210,77 @@ export class TopicEditorComponent implements OnInit {
     const dialogRef = this.dialog.open(TrainingAndValidationDialogComponent, {
       data: {
         topicId: this.topic.id,
-        filters: this.topic.filters,
+        filters: this.topic.filterPatterns[this.topic.enabledFilterPatternIndex].filters,
         topicKeywords: this.topic.keywords,
         trainingTweets: this.topic.trainingTweets,
       },
     });
     dialogRef.afterClosed().subscribe(result => {
-      // TODO
-      console.log(result);
+      // 検証結果のスコアを取得
+      const score = result.score;
+      // 当該ツイートフィルタパターンにスコアとして登録
+      if (!this.topic.filterPatterns[this.topic.enabledFilterPatternIndex]) {
+        return;
+      }
+      this.topic.filterPatterns[this.topic.enabledFilterPatternIndex].score = score;
     });
+  }
+
+  /**
+   * ツイートフィルタパターンの追加
+   */
+  addTweetFilterPattern(): void {
+    // 現在のフィルタパターンのフィルタ設定を取得
+    let currentFilters = [];
+    if (this.topic.filterPatterns[this.topic.enabledFilterPatternIndex]) {
+      // フィルタ設定をコピー
+      currentFilters = JSON.parse(
+        JSON.stringify(this.topic.filterPatterns[this.topic.enabledFilterPatternIndex].filters),
+      );
+    }
+    // 新しいツイートフィルタパターン名を決定
+    let filterPatternNameNumber = 0;
+    for (const pattern of this.topic.filterPatterns) {
+      if (pattern.name.match(/(\d+)$/)) {
+        const num = parseInt(RegExp.$1);
+        if (filterPatternNameNumber < num) {
+          filterPatternNameNumber = num;
+        }
+      }
+    }
+    filterPatternNameNumber++;
+    // トピックへツイートフィルタパターンを追加
+    this.topic.filterPatterns.push({
+      name: `パターン ${filterPatternNameNumber}`,
+      score: null,
+      filters: currentFilters,
+    });
+    this.topic.enabledFilterPatternIndex = this.topic.filterPatterns.length - 1;
+  }
+
+  /**
+   * 全ツイートフィルタパターンのスコアのリセット
+   */
+  cleanScoreOfAllTweetFilterPatterns(): void {
+    for (let filterPattern of this.topic.filterPatterns) {
+      filterPattern.score = null;
+    }
+  }
+
+  /**
+   * 指定されたツイートフィルタパターンのスコアのリセット
+   * @param filterPatternIndex フィルタパターンのインデックス番号 (未指定ならば現在有効なもの)
+   */
+  cleanScoreOfTweetFilterPattern(filterPatternIndex: number = null): void {
+    if (filterPatternIndex == null) {
+      filterPatternIndex = this.topic.enabledFilterPatternIndex;
+    }
+
+    if (!this.topic.filterPatterns[this.topic.enabledFilterPatternIndex]) {
+      return;
+    }
+
+    this.topic.filterPatterns[this.topic.enabledFilterPatternIndex].score = null;
   }
 
   /**
@@ -221,11 +296,15 @@ export class TopicEditorComponent implements OnInit {
       .afterDismissed()
       .subscribe(choosedFilterName => {
         if (!choosedFilterName) return;
-        // トピックへツイートフィルタを追加
-        this.topic.filters.push({
+
+        // 現在のツイートフィルタパターンへ当該ツイートフィルタを追加
+        this.topic.filterPatterns[this.topic.enabledFilterPatternIndex].filters.push({
           name: choosedFilterName,
           settings: {},
         });
+
+        // 現在のツイートフィルタパターンのスコアをリセット
+        this.cleanScoreOfTweetFilterPattern(null);
       });
   }
 
@@ -252,18 +331,31 @@ export class TopicEditorComponent implements OnInit {
 
   /**
    * 指定されたツイートフィルタの削除
-   * @param filter_index ツイートフィルタのインデックス番号
+   * @param filterIndex ツイートフィルタのインデックス番号
    */
-  deleteTweetFilter(filter_index: number) {
-    this.topic.filters.splice(filter_index, 1);
+  deleteTweetFilterPattern(filterIndex: number) {
+    // 当該ツイートフィルタパターンを削除
+    this.topic.filterPatterns.splice(filterIndex, 1);
+  }
+
+  /**
+   * 指定されたツイートフィルタの削除
+   * @param filterIndex ツイートフィルタのインデックス番号
+   */
+  deleteTweetFilter(filterIndex: number) {
+    // 現在のツイートフィルタパターンから当該ツイートフィルタを削除
+    this.topic.filterPatterns[this.topic.enabledFilterPatternIndex].filters.splice(filterIndex, 1);
+
+    // 現在のツイートフィルタパターンのスコアをリセット
+    this.cleanScoreOfTweetFilterPattern(null);
   }
 
   /**
    * 指定されたアクションの削除
-   * @param action_index アクションのインデックス番号
+   * @param actionIndex アクションのインデックス番号
    */
-  deleteAction(action_index: number) {
-    this.topic.actions.splice(action_index, 1);
+  deleteAction(actionIndex: number) {
+    this.topic.actions.splice(actionIndex, 1);
   }
 
   /**

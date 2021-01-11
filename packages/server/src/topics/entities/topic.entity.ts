@@ -9,7 +9,7 @@ import {
   ManyToOne,
   ManyToMany,
 } from 'typeorm';
-import { IsNotEmpty } from 'class-validator';
+import { IsNotEmpty, IsArray } from 'class-validator';
 import { CrawledTweet } from 'src/topics/ml/entities/crawled-tweet.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
 import { ExtractedTweet } from '../ml/entities/extracted-tweet.entity';
@@ -54,12 +54,17 @@ export class Topic extends BaseEntity {
   })
   keywords: string[];
 
-  // ツイートフィルタ
+  // ツイートフィルタパターン
   @Column({
     type: 'text',
     array: true,
   })
-  filters: string[];
+  @IsArray()
+  filterPatterns: string[];
+
+  // 使用するフィルタパターンのインデックス番号
+  @Column()
+  enabledFilterPatternIndex: number;
 
   // アクション
   @Column({

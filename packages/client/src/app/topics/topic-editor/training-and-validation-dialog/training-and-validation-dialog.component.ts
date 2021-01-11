@@ -62,7 +62,10 @@ export class TrainingAndValidationDialogComponent implements OnInit {
   }
 
   finish() {
-    this.dialogRef.close();
+    this.dialogRef.close({
+      // 点数を呼び出し元のコンポーネントへ渡す
+      score: this.validationResult.score,
+    });
   }
 
   cancel() {

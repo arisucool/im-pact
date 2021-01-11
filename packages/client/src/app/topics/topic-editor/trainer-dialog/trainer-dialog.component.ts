@@ -45,7 +45,7 @@ export class TrainerDialogComponent implements OnInit {
     this.status = 'しばらくお待ちください...';
     this.numOfSelectedTweets = 0;
     // ツイートの初期化
-    if (this.tweets === null) {
+    if (this.tweets === null || this.tweets.length == 0) {
       // 教師データ生成用のサンプルツイートを収集
       await this.getSampleTweets();
     } else {

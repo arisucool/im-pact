@@ -26,7 +26,8 @@ export class TopicsService {
     topic.crawlSocialAccount = new SocialAccount();
     topic.crawlSocialAccount.id = dto.crawlSocialAccountId;
     topic.crawlSchedule = dto.crawlSchedule;
-    topic.filters = dto.filters;
+    topic.filterPatterns = dto.filterPatterns;
+    topic.enabledFilterPatternIndex = dto.enabledFilterPatternIndex;
     topic.actions = dto.actions;
     topic.trainingTweets = dto.trainingTweets;
     return await this.topicsRepository.save(topic);

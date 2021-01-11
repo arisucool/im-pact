@@ -43,14 +43,22 @@ export class UpdateTopicDto {
   keywords: string[];
 
   @ApiProperty({
-    description: 'フィルタ',
+    description: 'フィルタパターン',
     example: [],
     type: String,
     isArray: true,
   })
   @IsArray()
   @IsNotEmpty()
-  filters: string[];
+  filterPatterns: string[];
+
+  @ApiProperty({
+    description: '使用するフィルタパターンのインデックス番号',
+    example: 0,
+    type: Number,
+  })
+  @IsNotEmpty()
+  enabledFilterPatternIndex: number;
 
   @ApiProperty({
     description: 'アクション',

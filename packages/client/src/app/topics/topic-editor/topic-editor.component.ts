@@ -198,6 +198,7 @@ export class TopicEditorComponent implements OnInit {
       data: {
         topicId: this.topic.id,
         filters: this.topic.filters,
+        topicKeywords: this.topic.keywords,
         trainingTweets: this.topic.trainingTweets,
       },
     });

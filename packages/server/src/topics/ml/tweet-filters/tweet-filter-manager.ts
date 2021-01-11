@@ -13,10 +13,18 @@ import { SocialAccount } from 'src/social-accounts/entities/social-account.entit
 export class TweetFilterManager {
   private modules: any[] = [];
 
+  /**
+   * コンストラクタ
+   * @param moduleStorageRepository モジュールストレージを読み書きするためのリポジトリ
+   * @param socialAccountRepository ソーシャルアカウントを読み書きするためのリポジトリ
+   * @param filterSettings ツイートフィルタ設定
+   * @param topicKeywords トピックのキーワード (実際に検索が行われるわけではない。ベイジアンフィルタ等で学習からキーワードを除いて精度を上げる場合などに使用される。)
+   */
   constructor(
     private moduleStorageRepository: Repository<ModuleStorageEntity.ModuleStorage>,
     private socialAccountRepository: Repository<SocialAccount>,
-    private filterSettings: any[],
+    private filterSettings: { [key: string]: any }[],
+    private topicKeywords: string[],
   ) {
     this.modules = [];
   }
@@ -144,7 +152,13 @@ export class TweetFilterManager {
     });
 
     // ヘルパの初期化
-    const moduleHelper = ModuleHelper.factory(filterName, moduleStorage, filterSetting, socialAccount);
+    const moduleHelper = ModuleHelper.factory(
+      filterName,
+      moduleStorage,
+      filterSetting,
+      socialAccount,
+      this.topicKeywords,
+    );
 
     // モジュールの初期化
     switch (filterName) {

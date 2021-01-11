@@ -25,6 +25,17 @@ export class TrainAndValidateDto {
   filters: string[];
 
   @ApiProperty({
+    description:
+      'キーワード (実際に検索が行われるわけではない。ベイジアンフィルタ等で学習からキーワードを除いて精度を上げる場合などに使用される。)',
+    example: ['ありす'],
+    type: String,
+    isArray: true,
+  })
+  @IsArray()
+  @IsNotEmpty()
+  topicKeywords: string[];
+
+  @ApiProperty({
     description: 'お手本分類されたツイート',
     example: [],
     type: String,

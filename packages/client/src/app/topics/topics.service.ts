@@ -221,13 +221,15 @@ export class TopicsService {
    * @param topicId トピックID
    * @param trainingTweets お手本分類の結果
    * @param filterSettings ツイートフィルタ設定
+   * @param topicKeywords トピックのキーワード
    * @return トレーニングおよび検証の結果
    */
-  async trainAndValidate(topicId: number, trainingTweets: any[], filterSettings: any[]) {
+  async trainAndValidate(topicId: number, trainingTweets: any[], filterSettings: any[], topicKeywords: any[]) {
     const dto: TrainAndValidateDto = {
       topicId: topicId,
       trainingTweets: trainingTweets,
       filters: filterSettings,
+      topicKeywords: topicKeywords,
     };
     return await this.api.mlControllerTrainAndValidate(dto).toPromise();
   }

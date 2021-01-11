@@ -20,7 +20,7 @@ export class MlService {
    * 利用可能なツイートフィルタの取得
    */
   async getAvailableTweetFilters() {
-    const filterManager = new TweetFilterManager(this.moduleStorageRepository, this.socialAccountRepository, []);
+    const filterManager = new TweetFilterManager(this.moduleStorageRepository, this.socialAccountRepository, [], []);
     const filterNames = await filterManager.getAvailableModuleNames();
 
     let filters = {};
@@ -56,13 +56,13 @@ export class MlService {
    */
   async trainAndValidate(dto: TrainAndValidateDto) {
     // データセットを生成
-    let generatedDatasets = await this.getTrainingDatasets(dto.trainingTweets, dto.filters);
+    let generatedDatasets = await this.getTrainingDatasets(dto.trainingTweets, dto.filters, dto.topicKeywords);
 
     // データセットの変数の数を取得
     const numOfFeatures = generatedDatasets.numOfFeatures;
 
     // データセットに対してバッチを実行
-    const BATCH_SIZE = 10;
+    const BATCH_SIZE = 16;
     console.log(`[MlService] trainAndValidate - Applying batch to dataset...`);
     const trainingDataset = generatedDatasets.trainingDataset.batch(BATCH_SIZE);
     const validationDataset = generatedDatasets.validationDataset.batch(BATCH_SIZE);
@@ -88,6 +88,7 @@ export class MlService {
       dto.trainingTweets,
       numOfFeatures,
       dto.filters,
+      dto.topicKeywords,
       false,
     );
     const scoreByTrainingTweets = resultOfTrainingTweets.score;
@@ -98,6 +99,7 @@ export class MlService {
       dto.trainingTweets,
       numOfFeatures,
       dto.filters,
+      dto.topicKeywords,
       true,
     );
     const scoreByTrainingTweetsExceptUnselect = resultOfTrainingTweetsExceptUnselect.score;
@@ -129,9 +131,10 @@ export class MlService {
    * トレーニングのためのデータセットの生成
    * @param trainingTweets お手本分類の結果
    * @param filterSettings ツイートフィルタ設定
+   * @param topicKeywords トピックのキーワード (実際に検索が行われるわけではない。ベイジアンフィルタ等で学習からキーワードを除いて精度を上げる場合などに使用される。)
    * @return 学習用データセットおよび検証用データセット
    */
-  protected async getTrainingDatasets(trainingTweets: any[], filterSettings: any[]) {
+  protected async getTrainingDatasets(trainingTweets: any[], filterSettings: any[], topicKeywords: string[]) {
     // 検証用にデータセットを分割する割合
     const VALIDATION_FRACTION = 0.1;
 
@@ -143,6 +146,7 @@ export class MlService {
       this.moduleStorageRepository,
       this.socialAccountRepository,
       filterSettings,
+      topicKeywords,
     );
 
     // 各ツイートフィルタによるバッチ処理を実行
@@ -313,6 +317,8 @@ export class MlService {
    * @param trainedModel 学習モデル
    * @param tweets お手本分類の結果
    * @param numOfFeatures データセットの変数の数
+   * @oaram filterSettings ツイートフィルタの設定
+   * @param topicKeywords トピックのキーワード  (実際に検索が行われるわけではない。ベイジアンフィルタ等で学習からキーワードを除いて精度を上げる場合などに使用される。)
    * @param excludeUnselectedTweets お手本分類でユーザによって選択されなかったツイートを検証から除外するか
    * @return 検証および分類の結果
    */
@@ -321,6 +327,7 @@ export class MlService {
     tweets: any[],
     numOfFeatures: number,
     filterSettings: any[],
+    topicKeywords: string[],
     excludeUnselectedTweets: boolean = false,
   ): Promise<{ score: number; tweets: any[] }> {
     // 検証するツイートを抽出
@@ -344,6 +351,7 @@ export class MlService {
       this.moduleStorageRepository,
       this.socialAccountRepository,
       filterSettings,
+      topicKeywords,
     );
 
     // 検証するツイートを反復

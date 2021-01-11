@@ -33,6 +33,10 @@ export class TweetTextBayesianFilter implements TweetFilter {
       return;
     }
 
+    // トピックのキーワードの取得
+    // (ベイジアンフィルタの学習からキーワードを取り除くことで精度を上げる試み)
+    const topicKeywords = await this.helper.getTopicKeywords();
+
     // ベイジアンフィルタの初期化
     const tokenizer = (text: string) => {
       let cleanText = text
@@ -51,6 +55,12 @@ export class TweetTextBayesianFilter implements TweetFilter {
         .replace(/\d{1,2}:\d{1,2}/g, '')
         .replace(/\d{1,2}時\d{1,2}分/g, '');
 
+      for (const keyword of topicKeywords) {
+        // トピックで指定されたキーワードを本文から取り除く
+        cleanText = cleanText.replace(new RegExp(keyword, 'g'), '');
+      }
+
+      // 抽出されたトークン (分かち書き) を返す
       return this.segmenter.segment(cleanText);
     };
     this.bayes = Bayes({

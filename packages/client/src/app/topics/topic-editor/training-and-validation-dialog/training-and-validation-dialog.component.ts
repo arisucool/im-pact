@@ -28,6 +28,8 @@ export class TrainingAndValidationDialogComponent implements OnInit {
 
   // トピックID
   topicId: number;
+  // トピックのキーワード
+  topicKeywords: string[];
 
   // フィルタ設定
   filters: [];
@@ -45,6 +47,7 @@ export class TrainingAndValidationDialogComponent implements OnInit {
   async ngOnInit() {
     // コンポーネントから渡された値を取得
     this.topicId = this.data.topicId;
+    this.topicKeywords = this.data.topicKeywords;
     this.trainingTweets = this.data.trainingTweets;
     this.filters = this.data.filters;
     // 初期化
@@ -82,6 +85,7 @@ export class TrainingAndValidationDialogComponent implements OnInit {
         this.topicId,
         this.trainingTweets,
         this.filters,
+        this.topicKeywords,
       )) as any;
       validationResult = result.validationResult;
     } catch (e) {

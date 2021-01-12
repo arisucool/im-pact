@@ -38,8 +38,9 @@ export class CrawlerConsumer {
     Logger.debug(`Job starting... (ID: ${job.id})`, 'CrawlerConsumer/execJob');
     const topicId = job.data.topicId;
     try {
-      await this.crawl(topicId, job);
+      const tweets = await this.crawl(topicId, job);
       Logger.debug(`Job completed... (ID: ${job.id})`, 'CrawlerConsumer/execJob');
+      return tweets;
     } catch (e) {
       Logger.error(`Error has occurred in job... (ID: ${job.id})`, e.stack, 'CrawlerConsumer/execJob');
       throw e;
@@ -95,7 +96,8 @@ export class CrawlerConsumer {
     job?.progress(75);
 
     // 分類されたツイートを反復
-    const savedTweets = [];
+    const savedTweets = [],
+      savedTweetIds = [];
     for (const tweet of predictedTweets) {
       // 当該ツイートを登録
       console.log(`[TopicService] crawl - Inserting extracted tweets... ${tweet.idStr}`);
@@ -104,10 +106,14 @@ export class CrawlerConsumer {
       tweet.topic = topic.id;
       try {
         savedTweets.push(await this.extractedTweetRepository.save(tweet));
+        savedTweetIds.push(tweet.idStr);
       } catch (e) {
         console.warn(e);
       }
     }
+
+    // ジョブの収集済みツイート情報を更新
+    if (job) job.update({ topicId: topic.id, tweetIds: savedTweetIds });
 
     // ジョブのステータスを更新
     job?.progress(100);

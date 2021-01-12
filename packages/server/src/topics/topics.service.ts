@@ -59,7 +59,7 @@ export class TopicsService {
       const schedules = topic.crawlSchedule.split(/\n/);
       // 収集スケジュールを反復
       for (const schedule of schedules) {
-        if (schedule.length === 0 || schedule.match(/\s+/)) {
+        if (schedule.length === 0 || schedule.match(/\^s+$/)) {
           // 行が空ならば、スキップ
           continue;
         }
@@ -68,7 +68,6 @@ export class TopicsService {
         try {
           const parsedSchedule = cronParser.parseExpression(schedule);
           const nextDate = parsedSchedule.prev();
-          console.log(nextDate.toString(), nextDate.getTime(), now - nextDate.getTime());
           if (59000 <= Math.abs(now - nextDate.getTime())) {
             // 現在時刻から59秒以上違えば、スキップ
             continue;

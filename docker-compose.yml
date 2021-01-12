@@ -70,6 +70,22 @@ services:
             - 16379:6379
         volumes:
             - "./redis_datas:/data"
+    
+    # Bullboard サーバ (Redis データベース管理用)
+    bullboard:
+        image: deadly0/bull-board:1.0.0-alpha.7
+        depends_on:
+            - redis
+        restart: always
+        networks:
+            - appnet
+        environment: 
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+            REDIS_PASSWORD: arisu15
+            BULL_PREFIX: bull
+        ports:
+          - 18081:3000
 
 networks:
     appnet:

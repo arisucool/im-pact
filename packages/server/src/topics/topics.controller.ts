@@ -116,6 +116,6 @@ export class TopicsController {
     description: '権限のエラー',
   })
   crawl(@Param('id') id: number) {
-    return this.topicsService.addCrawlQueue(id);
+    return this.topicsService.addCrawlerQueue(id);
   }
 }

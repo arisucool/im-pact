@@ -1,12 +1,14 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
+import { Cron } from '@nestjs/schedule';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateTopicDto } from './dto/create-topic.dto';
 import { UpdateTopicDto } from './dto/update-topic.dto';
 import { Topic } from './entities/topic.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
+import * as cronParser from 'cron-parser';
 
 @Injectable()
 export class TopicsService {
@@ -16,6 +18,80 @@ export class TopicsService {
     @InjectQueue('crawler')
     private readonly crawlQueue: Queue,
   ) {}
+
+  /**
+   * 毎分毎の定期処理
+   */
+  @Cron('* * * * *')
+  async onInternal() {
+    // このタイミングで収集を実行すべきトピックIDを取得
+    const topicIds = await this.getTopicIdsToBeCrawledOnNow();
+    if (topicIds.length === 0) return;
+
+    // 各トピックの収集ジョブをキューへ追加
+    for (const topicId of topicIds) {
+      const job = await this.crawlQueue.add({
+        topicId: topicId,
+      });
+      Logger.debug(`Add job to crawler queue... (Topic ID: ${topicId}, Job ID: ${job.id})`, 'AppService/onInterval');
+    }
+  }
+
+  /**
+   * 現在のタイミングで収集を実行すべきトピックIDの取得
+   * (各トピックの収集スケジュール設定から算出)
+   * TODO: もっと負荷のかからなさそうなコードにしたい
+   * @return トピックIDの配列
+   */
+  protected async getTopicIdsToBeCrawledOnNow(): Promise<number[]> {
+    // 収集を実行すべきトピックのIDを代入する配列を初期化
+    const topicIds: number[] = [];
+
+    // 現在時刻を取得
+    const now = new Date().getTime();
+
+    // トピックを反復
+    const topics = await this.topicsRepository.find({
+      select: ['id', 'crawlSchedule'],
+    });
+    for (const topic of topics) {
+      // 当該トピックの収集スケジュール (複数行) を配列へ
+      const schedules = topic.crawlSchedule.split(/\n/);
+      // 収集スケジュールを反復
+      for (const schedule of schedules) {
+        if (schedule.length === 0 || schedule.match(/\s+/)) {
+          // 行が空ならば、スキップ
+          continue;
+        }
+
+        // スケジュールをパース
+        try {
+          const parsedSchedule = cronParser.parseExpression(schedule);
+          const nextDate = parsedSchedule.prev();
+          console.log(nextDate.toString(), nextDate.getTime(), now - nextDate.getTime());
+          if (59000 <= Math.abs(now - nextDate.getTime())) {
+            // 現在時刻から59秒以上違えば、スキップ
+            continue;
+          }
+        } catch (e) {
+          Logger.error(
+            `Could not parse the crawl schedule of the topic (Topic ID : ${topic.id})`,
+            e,
+            'TopicService/getTopicIdsToBeCrawledOnNow',
+          );
+          continue;
+        }
+
+        // トピックID を配列へ追加
+        topicIds.push(topic.id);
+
+        // 次のトピックへ
+        break;
+      }
+    }
+
+    return topicIds;
+  }
 
   /**
    * トピックの作成

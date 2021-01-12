@@ -3,10 +3,11 @@ import { Helper } from './helper';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
+import { BullModule } from '@nestjs/bull';
+import { ScheduleModule } from '@nestjs/schedule';
+
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
-
-import { BullModule } from '@nestjs/bull';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module';
@@ -22,8 +23,10 @@ import { SocialAccountsModule } from './social-accounts/social-accounts.module';
     // Redis データベースによるキューへ接続するための設定
     BullModule.forRoot({
       redis: Helper.getRedisSettings(),
-      prefix: 'im_pact_queue',
+      prefix: 'bull',
     }),
+    // 定期処理を実行するための設定
+    ScheduleModule.forRoot(),
     // 本番環境にて Angular アプリケーション (../../client/dist/client/) を静的ファイルとしてサーブするための設定
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'client', 'dist', 'client'),
@@ -35,6 +38,6 @@ import { SocialAccountsModule } from './social-accounts/social-accounts.module';
     SocialAccountsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, InitializationService]
+  providers: [AppService, InitializationService],
 })
 export class AppModule {}

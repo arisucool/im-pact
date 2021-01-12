@@ -36,7 +36,7 @@ export class Topic extends BaseEntity {
   )
   crawlSocialAccount: SocialAccount;
 
-  // 収集アカウント
+  // 抽出済みツイート
   @OneToMany(
     () => ExtractedTweet,
     extractedTweet => extractedTweet.topic,

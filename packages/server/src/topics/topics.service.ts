@@ -133,7 +133,7 @@ export class TopicsService {
     const savedTweets = [];
     for (const tweet of predictedTweets) {
       // 当該ツイートの登録
-      console.log(`[TopicService] Inserting extracted tweets... ${tweet.idStr}`);
+      console.log(`[TopicService] crawl - Inserting extracted tweets... ${tweet.idStr}`);
       tweet.predictedClass = tweet.predictedSelect ? 'accept' : 'reject';
       tweet.filtersResult = tweet.filtersResult;
       tweet.topic = topic.id;
@@ -144,10 +144,8 @@ export class TopicsService {
       }
     }
 
-    // アクションの実行
-    // TODO:
-
     // 分類されたツイートを返す
+    console.log(`[TopicService] crawl - Done`);
     return savedTweets;
   }
 
@@ -193,24 +191,33 @@ export class TopicsService {
     }
 
     // 最近収集されたツイートから分類済みのものを除く
-    tweets = tweets.filter(async (tweet: CrawledTweet) => {
-      // 当該ツイートが分類済みでないか確認
-      if (
-        0 <
-        (
-          await this.extractedTweetRepository.find({
-            where: {
-              topic: topic.id,
-              idStr: tweet.idStr,
-            },
-          })
-        ).length
-      ) {
-        // 分類済みならば、スキップ
-        return false;
-      }
-      // 未分類ならば
-      return true;
+    await Promise.all(
+      tweets.map(
+        async tweet =>
+          (
+            await this.extractedTweetRepository.find({
+              where: {
+                topic: topic.id,
+                idStr: tweet.idStr,
+              },
+            })
+          ).length,
+      ),
+    ).then(
+      findResults =>
+        (tweets = tweets.filter((tweet, index) => {
+          if (0 < findResults[index]) return false;
+          return true;
+        })),
+    );
+
+    // 重複を除去
+    tweets = tweets.filter((item, i, self) => {
+      return (
+        self.findIndex(item_ => {
+          return item.idStr == item_.idStr;
+        }) === i
+      );
     });
 
     // 指定件数まで減らす

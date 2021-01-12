@@ -28,25 +28,32 @@ export class CrawlerConsumer {
     private twitterCrawlerService: TwitterCrawlerService,
   ) {}
 
+  /**
+   * crawler ジョブの実行
+   * (@nestjs/bull に呼び出される)
+   * @param job ジョブ
+   */
   @Process()
   async execJob(job: Job<any>) {
     Logger.debug(`Job starting... (ID: ${job.id})`, 'CrawlerConsumer/execJob');
     const topicId = job.data.topicId;
     try {
-      await this.crawl(topicId);
+      await this.crawl(topicId, job);
       Logger.debug(`Job completed... (ID: ${job.id})`, 'CrawlerConsumer/execJob');
     } catch (e) {
       Logger.error(`Error has occurred in job... (ID: ${job.id})`, e.stack, 'CrawlerConsumer/execJob');
+      throw e;
     }
   }
 
   /**
    * 指定されたトピックにおけるツイートの収集
    * @param id トピックID
+   * @param job ジョブ
    * @return 分類されたツイートの配列
    */
-  async crawl(id: number): Promise<ExtractedTweet[]> {
-    // トピックの取得
+  async crawl(id: number, job?: Job<any>): Promise<ExtractedTweet[]> {
+    // トピックを取得
     const topic: Topic = await this.topicsRepository.findOne(id, {
       relations: ['crawlSocialAccount'],
     });
@@ -54,23 +61,29 @@ export class CrawlerConsumer {
       throw new BadRequestException('Invalid item');
     }
 
-    // フィルタパターンの取得
+    // フィルタパターンを取得
     if (!topic.filterPatterns[topic.enabledFilterPatternIndex]) {
       throw new BadRequestException('Invalid filter pattern');
     }
     const filterPatern = JSON.parse(topic.filterPatterns[topic.enabledFilterPatternIndex]);
     const filterSettings = filterPatern.filters;
 
-    // 学習モデルの取得
+    // 学習モデルを取得
     const trainedModelId = filterPatern.trainedModelId;
     if (!trainedModelId) {
       throw new BadRequestException('trainedModel not registered');
     }
 
-    // 未分類ツイートの取得 (併せて収集も実行)
+    // ジョブのステータスを更新
+    job?.progress(10);
+
+    // 未分類ツイートを取得 (併せて収集も実行)
     let unextractedTweets = await this.getUnextractedTweets(topic);
 
-    // 未分類ツイートの分類
+    // ジョブのステータスを更新
+    job?.progress(50);
+
+    // 未分類ツイートを分類
     const predictedTweets = await this.mlService.predictTweets(
       trainedModelId,
       unextractedTweets,
@@ -78,10 +91,13 @@ export class CrawlerConsumer {
       topic.keywords,
     );
 
-    // 分類されたツイートの反復
+    // ジョブのステータスを更新
+    job?.progress(75);
+
+    // 分類されたツイートを反復
     const savedTweets = [];
     for (const tweet of predictedTweets) {
-      // 当該ツイートの登録
+      // 当該ツイートを登録
       console.log(`[TopicService] crawl - Inserting extracted tweets... ${tweet.idStr}`);
       tweet.predictedClass = tweet.predictedSelect ? 'accept' : 'reject';
       tweet.filtersResult = tweet.filtersResult;
@@ -92,6 +108,9 @@ export class CrawlerConsumer {
         console.warn(e);
       }
     }
+
+    // ジョブのステータスを更新
+    job?.progress(100);
 
     // 分類されたツイートを返す
     console.log(`[TopicService] crawl - Done`);

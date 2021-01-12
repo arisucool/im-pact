@@ -14,6 +14,7 @@ import { ModuleStorage } from './ml/entities/module-storage.entity';
 import { TwitterCrawlerService } from './ml/twitter-crawler.service';
 import { MlModel } from './ml/entities/ml-model.entity';
 import { CrawlerConsumer } from './ml/crawler.consumer';
+import { TrainerConsumer } from './ml/trainer.consumer';
 
 @Module({
   imports: [
@@ -23,8 +24,11 @@ import { CrawlerConsumer } from './ml/crawler.consumer';
     BullModule.registerQueue({
       name: 'crawler',
     }),
+    BullModule.registerQueue({
+      name: 'trainer',
+    }),
   ],
   controllers: [TopicsController, MlController],
-  providers: [MlService, TopicsService, TwitterCrawlerService, CrawlerConsumer],
+  providers: [MlService, TopicsService, TwitterCrawlerService, CrawlerConsumer, TrainerConsumer],
 })
 export class TopicsModule {}

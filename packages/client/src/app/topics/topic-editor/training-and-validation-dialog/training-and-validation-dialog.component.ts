@@ -90,12 +90,12 @@ export class TrainingAndValidationDialogComponent implements OnInit {
     let trainingResult,
       validationResult = null;
     try {
-      const result = (await this.topicsService.trainAndValidate(
+      const result = await this.topicsService.trainAndValidate(
         this.topicId,
         this.trainingTweets,
         this.filters,
         this.topicKeywords,
-      )) as any;
+      );
       trainingResult = result.trainingResult;
       validationResult = result.validationResult;
     } catch (e) {

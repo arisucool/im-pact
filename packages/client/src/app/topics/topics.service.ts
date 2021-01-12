@@ -1,6 +1,4 @@
 import { Injectable } from '@angular/core';
-import { generate } from 'rxjs';
-import { NgModel } from '@angular/forms';
 import {
   DefaultService,
   GetExampleTweetsDto,
@@ -227,13 +225,37 @@ export class TopicsService {
    * @param topicKeywords トピックのキーワード
    * @return トレーニングおよび検証の結果
    */
-  async trainAndValidate(topicId: number, trainingTweets: any[], filterSettings: any[], topicKeywords: any[]) {
+  async trainAndValidate(
+    topicId: number,
+    trainingTweets: any[],
+    filterSettings: any[],
+    topicKeywords: any[],
+  ): Promise<any> {
+    console.log('trainAndValidate');
+
     const dto: TrainAndValidateDto = {
       topicId: topicId,
       trainingTweets: trainingTweets,
       filters: filterSettings,
       topicKeywords: topicKeywords,
     };
-    return await this.api.mlControllerTrainAndValidate(dto).toPromise();
+
+    const jobId: number = (await this.api.mlControllerTrainAndValidate(dto).toPromise()) as any;
+
+    return new Promise((resolve, reject) => {
+      const interval = setInterval(() => {
+        this.api
+          .mlControllerGetStatusOfTrainAndValidate(jobId)
+          .toPromise()
+          .then((jobStatus: any) => {
+            if (jobStatus.status != 'completed' && jobStatus.status != 'failed') return;
+            clearInterval(interval);
+            if (jobStatus.status === 'failed') {
+              return reject(jobStatus.errorMessage);
+            }
+            resolve(jobStatus.result);
+          });
+      }, 1000);
+    });
   }
 }

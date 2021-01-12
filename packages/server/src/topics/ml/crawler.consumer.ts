@@ -11,7 +11,7 @@ import { ExtractedTweet } from './entities/extracted-tweet.entity';
 import { Topic } from '../entities/topic.entity';
 
 /**
- * 'crawler' キューを処理するためのコンシューマ
+ * 収集に関するキューを処理するためのコンシューマ
  */
 @Processor('crawler')
 export class CrawlerConsumer {

@@ -13,6 +13,7 @@ services:
         command: npm run start:dev
         depends_on:
             - db
+            - redis
         restart: always
         networks:
             - appnet
@@ -20,6 +21,7 @@ services:
             TWITTER_CONSUMER_KEY:
             TWITTER_CONSUMER_SECRET: 
             DATABASE_URL: postgres://im_pact:arisu15@db/im_pact?sslmode=disable
+            REDIS_URL: redis://:arisu15@redis:6379
             JWT_TOKEN_SECRET: arisu15
         ports:
             - 4200:4200
@@ -43,7 +45,7 @@ services:
         volumes:
             - ./db_datas:/var/lib/postgresql/data
     
-    # Adminer
+    # Adminer サーバ (PostgreSQL データベース管理用)
     adminer:
         build: ./.utils/adminer/
         depends_on:
@@ -55,6 +57,19 @@ services:
             ADMINER_DEFAULT_SERVER: db
         ports:
             - 18080:8080
+
+    # Redis データベースサーバ (キュー用)
+    redis:
+        container_name: redis
+        image: redis:6.0-alpine
+        command: redis-server --appendonly yes --requirepass arisu15
+        restart: always
+        networks:
+            - appnet
+        ports:
+            - 16379:6379
+        volumes:
+            - "./redis_datas:/data"
 
 networks:
     appnet:

@@ -10,6 +10,7 @@ packages/**/dist/
 
 # 開発環境におけるデータベース関連のファイル
 db_datas/
+redis_datas/
 
 # その他のファイル
 app.json

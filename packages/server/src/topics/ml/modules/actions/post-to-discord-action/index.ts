@@ -47,7 +47,6 @@ export class PostToDiscordAction implements Action {
       .replace(/%TWEET_TEXT%/g, tweet.text)
       .replace(/%TWEET_USER_NAME%/g, tweet.userName)
       .replace(/%TWEET_USER_SCREEN_NAME%/g, tweet.userScreenName);
-    return true;
 
     // 投稿を実行
     const res = await axios.post(

@@ -96,110 +96,27 @@ export class TopicsService {
 
   /**
    * 指定されたツイートフィルタの取得
-   * @param module_name ツイートフィルタ名 (例: 'TweetTextRegExpFilter')
+   * @param moduleName ツイートフィルタ名 (例: 'TweetTextRegExpFilter')
    */
-  async getTweetFilter(module_name: string) {
+  async getTweetFilter(moduleName: string) {
     const filters = await this.getAvailableTweetFilters();
-    return filters[module_name];
+    return filters[moduleName];
   }
 
   /**
    * 利用可能なアクションの取得
    */
   async getAvailableActions() {
-    return {
-      ApprovalOnDiscordAction: {
-        version: '1.0.0',
-        description: 'ツイートを Discord へ投稿し、次のアクションへ遷移するか承認を得るアクション',
-        settings: [
-          {
-            name: 'webhook_url',
-            title: 'Discord Webhook URL',
-            type: 'url',
-            placeholder: '例: https://discordapp.com/api/webhooks/000000000000000000/xxxxxxxxxxxxxxxxxxxxxxxxx',
-          },
-          {
-            name: 'content_template',
-            title: '投稿本文',
-            type: 'textarea',
-            rows: 6,
-            placeholder: `例: ツイートを収集しました。
-%TWEET_URL%
-
-承認: %APPROVAL_URL%
-
-拒否: %REJECTION_URL%`,
-          },
-        ],
-      },
-      WaitForSecondsAction: {
-        version: '1.0.0',
-        description: '指定した時間が経過したら次のアクションへ遷移するアクション',
-        settings: [
-          {
-            name: 'wait_seconds',
-            title: '待機する秒数',
-            type: 'number',
-            placeholder: '例: 3600 (1時間)',
-          },
-        ],
-      },
-      ScheduleAction: {
-        version: '1.0.0',
-        description: '指定したスケジュールになったら次のアクションへ遷移するアクション',
-        settings: [],
-      },
-      RetweetAction: {
-        version: '1.0.0',
-        description: 'ツイートをリツイートするアクション',
-        settings: [],
-      },
-      PostToIFTTTAction: {
-        version: '1.0.0',
-        description: 'ツイートを IFTTT Webhook へ投稿するアクション',
-        settings: [
-          {
-            name: 'event_name',
-            title: 'IFTTT Webhook Event name',
-            type: 'text',
-            placeholder: '例: foo',
-          },
-          {
-            name: 'webhook_key',
-            title: 'IFTTT Webhook key',
-            type: 'password',
-            placeholder: '例: xxxxxxxxxxxxxxxxxxxxxx',
-          },
-          {
-            name: 'value_1_template',
-            title: 'Value 1',
-            type: 'text',
-            placeholder: '例: %TWEET_URL%',
-          },
-          {
-            name: 'value_1_template',
-            title: 'Value 2',
-            type: 'text',
-            placeholder: '例: %TWEET_CONTENT%',
-          },
-          {
-            name: 'value_3_template',
-            title: 'Value 3',
-            type: 'text',
-            placeholder: '例: %TWEET_AUTHOR_SCREEN_NAME%',
-          },
-        ],
-      },
-    };
+    return await this.api.mlControllerGetAvailableActions().toPromise();
   }
 
   /**
    * 指定されたアクションの取得
-   * @param module_name アクション名 (例: 'ApprovalOnDiscordAction')
+   * @param moduleName アクション名 (例: 'ApprovalOnDiscordAction')
    */
-  async getAction(module_name: string) {
+  async getAction(moduleName: string) {
     const actions = await this.getAvailableActions();
-    return actions[module_name];
+    return actions[moduleName];
   }
 
   /**

@@ -58,19 +58,25 @@ export class ExtractedTweet extends Tweet {
   })
   filtersResult: string[];
 
-  // ツイートのアクション実行状況 (完了したアクションのインデックス番号)
+  // 完了したアクションのインデックス番号
   @Column({
     default: -1,
   })
   completeActionIndex: number;
 
-  // 最後のアクション実行日時
+  // 最後に実行されたアクションのインデックス番号 (保留またはエラーであっても更新される)
+  @Column({
+    default: -1,
+  })
+  lastActionIndex: number;
+
+  // 最後に実行されたアクションの実行日時 (保留またはエラーであっても更新される)
   @Column({
     nullable: true,
   })
   lastActionExecutedAt: Date;
 
-  // 最後のアクション実行結果
+  // 最後に実行されたアクションのエラー (エラーであれば更新される)
   @Column({
     type: 'text',
     nullable: true,

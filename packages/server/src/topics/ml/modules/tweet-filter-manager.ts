@@ -1,17 +1,17 @@
 import * as fs from 'fs';
+import { Repository } from 'typeorm';
+import { TweetFilterHelper } from './tweet-filter-helper';
+import { ModuleStorage } from './module-storage';
+import * as ModuleStorageEntity from '../entities/module-storage.entity';
+import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
+import { TweetFilter } from './tweet-filters/interfaces/tweet-filter.interface';
+import { TweetFilterBatch } from './tweet-filters/interfaces/tweet-filter-batch.interface';
+import { TweetFilterTrain } from './tweet-filters/interfaces/tweet-filter-train.interface';
 import { TweetRetweetsFilter } from './tweet-filters/tweet-retweets-filter';
 import { TweetLikesFilter } from './tweet-filters/tweet-likes-filter';
 import { TweetAuthorProfileLikeFoloweeBayesianFilter } from './tweet-filters/tweet-author-profile-like-folowee-bayesian-filter';
 import { TweetTextBayesianFilter } from './tweet-filters/tweet-text-bayesian-filter';
 import { TfIllustImageClassificationFilter } from './tweet-filters/tf-illust-image-classification-filter';
-import { Repository } from 'typeorm';
-import * as ModuleStorageEntity from '../entities/module-storage.entity';
-import { ModuleHelper } from './module-helper';
-import { ModuleStorage } from './module-storage';
-import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
-import { TweetFilter } from './tweet-filters/interfaces/tweet-filter.interface';
-import { TweetFilterBatch } from './tweet-filters/interfaces/tweet-filter-batch.interface';
-import { TweetFilterTrain } from './tweet-filters/interfaces/tweet-filter-train.interface';
 
 /**
  * ツイートフィルタモジュールを管理するためのクラス
@@ -174,7 +174,7 @@ export class TweetFilterManager {
     });
 
     // ヘルパの初期化
-    const moduleHelper = ModuleHelper.factory(
+    const moduleHelper = TweetFilterHelper.factory(
       filterName,
       moduleStorage,
       filterSetting,

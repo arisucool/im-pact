@@ -4,27 +4,13 @@ import { Repository } from 'typeorm';
 import { ModuleStorage } from './module-storage';
 import * as ModuleStorageEntity from '../entities/module-storage.entity';
 
-export class ModuleHelper {
+export abstract class BaseHelper {
   constructor(
-    private moduleName: string,
-    private moduleStorage: Readonly<ModuleStorage>,
-    private moduleSetting: any,
-    private socialAccount: SocialAccount,
-    private topicKeywords: string[],
+    protected moduleName: string,
+    protected moduleStorage: Readonly<ModuleStorage>,
+    protected moduleSetting: any,
+    protected socialAccount: SocialAccount,
   ) {}
-
-  /**
-   * ファクトリメソッド
-   */
-  static readonly factory = (
-    moduleName: string,
-    moduleStorage: Readonly<ModuleStorage>,
-    moduleSetting: any,
-    socialAccount: SocialAccount,
-    topicKeywords: string[],
-  ): Readonly<ModuleHelper> => {
-    return new ModuleHelper(moduleName, moduleStorage, moduleSetting, socialAccount, topicKeywords);
-  };
 
   /**
    * モジュールストレージの取得
@@ -38,21 +24,6 @@ export class ModuleHelper {
    */
   getSetting(): { [key: string]: any } {
     return this.moduleSetting;
-  }
-
-  /**
-   * トピックのキーワードの取得
-   * (ツイートフィルタの学習にバイアスをかけたい場合などに使用する)
-   */
-  async getTopicKeywords(): Promise<string[]> {
-    const keywords = this.topicKeywords;
-    const keywordStrings = [];
-    for (const keyword of keywords) {
-      if (keyword.match(/"([\S\s]+)"/)) {
-        keywordStrings.push(RegExp.$1);
-      }
-    }
-    return keywordStrings;
   }
 
   /**

@@ -1,9 +1,9 @@
 import { TweetFilter } from '../interfaces/tweet-filter.interface';
 import { Tweet } from 'src/topics/ml/entities/tweet.entity';
-import { ModuleHelper } from '../../module-helper';
+import { TweetFilterHelper } from '../../tweet-filter-helper';
 
 export class TweetLikesFilter implements TweetFilter {
-  constructor(private helper: Readonly<ModuleHelper>) {
+  constructor(private helper: Readonly<TweetFilterHelper>) {
     helper.toString();
   }
 

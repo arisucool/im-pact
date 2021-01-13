@@ -2,7 +2,7 @@ import { TweetFilter } from '../interfaces/tweet-filter.interface';
 import { TweetFilterBatch } from '../interfaces/tweet-filter-batch.interface';
 import { TweetFilterTrain } from '../interfaces/tweet-filter-train.interface';
 import { Tweet } from 'src/topics/ml/entities/tweet.entity';
-import { ModuleHelper } from '../../module-helper';
+import { TweetFilterHelper } from '../../tweet-filter-helper';
 import * as TinySegmenter from 'tiny-segmenter';
 import * as Bayes from 'bayes';
 
@@ -13,7 +13,7 @@ export class TweetAuthorProfileLikeFoloweeBayesianFilter implements TweetFilter,
   // ベイジアンフィルタ
   private bayes: any;
 
-  constructor(private helper: Readonly<ModuleHelper>) {
+  constructor(private helper: Readonly<TweetFilterHelper>) {
     this.segmenter = new TinySegmenter();
     this.bayes = null;
   }

@@ -9,6 +9,7 @@ import { TweetFilterManager } from './modules/tweet-filter-manager';
 import { ModuleStorage } from './entities/module-storage.entity';
 import { MlModel } from './entities/ml-model.entity';
 import { Topic } from '../entities/topic.entity';
+import { ActionManager } from './modules/action-manager';
 
 @Injectable()
 export class MlService {
@@ -20,6 +21,43 @@ export class MlService {
     @InjectRepository(MlModel)
     private mlModelRepository: Repository<MlModel>,
   ) {}
+
+  /**
+   * 利用可能なアクションの取得
+   */
+  async getAvailableActions() {
+    const actionManager = new ActionManager(this.moduleStorageRepository, this.socialAccountRepository, [], []);
+    const actionNames = await actionManager.getAvailableModuleNames();
+
+    let actions = {};
+    for (const actionName of actionNames) {
+      let mod = null;
+      try {
+        mod = await actionManager.getModule(actionName);
+      } catch (e) {
+        console.warn(`[MlService] getAvailableActions - Error = `, e);
+        continue;
+      }
+
+      if (mod === null) {
+        console.warn(`[MlService] getAvailableActions - This module is null... `, actionName);
+        continue;
+      }
+
+      actions[actionName] = {
+        // アクションのバージョン
+        version: '1.0.0', // TODO
+        // アクションの説明
+        description: mod.getDescription(),
+        // アクション設定の定義
+        settings: mod.getSettingsDefinition(),
+        // アクションで提供される機能
+        features: {},
+      };
+    }
+
+    return actions;
+  }
 
   /**
    * 利用可能なツイートフィルタの取得

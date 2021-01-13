@@ -1,6 +1,6 @@
 import { TweetFilter } from '../interfaces/tweet-filter.interface';
 import { Tweet } from 'src/topics/ml/entities/tweet.entity';
-import { ModuleHelper } from '../../module-helper';
+import { TweetFilterHelper } from '../../tweet-filter-helper';
 import * as tf from '@tensorflow/tfjs-node';
 import * as Jimp from 'jimp';
 import * as fs from 'fs';
@@ -16,7 +16,7 @@ export class TfIllustImageClassificationFilter implements TweetFilter {
   // 分類ラベル
   private labels: any[] = [];
 
-  constructor(private helper: Readonly<ModuleHelper>) {
+  constructor(private helper: Readonly<TweetFilterHelper>) {
     this.modelDirPath = `${__dirname}/assets/tfjs-model/`;
   }
 

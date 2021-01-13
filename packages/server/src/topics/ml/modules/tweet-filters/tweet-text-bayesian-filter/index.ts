@@ -1,6 +1,6 @@
 import { TweetFilter } from '../interfaces/tweet-filter.interface';
 import { TweetFilterTrain } from '../interfaces/tweet-filter-train.interface';
-import { ModuleHelper } from '../../module-helper';
+import { TweetFilterHelper } from '../../tweet-filter-helper';
 import { Tweet } from 'src/topics/ml/entities/tweet.entity';
 import * as TinySegmenter from 'tiny-segmenter';
 import * as Bayes from 'bayes';
@@ -12,7 +12,7 @@ export class TweetTextBayesianFilter implements TweetFilter, TweetFilterTrain {
   // ベイジアンフィルタ
   private bayes: any;
 
-  constructor(private helper: Readonly<ModuleHelper>) {
+  constructor(private helper: Readonly<TweetFilterHelper>) {
     this.segmenter = new TinySegmenter();
     this.bayes = null;
   }

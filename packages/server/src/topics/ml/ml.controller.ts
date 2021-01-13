@@ -128,4 +128,22 @@ export class MlController {
   getAvailableTweetFilters() {
     return this.mlService.getAvailableTweetFilters();
   }
+
+  /**
+   * 利用可能なアクションの取得
+   */
+  @Get('availableActions')
+  @HttpCode(200)
+  // ドキュメントの設定
+  @ApiOperation({ summary: '利用可能なアクションの取得' })
+  @ApiOkResponse({
+    type: Object,
+    description: 'アクションの連想配列',
+  })
+  @ApiUnauthorizedResponse({
+    description: '権限のエラー',
+  })
+  getAvailableActions() {
+    return this.mlService.getAvailableActions();
+  }
 }

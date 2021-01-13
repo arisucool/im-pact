@@ -3,11 +3,11 @@ import { ActionHelper } from '../../action-helper';
 import { ExtractedTweet } from 'src/topics/ml/entities/extracted-tweet.entity';
 import axios from 'axios';
 
-export class PostToDiscordAction implements Action {
+export class ApprovalOnDiscordAction implements Action {
   constructor(private helper: Readonly<ActionHelper>) {}
 
   getDescription() {
-    return 'ツイートを Discord へ投稿するアクション';
+    return 'ツイートを Discord へ投稿し、次のアクションへ遷移するか承認を得るアクション';
   }
 
   getSettingsDefinition() {
@@ -23,13 +23,18 @@ export class PostToDiscordAction implements Action {
         title: '投稿本文',
         type: 'textarea',
         rows: 6,
-        placeholder: `例: ツイートを収集しました
-%TWEET_URL%`,
+        placeholder: `例: ツイートを収集しました。承認しますか？
+%TWEET_URL%
+
+承認: %ACCEPT_URL%
+拒否: %REJECT_URL%`,
         templateVariables: {
           TWEET_URL: 'ツイートのURL',
           TWEET_TEXT: 'ツイートの本文',
           TWEET_USER_NAME: 'ツイートのユーザ名　(例: ありす)',
           TWEET_USER_SCREEN_NAME: 'ツイートのユーザ表示名　(例: arisucool)',
+          ACCEPT_URL: '承認用URL',
+          REJECT_URL: '拒否用URL',
         },
       },
     ];
@@ -46,7 +51,9 @@ export class PostToDiscordAction implements Action {
       .replace(/%TWEET_URL%/g, tweet.url)
       .replace(/%TWEET_TEXT%/g, tweet.text)
       .replace(/%TWEET_USER_NAME%/g, tweet.userName)
-      .replace(/%TWEET_USER_SCREEN_NAME%/g, tweet.userScreenName);
+      .replace(/%TWEET_USER_SCREEN_NAME%/g, tweet.userScreenName)
+      .replace(/%ACCEPT_URL%/g, this.helper.getAcceptUrlByTweet(tweet))
+      .replace(/%REJECT_URL%/g, this.helper.getRejectUrlByTweet(tweet));
 
     // 投稿を実行
     const res = await axios.post(
@@ -64,6 +71,7 @@ export class PostToDiscordAction implements Action {
     );
 
     // 完了
-    return true;
+    // (承認用URLまたは拒否用URLにより次のアクションへ遷移するので、ここでは常に保留を返す)
+    return false;
   }
 }

@@ -6,8 +6,10 @@ import { ModuleStorage } from './module-storage';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
 import { ExtractedTweet } from '../entities/extracted-tweet.entity';
 import { Action } from './actions/interfaces/action.interface';
+import { ApprovalOnDiscordAction } from './actions/approval-on-discord-action';
 import { PostToDiscordAction } from './actions/post-to-discord-action';
 import { WaitForSecondsAction } from './actions/wait-for-seconds-action';
+import { Topic } from 'src/topics/entities/topic.entity';
 
 /**
  * アクションモジュールを管理するためのクラス
@@ -64,9 +66,10 @@ export class ActionManager {
   /**
    * 指定されたツイートに対するアクションの実行
    * @param tweet ツイート
+   * @param topic トピック
    * @return アクションが完了したか否か (実行すべきアクションがなければ null)
    */
-  async execActionToTweet(tweet: ExtractedTweet): Promise<boolean | null> {
+  async execActionToTweet(tweet: ExtractedTweet, topic: Topic): Promise<boolean | null> {
     let completeActionIndex = tweet.completeActionIndex;
 
     // 当該ツイートに対して実行すべきアクションを取得
@@ -81,7 +84,7 @@ export class ActionManager {
     const nextAction = this.actionSettings[nextActionIndex];
 
     // アクションを初期化
-    const mod: Action = await this.getModule(nextAction.name, nextActionIndex);
+    const mod: Action = await this.getModule(nextAction.name, nextActionIndex, topic);
     if (mod === null) {
       throw new Error(`[ActionManager] - actionTweet - This action was invalid... ${nextAction.name}`);
     }
@@ -97,8 +100,9 @@ export class ActionManager {
    * 指定されたアクションモジュールの取得
    * @param actionName アクション名
    * @param actionIndex アクションのインデックス番号
+   * @param topic トピック
    */
-  async getModule(actionName: string, actionIndex: number = -1) {
+  async getModule(actionName: string, actionIndex: number = -1, topic: Topic) {
     // ModuleStorage の初期化
     const moduleStorage = ModuleStorage.factory(actionName, this.moduleStorageRepository);
 
@@ -109,16 +113,25 @@ export class ActionManager {
 
     // アクション設定の取得
     let actionSetting = [];
-    if (actionIndex != -1) {
+    if (actionIndex != null) {
       actionSetting = this.actionSettings[actionIndex].settings;
     }
 
     // ヘルパの初期化
-    const moduleHelper = ActionHelper.factory(actionName, moduleStorage, actionSetting, socialAccount, actionIndex);
+    const moduleHelper = ActionHelper.factory(
+      actionName,
+      moduleStorage,
+      actionSetting,
+      socialAccount,
+      topic,
+      actionIndex,
+    );
 
     // モジュールの初期化
     // NOTE: ツイートフィルタと異なり、アクションはツイートごとにモジュールおよびヘルパを初期化する
     switch (actionName) {
+      case 'ApprovalOnDiscordAction':
+        return new ApprovalOnDiscordAction(moduleHelper);
       case 'PostToDiscordAction':
         return new PostToDiscordAction(moduleHelper);
       case 'WaitForSecondsAction':

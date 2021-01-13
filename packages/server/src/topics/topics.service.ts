@@ -4,17 +4,20 @@ import { InjectQueue } from '@nestjs/bull';
 import { Cron } from '@nestjs/schedule';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as cronParser from 'cron-parser';
 import { CreateTopicDto } from './dto/create-topic.dto';
 import { UpdateTopicDto } from './dto/update-topic.dto';
 import { Topic } from './entities/topic.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
-import * as cronParser from 'cron-parser';
+import { ExtractedTweet } from './ml/entities/extracted-tweet.entity';
 
 @Injectable()
 export class TopicsService {
   constructor(
     @InjectRepository(Topic)
     private topicsRepository: Repository<Topic>,
+    @InjectRepository(ExtractedTweet)
+    private extractedTweetRepository: Repository<ExtractedTweet>,
     @InjectQueue('crawler')
     private readonly crawlQueue: Queue,
     @InjectQueue('action')
@@ -43,10 +46,10 @@ export class TopicsService {
   }
 
   /**
-   * 5分毎の定期処理
+   * 10分毎の定期処理
    */
-  @Cron('*/5 * * * *')
-  async onIntervalFiveMinutes() {
+  @Cron('*/10 * * * *')
+  async onIntervalTenMinutes() {
     // 全てのトピックIDを取得
     const topicIds = await this.getTopicIds();
 
@@ -57,7 +60,7 @@ export class TopicsService {
       });
       Logger.debug(
         `Add job to action queue... (Topic ID: ${topicId}, Job ID: ${job.id})`,
-        'TopicsService/onIntervalFiveMinutes',
+        'TopicsService/onIntervalTenMinutes',
       );
     }
   }
@@ -230,5 +233,99 @@ export class TopicsService {
 
     // ジョブIDを返す
     return job.id.toString();
+  }
+
+  /**
+   * 指定されたトピックおよびツイートに対する承諾
+   * @param topicId トピックID
+   * @param extractedTweetId 抽出済みツイートのID
+   * @param token 承諾用URLのトークン
+   */
+  async acceptTweet(topicId: number, extractedTweetId: number, token: string) {
+    // URLトークンを確認
+    if (!token.match(/^t(\d+)-(\d+)-(\d+)$/)) {
+      throw new BadRequestException('Invalid url token');
+    }
+
+    // URLトークンからパラメータを取得
+    const actionIndex = parseInt(RegExp.$1);
+    const tweetIdStr = RegExp.$2;
+    const tweetCrawledAt = RegExp.$3;
+
+    // データベースからツイートを取得
+    const tweet = await this.extractedTweetRepository.findOne(extractedTweetId, {
+      relations: ['topic'],
+    });
+    if (tweet == null) {
+      throw new BadRequestException('Invalid tweet id');
+    }
+
+    // パラメータを照合
+    if (
+      tweet.lastActionIndex != actionIndex ||
+      actionIndex <= tweet.completeActionIndex ||
+      tweet.topic.id != topicId ||
+      tweet.idStr != tweetIdStr ||
+      tweet.crawledAt.getTime().toString() != tweetCrawledAt
+    ) {
+      throw new BadRequestException('Invalid url token');
+    }
+
+    // ツイートを承諾 (次のアクションへ遷移)
+    tweet.completeActionIndex += 1;
+    tweet.save();
+
+    // ツイートを承諾として学習
+    // TODO:
+
+    // レスポンスを返す
+    return tweet;
+  }
+
+  /**
+   * 指定されたトピックおよびツイートに対する拒否
+   * @param topicId トピックID
+   * @param extractedTweetId 抽出済みツイートのID
+   * @param token 拒否用URLのトークン
+   */
+  async rejectTweet(topicId: number, extractedTweetId: number, token: string) {
+    // URLトークンを確認
+    if (!token.match(/^t(\d+)-(\d+)-(\d+)$/)) {
+      throw new BadRequestException('Invalid url token');
+    }
+
+    // URLトークンからパラメータを取得
+    const actionIndex = parseInt(RegExp.$1);
+    const tweetIdStr = RegExp.$2;
+    const tweetCrawledAt = RegExp.$3;
+
+    // データベースからツイートを取得
+    const tweet = await this.extractedTweetRepository.findOne(extractedTweetId, {
+      relations: ['topic'],
+    });
+    if (tweet == null) {
+      throw new BadRequestException('Invalid tweet id');
+    }
+
+    // パラメータを照合
+    if (
+      tweet.lastActionIndex != actionIndex ||
+      actionIndex <= tweet.completeActionIndex ||
+      tweet.topic.id != topicId ||
+      tweet.idStr != tweetIdStr ||
+      tweet.crawledAt.getTime().toString() != tweetCrawledAt
+    ) {
+      throw new BadRequestException('Invalid url token');
+    }
+
+    // ツイートを拒否
+    tweet.predictedClass = 'reject';
+    tweet.save();
+
+    // ツイートを拒否として学習
+    // TODO:
+
+    // レスポンスを返す
+    return tweet;
   }
 }

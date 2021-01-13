@@ -99,7 +99,7 @@ export class ActionConsumer {
         // アクションを実行
         let completeStatus = null;
         try {
-          completeStatus = await actionManager.execActionToTweet(tweet);
+          completeStatus = await actionManager.execActionToTweet(tweet, topic);
         } catch (e) {
           // エラーならば
           Logger.error(`Could not action executed for tweet...${tweet.idStr}`, e.stack, 'ActionConsumer/execActions');

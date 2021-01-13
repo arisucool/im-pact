@@ -33,7 +33,7 @@ export class MlService {
     for (const actionName of actionNames) {
       let mod = null;
       try {
-        mod = await actionManager.getModule(actionName);
+        mod = await actionManager.getModule(actionName, null, null);
       } catch (e) {
         console.warn(`[MlService] getAvailableActions - Error = `, e);
         continue;

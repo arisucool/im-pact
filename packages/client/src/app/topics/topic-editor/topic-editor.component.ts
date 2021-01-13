@@ -390,6 +390,25 @@ export class TopicEditorComponent implements OnInit {
   }
 
   /**
+   * 指定されたアクションの順序を上へ
+   * @param actionIndex アクションのインデックス番号
+   */
+  moveActionToUp(actionIndex: number) {
+    if (actionIndex == 0 || this.topic.actions.length == 0) return;
+
+    this.topic.actions.splice(actionIndex - 1, 2, this.topic.actions[actionIndex], this.topic.actions[actionIndex - 1]);
+  }
+  /**
+   * 指定されたアクションの順序を下へ
+   * @param actionIndex アクションのインデックス番号
+   */
+  moveActionToDown(actionIndex: number) {
+    if (this.topic.actions.length - 1 == actionIndex || this.topic.actions.length == 0) return;
+    actionIndex += 1;
+    this.topic.actions.splice(actionIndex - 1, 2, this.topic.actions[actionIndex], this.topic.actions[actionIndex - 1]);
+  }
+
+  /**
    * 配列のアイテムを ngModel で入力欄へ双方向バインディングしたとき、入力毎にフォーカスが外れる問題の対策
    * @param index
    * @param obj

@@ -124,11 +124,24 @@ section.training-and-validation {
       margin-bottom: 1rem;
     }
 
-    // ツイートフィルタまたはアクションの削除ボタン
-    .delete-btn {
+    // ツイートフィルタ操作領域 ・ アクション操作領域
+    .module-btns {
       position: absolute;
       top: 5px;
       right: 5px;
+
+      // ツイートフィルタまたはアクションの削除ボタン
+      .delete-btn {
+        float: right;
+        margin-right: 0.5rem;
+      }
+
+      // アクションの順序変更ボタン
+      .move-up-btn,
+      .move-down-btn {
+        float: right;
+        margin-right: 0.5rem;
+      }
     }
   }
 }

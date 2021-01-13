@@ -267,17 +267,21 @@
                   適用範囲:&nbsp;{{ availableTweetFilters[moduleSetting.name]?.scope }}
                 </span>
 
-                <!-- ツイートフィルタ削除ボタン -->
-                <button
-                  (click)="deleteTweetFilter(filterIndex)"
-                  type="button"
-                  class="delete-btn"
-                  matTooltip="このツイートフィルタを削除"
-                  mat-icon-button
-                  color="warn"
-                >
-                  <mat-icon>delete</mat-icon>
-                </button>
+                <!-- ツイートフィルタ操作領域 -->
+                <div class="module-btns">
+                  <!-- ツイートフィルタ削除ボタン -->
+                  <button
+                    (click)="deleteTweetFilter(filterIndex)"
+                    type="button"
+                    class="delete-btn"
+                    matTooltip="このツイートフィルタを削除"
+                    mat-icon-button
+                    color="warn"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                  <!---->
+                </div>
                 <!---->
               </div>
               <!---->
@@ -495,27 +499,56 @@
               {{ actionIndex + 1 }}
             </span>
             <!---->
+            <!-- アクション操作領域 -->
+            <div class="module-btns">
+              <!-- アクション削除ボタン -->
+              <button
+                (click)="deleteAction(actionIndex)"
+                type="button"
+                class="delete-btn"
+                matTooltip="このアクションを削除"
+                mat-icon-button
+                color="warn"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+              <!---->
+              <!-- アクションの順序変更ボタン -->
+              <button
+                (click)="moveActionToDown(actionIndex)"
+                type="button"
+                class="move-down-btn"
+                matTooltip="このアクションを一つ下へ"
+                mat-icon-button
+                [disabled]="actionIndex == topic.actions.length - 1"
+              >
+                <mat-icon>arrow_downward</mat-icon>
+              </button>
+              <button
+                (click)="moveActionToUp(actionIndex)"
+                type="button"
+                class="move-up-btn"
+                matTooltip="このアクションを一つ上へ"
+                mat-icon-button
+                [disabled]="actionIndex == 0"
+              >
+                <mat-icon>arrow_upward</mat-icon>
+              </button>
+              <!---->
+            </div>
+            <!---->
+            <!-- アクション名 -->
             <h4>{{ moduleSetting.name }}</h4>
+            <!---->
+            <!-- アクション説明文 -->
             <span class="description">{{ availableActions[moduleSetting.name]?.description }}</span>
-
-            <!-- アクション削除ボタン -->
-            <button
-              (click)="deleteAction(actionIndex)"
-              type="button"
-              class="delete-btn"
-              matTooltip="このアクションを削除"
-              mat-icon-button
-              color="warn"
-            >
-              <mat-icon>delete</mat-icon>
-            </button>
             <!---->
           </div>
           <!---->
           <!-- エラー (モジュールが存在しない場合) -->
           <p style="margin: -1rem 0 1rem 0;" *ngIf="!availableActions[moduleSetting.name]">
             <span style="font-size: 0.8rem;"
-              >このツイートフィルタは、インストールされていないか、致命的なエラーが発生しているため、無効化されています</span
+              >このアクションは、インストールされていないか、致命的なエラーが発生しているため、無効化されています</span
             >
           </p>
           <!-- 設定項目領域 -->

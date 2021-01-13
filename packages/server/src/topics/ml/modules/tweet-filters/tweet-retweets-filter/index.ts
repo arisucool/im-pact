@@ -1,6 +1,6 @@
-import { CrawledTweet } from '../../entities/crawled-tweet.entity';
+import { CrawledTweet } from '../../../entities/crawled-tweet.entity';
 import { TweetFilter } from '../interfaces/tweet-filter.interface';
-import { ModuleHelper } from '../module-helper';
+import { ModuleHelper } from '../../module-helper';
 
 export class TweetRetweetsFilter implements TweetFilter {
   constructor(private helper: Readonly<ModuleHelper>) {}

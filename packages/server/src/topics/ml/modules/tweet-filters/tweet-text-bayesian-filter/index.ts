@@ -1,8 +1,8 @@
-import { CrawledTweet } from '../../entities/crawled-tweet.entity';
+import { CrawledTweet } from '../../../entities/crawled-tweet.entity';
 import { TweetFilter } from '../interfaces/tweet-filter.interface';
 import * as TinySegmenter from 'tiny-segmenter';
 import * as Bayes from 'bayes';
-import { ModuleHelper } from '../module-helper';
+import { ModuleHelper } from '../../module-helper';
 
 export class TweetTextBayesianFilter implements TweetFilter {
   // 形態素解析器
@@ -93,7 +93,16 @@ export class TweetTextBayesianFilter implements TweetFilter {
     await this.initBayes();
     // ベイジアンフィルタでツイートの本文を学習
     const label = isSelected ? 'accept' : 'reject';
-    await this.bayes.learn(tweet.text, label);
+    if (isSelected) {
+      // 対象ツイートならば、何回も学習させておく
+      // (本システムの特性上、対象・非対象でデータセットの偏りが大きいことが想定されるため)
+      for (let i = 0; i < 4; i++) {
+        await this.bayes.learn(tweet.text, label);
+      }
+    } else {
+      // 非対象ツイートならば
+      await this.bayes.learn(tweet.text, label);
+    }
     // ベイジアンフィルタを保存
     this.helper.getStorage().set('storedClassifier', this.bayes.toJson());
   }

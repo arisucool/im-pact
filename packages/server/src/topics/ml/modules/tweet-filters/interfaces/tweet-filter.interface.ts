@@ -1,4 +1,4 @@
-import { CrawledTweet } from '../../entities/crawled-tweet.entity';
+import { CrawledTweet } from '../../../entities/crawled-tweet.entity';
 import { TweetFilterSettingsDefinitionItem } from './settings-definition-item';
 
 /**

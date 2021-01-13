@@ -1,8 +1,8 @@
-import { CrawledTweet } from '../../entities/crawled-tweet.entity';
+import { CrawledTweet } from '../../../entities/crawled-tweet.entity';
 import { TweetFilter } from '../interfaces/tweet-filter.interface';
 import * as TinySegmenter from 'tiny-segmenter';
 import * as Bayes from 'bayes';
-import { ModuleHelper } from '../module-helper';
+import { ModuleHelper } from '../../module-helper';
 
 export class TweetAuthorProfileLikeFoloweeBayesianFilter implements TweetFilter {
   // 形態素解析器

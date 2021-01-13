@@ -1,9 +1,9 @@
 import * as fs from 'fs';
-import { TweetRetweetsFilter } from './tweet-retweets-filter';
-import { TweetLikesFilter } from './tweet-likes-filter';
-import { TweetAuthorProfileLikeFoloweeBayesianFilter } from './tweet-author-profile-like-folowee-bayesian-filter';
-import { TweetTextBayesianFilter } from './tweet-text-bayesian-filter';
-import { TfIllustImageClassificationFilter } from './tf-illust-image-classification-filter';
+import { TweetRetweetsFilter } from './tweet-filters/tweet-retweets-filter';
+import { TweetLikesFilter } from './tweet-filters/tweet-likes-filter';
+import { TweetAuthorProfileLikeFoloweeBayesianFilter } from './tweet-filters/tweet-author-profile-like-folowee-bayesian-filter';
+import { TweetTextBayesianFilter } from './tweet-filters/tweet-text-bayesian-filter';
+import { TfIllustImageClassificationFilter } from './tweet-filters/tf-illust-image-classification-filter';
 import { Repository } from 'typeorm';
 import * as ModuleStorageEntity from '../entities/module-storage.entity';
 import { ModuleHelper } from './module-helper';

@@ -5,7 +5,7 @@ import { SocialAccount } from '../../social-accounts/entities/social-account.ent
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TrainAndValidateDto } from './dto/train-and-validate.dto';
-import { TweetFilterManager } from './tweet-filters/tweet-filter-manager';
+import { TweetFilterManager } from './modules/tweet-filter-manager';
 import { ModuleStorage } from './entities/module-storage.entity';
 import { MlModel } from './entities/ml-model.entity';
 import { Topic } from '../entities/topic.entity';

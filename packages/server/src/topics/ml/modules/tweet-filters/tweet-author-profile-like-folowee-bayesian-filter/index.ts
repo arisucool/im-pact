@@ -1,10 +1,12 @@
-import { CrawledTweet } from '../../../entities/crawled-tweet.entity';
 import { TweetFilter } from '../interfaces/tweet-filter.interface';
+import { TweetFilterBatch } from '../interfaces/tweet-filter-batch.interface';
+import { TweetFilterTrain } from '../interfaces/tweet-filter-train.interface';
+import { Tweet } from 'src/topics/ml/entities/tweet.entity';
+import { ModuleHelper } from '../../module-helper';
 import * as TinySegmenter from 'tiny-segmenter';
 import * as Bayes from 'bayes';
-import { ModuleHelper } from '../../module-helper';
 
-export class TweetAuthorProfileLikeFoloweeBayesianFilter implements TweetFilter {
+export class TweetAuthorProfileLikeFoloweeBayesianFilter implements TweetFilter, TweetFilterBatch, TweetFilterTrain {
   // 形態素解析器
   private segmenter: any;
 
@@ -28,7 +30,7 @@ export class TweetAuthorProfileLikeFoloweeBayesianFilter implements TweetFilter 
     return [];
   }
 
-  async filter(tweet: CrawledTweet): Promise<number> {
+  async filter(tweet: Tweet): Promise<number> {
     // ベイジアンフィルタを初期化
     await this.initBayes();
     // ツイートした人のプロフィールからベイジアンフィルタでカテゴリを予測
@@ -40,7 +42,7 @@ export class TweetAuthorProfileLikeFoloweeBayesianFilter implements TweetFilter 
     return 1;
   }
 
-  async train(tweet: CrawledTweet, isSelected: boolean) {
+  async train(tweet: Tweet, isSelected: boolean) {
     // ベイジアンフィルタを初期化
     await this.initBayes();
     // ツイートした人のプロフィールをベイジアンフィルタで学習

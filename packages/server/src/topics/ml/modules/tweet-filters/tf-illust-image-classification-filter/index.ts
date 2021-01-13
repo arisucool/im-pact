@@ -1,7 +1,6 @@
-import { CrawledTweet } from '../../../entities/crawled-tweet.entity';
 import { TweetFilter } from '../interfaces/tweet-filter.interface';
+import { Tweet } from 'src/topics/ml/entities/tweet.entity';
 import { ModuleHelper } from '../../module-helper';
-
 import * as tf from '@tensorflow/tfjs-node';
 import * as Jimp from 'jimp';
 import * as fs from 'fs';
@@ -68,7 +67,7 @@ export class TfIllustImageClassificationFilter implements TweetFilter {
     this.labels = require(labelsFilePath).labels;
   }
 
-  async filter(tweet: CrawledTweet): Promise<number> {
+  async filter(tweet: Tweet): Promise<number> {
     // 機械学習モデルを読み込む
     await this.initialize();
 

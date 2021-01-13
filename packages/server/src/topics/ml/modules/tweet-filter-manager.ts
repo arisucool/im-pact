@@ -9,7 +9,13 @@ import * as ModuleStorageEntity from '../entities/module-storage.entity';
 import { ModuleHelper } from './module-helper';
 import { ModuleStorage } from './module-storage';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
+import { TweetFilter } from './tweet-filters/interfaces/tweet-filter.interface';
+import { TweetFilterBatch } from './tweet-filters/interfaces/tweet-filter-batch.interface';
+import { TweetFilterTrain } from './tweet-filters/interfaces/tweet-filter-train.interface';
 
+/**
+ * ツイートフィルタモジュールを管理するためのクラス
+ */
 export class TweetFilterManager {
   private modules: any[] = [];
 
@@ -32,15 +38,14 @@ export class TweetFilterManager {
   /**
    * 利用可能なモジュール名の取得
    */
-
   async getAvailableModuleNames(): Promise<string[]> {
     // ツイートフィルタのモジュールディレクトリからディレクトリを列挙
     let moduleDirNames: string[] = await new Promise((resolve, reject) => {
-      fs.readdir(`${__dirname}/`, (err, files) => {
+      fs.readdir(`${__dirname}/tweet-filters/`, (err, files) => {
         let directories: string[] = [];
         files
           .filter(filePath => {
-            return !fs.statSync(`${__dirname}/${filePath}`).isFile();
+            return !fs.statSync(`${__dirname}/tweet-filters/${filePath}`).isFile();
           })
           .filter(filePath => {
             return filePath !== 'interfaces';
@@ -64,11 +69,16 @@ export class TweetFilterManager {
     return moduleDirNames;
   }
 
-  async trainTweet(tweet: any, isSelected: boolean) {
+  /**
+   * 指定されたツイートに対する学習の実行
+   * @param tweet ツイート
+   * @param isSelected ツイートが選択されたか否か
+   */
+  async trainTweet(tweet: any, isSelected: boolean): Promise<void> {
     // フィルタ設定を反復
     for (const filter of this.filterSettings) {
       // ツイートフィルタを初期化
-      const mod = await this.getModule(filter.name);
+      const mod = (await this.getModule(filter.name)) as TweetFilterTrain;
       if (mod === null) {
         console.log(`[TweetFilters] - trainTweet - This filter was invalid... ${filter.name}`);
         continue;
@@ -90,11 +100,14 @@ export class TweetFilterManager {
     }
   }
 
-  async batch() {
+  /**
+   * 全てのツイートフィルタに対するバッチ処理の実行
+   */
+  async batch(): Promise<void> {
     // フィルタ設定を反復
     for (const filter of this.filterSettings) {
       // ツイートフィルタを初期化
-      const mod = await this.getModule(filter.name);
+      const mod = (await this.getModule(filter.name)) as TweetFilterBatch;
       if (mod === null) {
         console.log(`[TweetFilters] - batchByFilterSettings - This filter was invalid... ${filter.name}`);
         continue;
@@ -110,14 +123,19 @@ export class TweetFilterManager {
     }
   }
 
-  async filterTweet(tweet: any) {
+  /**
+   * 指定されたツイートに対するフィルタの実行
+   * @param tweet ツイート
+   * @return ツイートフィルタの実行結果
+   */
+  async filterTweet(tweet: any): Promise<number[]> {
     // 当該ツイートに対する全フィルタの適用結果を代入するための配列
     let allFiltersResults = [];
 
     // フィルタ設定を反復
     for (const filter of this.filterSettings) {
       // ツイートフィルタを初期化
-      const mod = await this.getModule(filter.name);
+      const mod: TweetFilter = await this.getModule(filter.name);
       if (mod === null) {
         console.log(`[TweetFilters] - filterTweetByFilterSettings - This filter was invalid... ${filter.name}`);
         continue;
@@ -134,7 +152,11 @@ export class TweetFilterManager {
     return allFiltersResults;
   }
 
-  async getModule(filterName: string) {
+  /**
+   * 指定されたツイートフィルタモジュールの取得
+   * @param filterName ツイートフィルタ名
+   */
+  async getModule(filterName: string): Promise<TweetFilter | TweetFilterBatch | TweetFilterTrain> {
     if (this.modules[filterName]) return this.modules[filterName];
 
     // ModuleStorage の初期化

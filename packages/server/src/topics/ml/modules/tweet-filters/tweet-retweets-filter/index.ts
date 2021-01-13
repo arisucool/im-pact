@@ -1,5 +1,5 @@
-import { CrawledTweet } from '../../../entities/crawled-tweet.entity';
 import { TweetFilter } from '../interfaces/tweet-filter.interface';
+import { Tweet } from 'src/topics/ml/entities/tweet.entity';
 import { ModuleHelper } from '../../module-helper';
 
 export class TweetRetweetsFilter implements TweetFilter {
@@ -17,7 +17,7 @@ export class TweetRetweetsFilter implements TweetFilter {
     return [];
   }
 
-  async filter(tweet: CrawledTweet): Promise<number> {
+  async filter(tweet: Tweet): Promise<number> {
     return tweet.crawledRetweetCount;
   }
 }

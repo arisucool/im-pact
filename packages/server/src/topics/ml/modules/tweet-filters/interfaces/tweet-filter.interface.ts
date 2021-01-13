@@ -1,12 +1,12 @@
-import { CrawledTweet } from '../../../entities/crawled-tweet.entity';
-import { TweetFilterSettingsDefinitionItem } from './settings-definition-item';
+import { TweetFilterSettingsDefinitionItem } from './tweet-filter-settings-definition-item.interface';
+import { Tweet } from 'src/topics/ml/entities/tweet.entity';
 
 /**
- * ツイートフィルタを実装するためのインタフェース
+ * ツイートフィルタモジュールを実装するためのインタフェース
  */
 export interface TweetFilter {
   getDescription(): string;
   getScope(): string;
   getSettingsDefinition(): Promise<TweetFilterSettingsDefinitionItem[]> | TweetFilterSettingsDefinitionItem[];
-  filter(tweet: CrawledTweet): Promise<number> | number;
+  filter(tweet: Tweet): Promise<number>;
 }

@@ -577,6 +577,28 @@
                   placeholder="{{ settingItem.placeholder }}"
                   [(ngModel)]="moduleSetting.settings[settingItem.name]"
                 />
+                <!-- テンプレート変数挿入ボタン -->
+                <button
+                  *ngIf="settingItem.templateVariables"
+                  (click)="deleteKeyword()"
+                  type="button"
+                  matTooltip="クリックすると、テンプレート変数を挿入できます"
+                  mat-icon-button
+                  matSuffix
+                  [matMenuTriggerFor]="templateVariablesMenu"
+                >
+                  <mat-icon>smart_button</mat-icon>
+                </button>
+                <mat-menu #templateVariablesMenu="matMenu">
+                  <button
+                    (click)="insertTemplateVariableToActionSettingField(variable.key, actionIndex, settingItem.name)"
+                    mat-menu-item
+                    *ngFor="let variable of settingItem.templateVariables | keyvalue"
+                  >
+                    {{ variable.value }}
+                  </button>
+                </mat-menu>
+                <!---->
               </mat-form-field>
               <!---->
               <!-- テキストエリア入力欄 -->
@@ -589,6 +611,28 @@
                   rows="{{ settingItem.rows }}"
                   [(ngModel)]="moduleSetting.settings[settingItem.name]"
                 ></textarea>
+                <!--テンプレート変数挿入ボタン -->
+                <button
+                  *ngIf="settingItem.templateVariables"
+                  (click)="deleteKeyword()"
+                  type="button"
+                  matTooltip="クリックすると、テンプレート変数を挿入できます"
+                  mat-icon-button
+                  matSuffix
+                  [matMenuTriggerFor]="templateVariablesMenu"
+                >
+                  <mat-icon>smart_button</mat-icon>
+                </button>
+                <mat-menu #templateVariablesMenu="matMenu">
+                  <button
+                    (click)="insertTemplateVariableToActionSettingField(variable.key, actionIndex, settingItem.name)"
+                    mat-menu-item
+                    *ngFor="let variable of settingItem.templateVariables | keyvalue"
+                  >
+                    {{ variable.value }}
+                  </button>
+                </mat-menu>
+                <!---->
               </mat-form-field>
               <!---->
             </p>

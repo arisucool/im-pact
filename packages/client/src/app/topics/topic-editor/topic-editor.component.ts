@@ -409,6 +409,19 @@ export class TopicEditorComponent implements OnInit {
   }
 
   /**
+   * 指定されたアクション設定項目に対するテンプレート変数の追加
+   * @param templateVariable テンプレート変数
+   * @param actionIndex アクションのインデックス番号
+   * @param settingItemName アクションの設定項目名
+   */
+  insertTemplateVariableToActionSettingField(templateVariable: string, actionIndex: string, settingItemName: string) {
+    if (!this.topic.actions[actionIndex].settings[settingItemName]) {
+      this.topic.actions[actionIndex].settings[settingItemName] = '';
+    }
+    this.topic.actions[actionIndex].settings[settingItemName] += `%${templateVariable}%`;
+  }
+
+  /**
    * 配列のアイテムを ngModel で入力欄へ双方向バインディングしたとき、入力毎にフォーカスが外れる問題の対策
    * @param index
    * @param obj

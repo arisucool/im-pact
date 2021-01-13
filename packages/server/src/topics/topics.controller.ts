@@ -116,6 +116,26 @@ export class TopicsController {
     description: '権限のエラー',
   })
   crawl(@Param('id') id: number) {
-    return this.topicsService.addCrawlerQueue(id);
+    return this.topicsService.addJobToCrawlerQueue(id);
+  }
+
+  /**
+   * 指定されたトピックにおけるアクションの実行
+   * @param id トピックID
+   */
+  @Post(':id/execActions')
+  @HttpCode(200)
+  // ドキュメントの設定
+  @ApiOperation({ summary: '指定されたトピックにおけるアクションの実行' })
+  @ApiOkResponse({
+    type: ExtractedTweet,
+    description: 'ログ',
+    isArray: true,
+  })
+  @ApiUnauthorizedResponse({
+    description: '権限のエラー',
+  })
+  execActions(@Param('id') id: number) {
+    return this.topicsService.addJobToActionQueue(id);
   }
 }

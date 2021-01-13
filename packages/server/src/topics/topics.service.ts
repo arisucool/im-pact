@@ -17,24 +17,68 @@ export class TopicsService {
     private topicsRepository: Repository<Topic>,
     @InjectQueue('crawler')
     private readonly crawlQueue: Queue,
+    @InjectQueue('action')
+    private readonly actionQueue: Queue,
   ) {}
 
   /**
    * 毎分毎の定期処理
    */
   @Cron('* * * * *')
-  async onInternal() {
+  async onIntervalMinutes() {
     // このタイミングで収集を実行すべきトピックIDを取得
-    const topicIds = await this.getTopicIdsToBeCrawledOnNow();
-    if (topicIds.length === 0) return;
+    const crawlTopicIds = await this.getTopicIdsToBeCrawledOnNow();
+    if (crawlTopicIds.length === 0) return;
 
     // 各トピックの収集ジョブをキューへ追加
-    for (const topicId of topicIds) {
+    for (const topicId of crawlTopicIds) {
       const job = await this.crawlQueue.add({
         topicId: topicId,
       });
-      Logger.debug(`Add job to crawler queue... (Topic ID: ${topicId}, Job ID: ${job.id})`, 'AppService/onInterval');
+      Logger.debug(
+        `Add job to crawler queue... (Topic ID: ${topicId}, Job ID: ${job.id})`,
+        'TopicsService/onIntervalMinutes',
+      );
     }
+  }
+
+  /**
+   * 5分毎の定期処理
+   */
+  @Cron('*/5 * * * *')
+  async onIntervalFiveMinutes() {
+    // 全てのトピックIDを取得
+    const topicIds = await this.getTopicIds();
+
+    // 各トピックのアクション実行ジョブをキューへ追加
+    for (const topicId of topicIds) {
+      const job = await this.actionQueue.add({
+        topicId: topicId,
+      });
+      Logger.debug(
+        `Add job to action queue... (Topic ID: ${topicId}, Job ID: ${job.id})`,
+        'TopicsService/onIntervalFiveMinutes',
+      );
+    }
+  }
+
+  /**
+   * 全てのトピックIDの取得
+   */
+  protected async getTopicIds(): Promise<number[]> {
+    // トピックIDを代入する配列を初期化
+    const topicIds: number[] = [];
+
+    // トピックを反復
+    const topics = await this.topicsRepository.find({
+      select: ['id'],
+    });
+    for (const topic of topics) {
+      topicIds.push(topic.id);
+    }
+
+    // トピックIDの配列を返す
+    return topicIds;
   }
 
   /**
@@ -162,10 +206,25 @@ export class TopicsService {
    * 指定されたトピックにおけるツイートの収集 (キューに対するジョブ追加)
    * @param id トピックID
    */
-  async addCrawlerQueue(id: number): Promise<string> {
+  async addJobToCrawlerQueue(id: number): Promise<string> {
     // crawler キューへジョブを追加
     // (crawler.consumer.ts にて順次処理される)
     const job = await this.crawlQueue.add({
+      topicId: id,
+    });
+
+    // ジョブIDを返す
+    return job.id.toString();
+  }
+
+  /**
+   * 指定されたトピックにおけるアクションの実行 (キューに対するジョブ追加)
+   * @param id トピックID
+   */
+  async addJobToActionQueue(id: number): Promise<string> {
+    // action キューへジョブを追加
+    // (action.consumer.ts にて順次処理される)
+    const job = await this.actionQueue.add({
       topicId: id,
     });
 

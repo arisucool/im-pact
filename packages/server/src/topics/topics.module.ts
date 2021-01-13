@@ -13,6 +13,7 @@ import { ExtractedTweet } from './ml/entities/extracted-tweet.entity';
 import { ModuleStorage } from './ml/entities/module-storage.entity';
 import { TwitterCrawlerService } from './ml/twitter-crawler.service';
 import { MlModel } from './ml/entities/ml-model.entity';
+import { ActionConsumer } from './ml/action.consumer';
 import { CrawlerConsumer } from './ml/crawler.consumer';
 import { TrainerConsumer } from './ml/trainer.consumer';
 
@@ -22,13 +23,16 @@ import { TrainerConsumer } from './ml/trainer.consumer';
     SocialAccountsModule,
     // キューを登録
     BullModule.registerQueue({
-      name: 'crawler',
+      name: 'action', // action.consumer.ts にて処理される
     }),
     BullModule.registerQueue({
-      name: 'trainer',
+      name: 'crawler', // crawler.consumer.ts にて処理される
+    }),
+    BullModule.registerQueue({
+      name: 'trainer', // trainer.consumer.ts にて処理される
     }),
   ],
   controllers: [TopicsController, MlController],
-  providers: [MlService, TopicsService, TwitterCrawlerService, CrawlerConsumer, TrainerConsumer],
+  providers: [MlService, TopicsService, TwitterCrawlerService, ActionConsumer, CrawlerConsumer, TrainerConsumer],
 })
 export class TopicsModule {}

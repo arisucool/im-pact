@@ -118,6 +118,12 @@ export class ActionManager {
 
     // モジュールの初期化
     // NOTE: ツイートフィルタと異なり、アクションはツイートごとにモジュールおよびヘルパを初期化する
+    switch (actionName) {
+      case 'PostToDiscordAction':
+        return new PostToDiscordAction(moduleHelper);
+      case 'WaitForSecondsAction':
+        return new WaitForSecondsAction(moduleHelper);
+    }
 
     return null;
   }

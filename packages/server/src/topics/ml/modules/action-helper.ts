@@ -44,7 +44,7 @@ export class ActionHelper extends BaseHelper {
    * ツイートを受理して次のアクションへ遷移するためのURLの取得
    */
   getAcceptUrlByTweet(tweet: ExtractedTweet): string {
-    return `/api/topics/${this.topic.id}/tweets/${tweet.id}/accept?token=t${this.getOwnActionIndex()}-${
+    return `${process.env.BASE_URL}/api/topics/${this.topic.id}/tweets/${tweet.id}/accept?token=t${this.getOwnActionIndex()}-${
       tweet.idStr
     }-${tweet.crawledAt.getTime()}`;
   }
@@ -53,7 +53,7 @@ export class ActionHelper extends BaseHelper {
    * ツイートを拒否して以降のアクションをキャンセルするためのURLの取得
    */
   getRejectUrlByTweet(tweet: ExtractedTweet): string {
-    return `/api/topics/${this.topic.id}/tweets/${tweet.id}/reject?token=t${this.getOwnActionIndex()}-${
+    return `${process.env.BASE_URL}/api/topics/${this.topic.id}/tweets/${tweet.id}/reject?token=t${this.getOwnActionIndex()}-${
       tweet.idStr
     }-${tweet.crawledAt.getTime()}`;
   }

@@ -3,6 +3,10 @@
     "description": "\"im pact\" is Twitter crawler and bot for Producers and Everyone.",
     "repository": "https://github.com/arisucool/im-pact",
     "env": {
+        "BASE_URL": {
+            "description": "Your application URL (e.g. 'https://****.herokuapp.com'). **** is the same with the 'App name'.",
+            "required": true
+        },
         "NPM_CONFIG_PRODUCTION": {
             "description": "We recommend that you set this value to \"true\" for faster builds.",
             "value": "true"

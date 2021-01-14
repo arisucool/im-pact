@@ -254,17 +254,19 @@ export class TopicsService {
 
     // データベースからツイートを取得
     const tweet = await this.extractedTweetRepository.findOne(extractedTweetId, {
-      relations: ['topic'],
+      loadRelationIds: true
     });
     if (tweet == null) {
       throw new BadRequestException('Invalid tweet id');
     }
 
+    const tweetTopicId = tweet.topic as unknown as number;
+
     // パラメータを照合
     if (
       tweet.lastActionIndex != actionIndex ||
       actionIndex <= tweet.completeActionIndex ||
-      tweet.topic.id != topicId ||
+      tweetTopicId != topicId ||
       tweet.idStr != tweetIdStr ||
       tweet.crawledAt.getTime().toString() != tweetCrawledAt
     ) {
@@ -301,19 +303,22 @@ export class TopicsService {
 
     // データベースからツイートを取得
     const tweet = await this.extractedTweetRepository.findOne(extractedTweetId, {
-      relations: ['topic'],
+      loadRelationIds: true
     });
     if (tweet == null) {
       throw new BadRequestException('Invalid tweet id');
     }
 
+    const tweetTopicId = tweet.topic as unknown as number;
+
     // パラメータを照合
     if (
       tweet.lastActionIndex != actionIndex ||
       actionIndex <= tweet.completeActionIndex ||
-      tweet.topic.id != topicId ||
+      tweetTopicId != topicId ||
       tweet.idStr != tweetIdStr ||
-      tweet.crawledAt.getTime().toString() != tweetCrawledAt
+      tweet.crawledAt.getTime().toString() != tweetCrawledAt ||
+      tweet.predictedClass == 'reject'
     ) {
       throw new BadRequestException('Invalid url token');
     }

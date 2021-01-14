@@ -59,7 +59,7 @@ export class ActionConsumer {
     }
 
     // 対象ツイートを取得
-    const tweets = await this.getActionUncompletedTweets(topic, 2);
+    const tweets = await this.getActionUncompletedTweets(topic, 5); // TODO: ひとまず5件だけに絞る
     Logger.debug(
       `Found action uncompleted tweets for Topic ${topicId}... ${tweets.length} tweets`,
       'ActionConsumer/execActions',
@@ -114,12 +114,6 @@ export class ActionConsumer {
           break;
         }
 
-        // データベースを更新
-        tweet.lastActionError = null;
-        tweet.lastActionExecutedAt = new Date();
-        tweet.lastActionIndex = completeActionIndex + 1;
-        tweet.save();
-
         // 実行結果を確認
         if (completeStatus === null) {
           // 実行すべきアクションが残っていなかったならば、次のツイートへ
@@ -128,7 +122,16 @@ export class ActionConsumer {
             'ActionConsumer/execActions',
           );
           break;
-        } else if (!completeStatus) {
+        }
+
+        // データベースを更新
+        tweet.lastActionError = null;
+        tweet.lastActionExecutedAt = new Date();
+        tweet.lastActionIndex = completeActionIndex + 1;
+        tweet.save();
+
+        // 実行結果を確認
+        if (!completeStatus) {
           // 保留 (承認系アクションなどで未承認の場合など) ならば、次のツイートへ
           Logger.debug(
             `Action for tweet was successful, but not completed...${tweet.idStr} (lastActionIndex = ${tweet.lastActionIndex}, completeActionIndex = ${completeActionIndex})`,
@@ -170,7 +173,7 @@ export class ActionConsumer {
         topic: topic,
         completeActionIndex: LessThan(numOfActions - 1),
         predictedClass: 'accept',
-        lastActionExecutedAt: IsNull()
+        lastActionExecutedAt: IsNull(),
       },
       order: {
         extractedAt: 'ASC',
@@ -179,19 +182,20 @@ export class ActionConsumer {
     });
 
     // データベースからツイートを取得 (一つでもアクション実行済のツイート)
-    tweets = tweets.concat(await this.extractedTweetRepository.find({
-      where: {
-        topic: topic,
-        completeActionIndex: LessThan(numOfActions - 1),
-        predictedClass: 'accept',
-        lastActionExecutedAt: Not(IsNull())
-      },
-      order: {
-        extractedAt: 'ASC',
-        lastActionExecutedAt: 'ASC'
-      },
-      take: numOfTweets,
-    }));
+    tweets = tweets.concat(
+      await this.extractedTweetRepository.find({
+        where: {
+          topic: topic,
+          completeActionIndex: LessThan(numOfActions - 1),
+          predictedClass: 'accept',
+          lastActionExecutedAt: Not(IsNull()),
+        },
+        order: {
+          lastActionExecutedAt: 'ASC',
+        },
+        take: numOfTweets,
+      }),
+    );
 
     // 重複を除去
     tweets = tweets.filter((item, i, self) => {
@@ -206,7 +210,6 @@ export class ActionConsumer {
     if (numOfTweets < tweets.length) {
       tweets = tweets.slice(0, numOfTweets);
     }
-
 
     // ツイートを返す
     return tweets;

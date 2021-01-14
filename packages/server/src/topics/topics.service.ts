@@ -10,16 +10,23 @@ import { UpdateTopicDto } from './dto/update-topic.dto';
 import { Topic } from './entities/topic.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
 import { ExtractedTweet } from './ml/entities/extracted-tweet.entity';
+import { TrainAndValidateDto } from './ml/dto/train-and-validate.dto';
+import { CrawledTweet } from './ml/entities/crawled-tweet.entity';
+import { ReTrainDto } from './ml/dto/retrain.dto';
 
 @Injectable()
 export class TopicsService {
   constructor(
     @InjectRepository(Topic)
     private topicsRepository: Repository<Topic>,
+    @InjectRepository(CrawledTweet)
+    private crawledTweetRepository: Repository<CrawledTweet>,
     @InjectRepository(ExtractedTweet)
     private extractedTweetRepository: Repository<ExtractedTweet>,
     @InjectQueue('crawler')
     private readonly crawlQueue: Queue,
+    @InjectQueue('trainer')
+    private readonly trainerQueue: Queue,
     @InjectQueue('action')
     private readonly actionQueue: Queue,
   ) {}
@@ -46,9 +53,9 @@ export class TopicsService {
   }
 
   /**
-   * 10分毎の定期処理
+   * 15分毎の定期処理
    */
-  @Cron('*/10 * * * *')
+  @Cron('*/15 * * * *') // TODO:
   async onIntervalTenMinutes() {
     // 全てのトピックIDを取得
     const topicIds = await this.getTopicIds();
@@ -236,10 +243,10 @@ export class TopicsService {
   }
 
   /**
-   * 指定されたトピックおよびツイートに対する承諾
+   * 指定されたトピックおよびツイートに対する承認
    * @param topicId トピックID
    * @param extractedTweetId 抽出済みツイートのID
-   * @param token 承諾用URLのトークン
+   * @param token 承認用URLのトークン
    */
   async acceptTweet(topicId: number, extractedTweetId: number, token: string) {
     // URLトークンを確認
@@ -254,13 +261,13 @@ export class TopicsService {
 
     // データベースからツイートを取得
     const tweet = await this.extractedTweetRepository.findOne(extractedTweetId, {
-      loadRelationIds: true
+      loadRelationIds: true,
     });
     if (tweet == null) {
       throw new BadRequestException('Invalid tweet id');
     }
 
-    const tweetTopicId = tweet.topic as unknown as number;
+    const tweetTopicId = (tweet.topic as unknown) as number;
 
     // パラメータを照合
     if (
@@ -273,15 +280,19 @@ export class TopicsService {
       throw new BadRequestException('Invalid url token');
     }
 
-    // ツイートを承諾 (次のアクションへ遷移)
+    // ツイートの分類を承認へ (次のアクションへ遷移)
+    tweet.predictedClass = 'accept';
     tweet.completeActionIndex += 1;
-    tweet.save();
+    await tweet.save();
 
-    // ツイートを承諾として学習
-    // TODO:
+    // ツイートを用いて再トレーニング
+    const jobId = await this.retrainWithTweet(tweetTopicId, tweet);
 
     // レスポンスを返す
-    return tweet;
+    return {
+      retrainJobId: jobId,
+      acceptedTweet: tweet,
+    };
   }
 
   /**
@@ -303,13 +314,13 @@ export class TopicsService {
 
     // データベースからツイートを取得
     const tweet = await this.extractedTweetRepository.findOne(extractedTweetId, {
-      loadRelationIds: true
+      loadRelationIds: true,
     });
     if (tweet == null) {
       throw new BadRequestException('Invalid tweet id');
     }
 
-    const tweetTopicId = tweet.topic as unknown as number;
+    const tweetTopicId = (tweet.topic as unknown) as number;
 
     // パラメータを照合
     if (
@@ -323,14 +334,39 @@ export class TopicsService {
       throw new BadRequestException('Invalid url token');
     }
 
-    // ツイートを拒否
+    // ツイートの分類を拒否へ
     tweet.predictedClass = 'reject';
-    tweet.save();
+    await tweet.save();
 
-    // ツイートを拒否として学習
-    // TODO:
+    // ツイートを用いて再トレーニング
+    const jobId = await this.retrainWithTweet(tweetTopicId, tweet);
 
     // レスポンスを返す
-    return tweet;
+    return {
+      retrainJobId: jobId,
+      rejectedTweet: tweet,
+    };
+  }
+
+  /**
+   * 指定された抽出済みツイートによる再トレーニング (キューに対するジョブ追加)
+   * (お手本分類、ツイートフィルタの学習、トレーニングおよび検証が再実行される)
+   * @param topicId トピックID
+   * @param tweet ツイート
+   */
+  async retrainWithTweet(topicId: number, tweet: ExtractedTweet) {
+    // retrainer キューへジョブを追加
+    // (trainer.consumer.ts にて順次処理される)
+    const dto: ReTrainDto = {
+      topicId: topicId,
+      isSelected: tweet.predictedClass === 'accepted',
+      tweet: tweet,
+    };
+    const job = await this.trainerQueue.add('retrainer', {
+      dto: dto,
+    });
+
+    // ジョブIDを返す
+    return job.id.toString();
   }
 }

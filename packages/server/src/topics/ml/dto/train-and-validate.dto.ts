@@ -38,10 +38,10 @@ export class TrainAndValidateDto {
   @ApiProperty({
     description: 'お手本分類されたツイート',
     example: [],
-    type: String,
+    type: Object,
     isArray: true,
   })
   @IsArray()
   @IsNotEmpty()
-  trainingTweets: string[];
+  trainingTweets: any[];
 }

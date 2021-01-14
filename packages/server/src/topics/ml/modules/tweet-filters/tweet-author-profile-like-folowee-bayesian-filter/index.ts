@@ -36,7 +36,7 @@ export class TweetAuthorProfileLikeFoloweeBayesianFilter implements TweetFilter,
     // ツイートした人のプロフィールからベイジアンフィルタでカテゴリを予測
     const userProfile = JSON.parse(tweet.rawJSONData).user.description;
     const category = await this.bayes.categorize(userProfile);
-    console.log(`[TweetAuthorProfileLikeFoloweeBayesianFilter] filter - Categorized... ${category}, ${userProfile}`);
+    //console.log(`[TweetAuthorProfileLikeFoloweeBayesianFilter] filter - Categorized... ${category}, ${userProfile}`);
     // カテゴリに応じた数値を返す
     return category === 'accept' ? 1 : 0;
     return 1;

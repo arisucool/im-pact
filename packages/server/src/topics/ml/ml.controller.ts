@@ -49,18 +49,12 @@ export class MlController {
   })
   async trainAndValidate(@Body(ValidationPipe) dto: TrainAndValidateDto): Promise<number> {
     // trainer キューへジョブを追加
-    const job = await this.trainerQueue.add({
+    const job = await this.trainerQueue.add('trainer', {
       dto: dto,
     });
 
     // ジョブIDを返す
     return parseInt(job.id.toString());
-    /*try {
-      return await this.mlService.trainAndValidate(dto);
-    } catch (e) {
-      console.warn(e.stack);
-      throw new BadRequestException(e.toString());
-    }*/
   }
 
   /**

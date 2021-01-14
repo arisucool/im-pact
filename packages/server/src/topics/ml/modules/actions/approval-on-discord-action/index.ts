@@ -42,6 +42,7 @@ export class ApprovalOnDiscordAction implements Action {
 
   async execAction(tweet: ExtractedTweet): Promise<boolean> {
     // 前回実行されたアクションを確認
+    console.log(this.helper.getOwnActionIndex(), tweet.lastActionIndex);
     if (this.helper.getOwnActionIndex() === tweet.lastActionIndex && !tweet.lastActionError) {
       // 前回実行されたアクションが自身であり、エラーでなかったならば、そのまま保留を継続
       return false;

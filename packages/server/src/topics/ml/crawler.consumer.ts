@@ -145,7 +145,7 @@ export class CrawlerConsumer {
     let tweets = [];
     for (const keyword of topic.keywords) {
       // 当該キーワードにて最近収集されたツイートを検索
-      const NUM_OF_MAX_FIND_TWEETS_OF_EACH_KEYWORD = numOfRequestTweets * 5;
+      const NUM_OF_MAX_FIND_TWEETS_OF_EACH_KEYWORD = numOfRequestTweets * 10;
       const RANGE_OF_HOURS_TO_FIND = 24; // 24時間前に収集したツイートまで
 
       let whereCrawledAt = new Date();
@@ -159,10 +159,12 @@ export class CrawlerConsumer {
         order: {
           crawledAt: 'ASC',
         },
-        take: NUM_OF_MAX_FIND_TWEETS_OF_EACH_KEYWORD,
+        //take: NUM_OF_MAX_FIND_TWEETS_OF_EACH_KEYWORD,
       });
       tweets = tweets.concat(tweetsOfThisKeyword);
     }
+
+    console.log(`[TopicService] getUnextractedTweets - Found tweets... ${tweets.length}`);
 
     // 最近収集されたツイートから分類済みのものを除く
     await Promise.all(
@@ -193,6 +195,8 @@ export class CrawlerConsumer {
         }) === i
       );
     });
+
+    console.log(`[TopicService] getUnextractedTweets - Found unextracted tweets... ${tweets.length}`);
 
     // 指定件数まで減らす
     if (numOfRequestTweets < tweets.length) {

@@ -41,6 +41,12 @@ export class ApprovalOnDiscordAction implements Action {
   }
 
   async execAction(tweet: ExtractedTweet): Promise<boolean> {
+    // 前回実行されたアクションを確認
+    if (this.helper.getOwnActionIndex() === tweet.lastActionIndex && !tweet.lastActionError) {
+      // 前回実行されたアクションが自身であり、エラーでなかったならば、そのまま保留を継続
+      return false;
+    }
+
     // 設定を取得
     const webhookUrl = this.helper.getSetting().webhookUrl;
     if (!webhookUrl) throw new Error('Discord Webhook URL が未指定です');

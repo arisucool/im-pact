@@ -2,7 +2,7 @@ import { Process, Processor } from '@nestjs/bull';
 import { Logger, BadRequestException } from '@nestjs/common';
 import { Job } from 'bull';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThanOrEqual, LessThanOrEqual, LessThan } from 'typeorm';
+import { Repository, MoreThanOrEqual, LessThanOrEqual, LessThan, IsNull, Not } from 'typeorm';
 import { ActionManager } from './modules/action-manager';
 import { Topic } from '../entities/topic.entity';
 import { ModuleStorage } from './entities/module-storage.entity';
@@ -164,19 +164,49 @@ export class ActionConsumer {
     // トピックのアクション数を取得
     const numOfActions = topic.actions.length;
 
-    // データベースからツイートを取得
-    const tweets = await this.extractedTweetRepository.find({
+    // データベースからツイートを取得 (アクション未実行のツイート)
+    let tweets = await this.extractedTweetRepository.find({
       where: {
         topic: topic,
         completeActionIndex: LessThan(numOfActions - 1),
         predictedClass: 'accept',
+        lastActionExecutedAt: IsNull()
       },
       order: {
         extractedAt: 'ASC',
-        //ompleteActionIndex: 'ASC',
       },
       take: numOfTweets,
     });
+
+    // データベースからツイートを取得 (一つでもアクション実行済のツイート)
+    tweets = tweets.concat(await this.extractedTweetRepository.find({
+      where: {
+        topic: topic,
+        completeActionIndex: LessThan(numOfActions - 1),
+        predictedClass: 'accept',
+        lastActionExecutedAt: Not(IsNull())
+      },
+      order: {
+        extractedAt: 'ASC',
+        lastActionExecutedAt: 'ASC'
+      },
+      take: numOfTweets,
+    }));
+
+    // 重複を除去
+    tweets = tweets.filter((item, i, self) => {
+      return (
+        self.findIndex(item_ => {
+          return item.idStr == item_.idStr;
+        }) === i
+      );
+    });
+
+    // 指定件数まで減らす
+    if (numOfTweets < tweets.length) {
+      tweets = tweets.slice(0, numOfTweets);
+    }
+
 
     // ツイートを返す
     return tweets;

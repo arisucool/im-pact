@@ -1,7 +1,47 @@
 import * as url from 'url';
 import { RedisOptions } from 'ioredis';
+import { DocumentBuilder, SwaggerModule, OpenAPIObject } from '@nestjs/swagger';
+import { INestApplication } from '@nestjs/common';
 
 export class Helper {
+  /**
+   * APIドキュメントの生成・取得
+   * @param app Nest アプリケーション
+   * @return 生成されたドキュメント
+   */
+  static generateAPIDocument(app: INestApplication): OpenAPIObject {
+    // アプリケーション名の取得
+    let package_name = null,
+      package_version = null;
+    try {
+      const package_json = require(`${__dirname}/../../../package.json`);
+      package_name = package_json.name;
+      package_version = package_version = package_json.version;
+    } catch (e) {}
+
+    // ドキュメント情報の設定
+    let doc_app_name = null,
+      doc_app_description = null,
+      doc_app_version = 'x.x.x';
+    if (!package_name || package_name === 'im-pact') {
+      doc_app_name = 'im pact';
+      doc_app_description = `for "${doc_app_name}" by arisu.cool 🍓 Project.`;
+    } else {
+      doc_app_name = package_name;
+      doc_app_description = `for ${doc_app_name} (based on "im pact" by arisu.cool 🍓 Project).`;
+    }
+    if (package_version) doc_app_version = package_version;
+
+    // Swagger による OpenAPI の対応 (/api/docs/ にてドキュメントを公開)
+    const options = new DocumentBuilder()
+      .setTitle(`${doc_app_name} API Document`)
+      .setDescription(`API Document ${doc_app_description}`)
+      .setVersion(doc_app_version)
+      .addBearerAuth()
+      .build();
+    return SwaggerModule.createDocument(app, options);
+  }
+
   /**
    * データベース接続設定の取得
    */
@@ -49,7 +89,8 @@ export class Helper {
   static getRedisSettings(): any {
     if (!process.env.REDIS_URL || process.env.REDIS_URL.length <= 0) {
       // 環境変数 DATABASE_URL が未指定ならば
-      // TODO:
+      console.warn('[Helper] REDIS_URL is not specified!');
+      return {};
     }
 
     // REDIS_URL で指定されたデータベースを使用

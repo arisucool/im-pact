@@ -11,7 +11,7 @@
     "build:api-client": "/bin/bash ../../.utils/api-client-generator.sh",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
-    "start:dev": "concurrently --names NestJS,CliGen \"nest start --watch\" \"nodemon --watch src --ext ts --exec /bin/bash ../../.utils/api-client-generator.sh online\"",
+    "start:dev": "concurrently --names NestJS,Worker,CliGen \"nest start --watch\" \"nest start --config=nest-cli.worker.json --watch\" \"nodemon --watch src --ext ts --exec /bin/bash ../../.utils/api-client-generator.sh online\"",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",

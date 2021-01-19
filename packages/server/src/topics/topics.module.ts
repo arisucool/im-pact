@@ -13,26 +13,31 @@ import { ExtractedTweet } from './ml/entities/extracted-tweet.entity';
 import { ModuleStorage } from './ml/entities/module-storage.entity';
 import { TwitterCrawlerService } from './ml/twitter-crawler.service';
 import { MlModel } from './ml/entities/ml-model.entity';
-import { ActionConsumer } from './ml/action.consumer';
-import { CrawlerConsumer } from './ml/crawler.consumer';
-import { TrainerConsumer } from './ml/trainer.consumer';
 
+/**
+ * トピックに関する WebAPI を構築するためのモジュール
+ * (../app.module.ts から呼び出される)
+ */
 @Module({
   imports: [
     TypeOrmModule.forFeature([CrawledTweet, ExtractedTweet, SocialAccount, Topic, ModuleStorage, MlModel]),
     SocialAccountsModule,
     // キューを登録
+    // (但し、キューの処理は、別アプリケーション (../worker-app.module.ts) にて行われる)
     BullModule.registerQueue({
-      name: 'action', // action.consumer.ts にて処理される
+      name: 'action',
     }),
     BullModule.registerQueue({
-      name: 'crawler', // crawler.consumer.ts にて処理される
+      name: 'crawler',
     }),
     BullModule.registerQueue({
-      name: 'trainer', // trainer.consumer.ts にて処理される
+      name: 'trainer',
+    }),
+    BullModule.registerQueue({
+      name: 'retrainer',
     }),
   ],
   controllers: [TopicsController, MlController],
-  providers: [MlService, TopicsService, TwitterCrawlerService, ActionConsumer, CrawlerConsumer, TrainerConsumer],
+  providers: [MlService, TopicsService, TwitterCrawlerService],
 })
 export class TopicsModule {}

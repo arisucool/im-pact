@@ -45,7 +45,7 @@ export class Helper {
   /**
    * データベース接続設定の取得
    */
-  static getDBSettings(): any {
+  static getDBSettings(synchronize: boolean = true): any {
     if (!process.env.DATABASE_URL || process.env.DATABASE_URL.length <= 0) {
       // 環境変数 DATABASE_URL が未指定ならば
       // オンメモリデータベースを使用

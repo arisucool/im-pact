@@ -3,11 +3,11 @@ import { Logger, BadRequestException } from '@nestjs/common';
 import { Job } from 'bull';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual, LessThanOrEqual, LessThan, IsNull, Not } from 'typeorm';
-import { ActionManager } from './modules/action-manager';
+import { ActionManager } from '../ml/modules/action-manager';
 import { Topic } from '../entities/topic.entity';
-import { ModuleStorage } from './entities/module-storage.entity';
+import { ModuleStorage } from '../ml/entities/module-storage.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
-import { ExtractedTweet } from './entities/extracted-tweet.entity';
+import { ExtractedTweet } from '../ml/entities/extracted-tweet.entity';
 
 /**
  * アクションに関するキューを処理するためのコンシューマ
@@ -26,8 +26,8 @@ export class ActionConsumer {
   ) {}
 
   /**
-   * action ジョブの実行
-   * (@nestjs/bull に呼び出される)
+   * アクションを実行するためのジョブの処理
+   * (@nestjs/bull から 'action' キューを介して呼び出される)
    * @param job ジョブ
    */
   @Process()

@@ -1,6 +1,6 @@
 {
   "collection": "@nestjs/schematics",
-  "entryFile": "main",
+  "entryFile": "worker",
   "sourceRoot": "src",
   "compilerOptions": {
     "assets": ["**/assets/**/*"]

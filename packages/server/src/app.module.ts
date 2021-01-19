@@ -16,6 +16,10 @@ import { InitializationService } from './initialization.service';
 import { TopicsModule } from './topics/topics.module';
 import { SocialAccountsModule } from './social-accounts/social-accounts.module';
 
+/**
+ * バックエンドサーバのアプリケーションモジュール
+ * (./main.ts から呼び出される)
+ */
 @Module({
   imports: [
     // データベースへ接続するための設定

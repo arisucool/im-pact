@@ -1,14 +1,18 @@
 import { Process, Processor } from '@nestjs/bull';
 import { Logger, BadRequestException } from '@nestjs/common';
-import { Job } from 'bull';
-import { MlService } from './ml.service';
-import { TwitterCrawlerService } from './twitter-crawler.service';
+import { Job, DoneCallback } from 'bull';
+import { MlService } from '../ml/ml.service';
+import { TwitterCrawlerService } from '../ml/twitter-crawler.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
 import { Repository, MoreThanOrEqual } from 'typeorm';
-import { CrawledTweet } from './entities/crawled-tweet.entity';
-import { ExtractedTweet } from './entities/extracted-tweet.entity';
+import { CrawledTweet } from '../ml/entities/crawled-tweet.entity';
+import { ExtractedTweet } from '../ml/entities/extracted-tweet.entity';
 import { Topic } from '../entities/topic.entity';
+
+export default function(job: Job, cb: DoneCallback) {
+  cb(null, 'It works');
+}
 
 /**
  * 収集に関するキューを処理するためのコンシューマ
@@ -18,8 +22,6 @@ export class CrawlerConsumer {
   constructor(
     @InjectRepository(Topic)
     private topicsRepository: Repository<Topic>,
-    @InjectRepository(SocialAccount)
-    private socialAccountRepository: Repository<SocialAccount>,
     @InjectRepository(CrawledTweet)
     private crawledTweetRepository: Repository<CrawledTweet>,
     @InjectRepository(ExtractedTweet)
@@ -29,8 +31,8 @@ export class CrawlerConsumer {
   ) {}
 
   /**
-   * crawler ジョブの実行
-   * (@nestjs/bull に呼び出される)
+   * ツイートの収集を実行するためのジョブの処理
+   * (@nestjs/bull から 'crawler' キューを介して呼び出される)
    * @param job ジョブ
    */
   @Process()

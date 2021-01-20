@@ -323,7 +323,8 @@ export class TopicsService {
 
     // ツイートの分類を承認へ (指定されたアクションまたは次のアクションへ遷移)
     tweet.predictedClass = 'accept';
-    tweet.completeActionIndex = actionIndex !== null ? actionIndex : tweet.completeActionIndex + 1;
+    tweet.completeActionIndex =
+      actionIndex != null && actionIndex != undefined ? actionIndex : tweet.completeActionIndex + 1;
     await tweet.save();
 
     // ツイートを用いて再トレーニング

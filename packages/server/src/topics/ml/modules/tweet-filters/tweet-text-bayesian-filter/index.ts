@@ -3,7 +3,7 @@ import { TweetFilterTrain } from '../interfaces/tweet-filter-train.interface';
 import { TweetFilterHelper } from '../../tweet-filter-helper';
 import { Tweet } from 'src/topics/ml/entities/tweet.entity';
 import * as TinySegmenter from 'tiny-segmenter';
-import * as Bayes from 'bayes';
+import * as Bayes from 'bayes-multiple-categories';
 
 export class TweetTextBayesianFilter implements TweetFilter, TweetFilterTrain {
   // 形態素解析器
@@ -79,14 +79,29 @@ export class TweetTextBayesianFilter implements TweetFilter, TweetFilterTrain {
     }
   }
 
-  async filter(tweet: Tweet): Promise<number> {
+  async filter(tweet: Tweet): Promise<number[]> {
     // ベイジアンフィルタを初期化
     await this.initBayes();
+
     // ベイジアンフィルタでツイートの本文からカテゴリを予測
     const category = await this.bayes.categorize(tweet.text);
-    //console.log(`[TweetTextBayesianFilter] filter - Categorized... ${category}, ${tweet.text}`);
-    // カテゴリに応じた数値を返す
-    return category === 'accept' ? 1 : 0;
+
+    // accept カテゴリの確率を取得
+    const numOfCategories = 2;
+    const results = await this.bayes.categorizeMultiple(tweet.text, numOfCategories);
+    let resultOfAccept = results.find((item: any) => {
+      return item.category === 'accept';
+    });
+    let probabilityOfAccept = resultOfAccept ? resultOfAccept.propability : 0.0;
+
+    // reject カテゴリの確率を取得
+    let resultOfReject = results.find((item: any) => {
+      return item.category === 'reject';
+    });
+    let probabilityOfReject = resultOfReject ? resultOfReject.propability : 0.0;
+
+    // 各カテゴリの確率を返す
+    return [probabilityOfAccept, probabilityOfReject];
   }
 
   async train(tweet: Tweet, isSelected: boolean) {

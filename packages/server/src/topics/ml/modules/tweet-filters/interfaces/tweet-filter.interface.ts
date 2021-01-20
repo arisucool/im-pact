@@ -8,5 +8,5 @@ export interface TweetFilter {
   getDescription(): string;
   getScope(): string;
   getSettingsDefinition(): Promise<TweetFilterSettingsDefinitionItem[]> | TweetFilterSettingsDefinitionItem[];
-  filter(tweet: Tweet): Promise<number>;
+  filter(tweet: Tweet): Promise<number> | Promise<number[]>;
 }

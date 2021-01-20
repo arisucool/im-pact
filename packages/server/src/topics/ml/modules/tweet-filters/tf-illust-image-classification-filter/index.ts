@@ -75,9 +75,9 @@ export class TfIllustImageClassificationFilter implements TweetFilter {
     const cachedClassifiedNumber = await this.helper.getStorage().get(`classfiedCache-${tweet.idStr}`);
     if (cachedClassifiedNumber) {
       // キャッシュがあれば、キャッシュから返す
-      console.log(
+      /*console.log(
         `[TfIllustImageClassificationFilter] filter - return from cache... ${cachedClassifiedNumber} for ID: ${tweet.idStr}`,
-      );
+      );*/
       return +cachedClassifiedNumber;
     }
 

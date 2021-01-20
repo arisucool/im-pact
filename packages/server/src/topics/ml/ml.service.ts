@@ -266,10 +266,11 @@ export class MlService {
       //console.log(`[MlService] getTrainingDatasets - Tweet: ${tweet.idStr}, ${tweet.selected}`);
       // 当該ツイートに対してツイートフィルタを実行し、分類のための変数を取得
       let allFiltersResult = await filterManager.filterTweet(tweet);
-      numOfFeatures = allFiltersResult.length;
+      const allFiltersResultFlat = [].concat(...allFiltersResult);
+      numOfFeatures = allFiltersResultFlat.length;
       // 生データセットの行を生成
       let rawDataRow = [];
-      rawDataRow = rawDataRow.concat(allFiltersResult);
+      rawDataRow = rawDataRow.concat(allFiltersResultFlat);
       rawDataRow.push(tweet.selected ? 1 : 0);
       // 生データセットへ追加
       rawDataset.push(rawDataRow);
@@ -465,15 +466,16 @@ export class MlService {
     for (let tweet of validationTweets) {
       // 当該ツイートに対してツイートフィルタを実行し、分類のための変数を取得
       let allFiltersResult = await filterManager.filterTweet(tweet);
+      const allFiltersResultFlat = [].concat(...allFiltersResult);
       // 指定された学習モデルにより予測を実行
-      const predictedClass = (trainedModel.predict(tf.tensor2d(allFiltersResult, [1, numOfFeatures])) as tf.Tensor)
+      const predictedClass = (trainedModel.predict(tf.tensor2d(allFiltersResultFlat, [1, numOfFeatures])) as tf.Tensor)
         .argMax(-1)
         .dataSync()[0];
 
       // 予測した答えを追加
       validationTweets[i].predictedSelect = predictedClass == 1;
       // ツイートフィルタの実行結果を追加
-      validationTweets[i].filtersResult = allFiltersResult;
+      validationTweets[i].filtersResult = allFiltersResultFlat;
       i++;
 
       // 予測した答えが正しいか判定
@@ -538,9 +540,10 @@ export class MlService {
     for (let tweet of tweets) {
       // 当該ツイートに対してツイートフィルタを実行し、分類のための変数を取得
       let allFiltersResult = await filterManager.filterTweet(tweet);
+      const allFiltersResultFlat = [].concat(...allFiltersResult);
       // 指定された学習モデルにより予測を実行
       const predictedClass = (trainedModel.predict(
-        tf.tensor2d(allFiltersResult, [1, allFiltersResult.length]),
+        tf.tensor2d(allFiltersResultFlat, [1, allFiltersResultFlat.length]),
       ) as tf.Tensor)
         .argMax(-1)
         .dataSync()[0];
@@ -548,7 +551,7 @@ export class MlService {
       // 予測した答えを追加
       tweets[i].predictedSelect = predictedClass == 1;
       // ツイートフィルタの実行結果を追加
-      tweets[i].filtersResult = allFiltersResult;
+      tweets[i].filtersResult = allFiltersResultFlat;
       i++;
 
       console.log(`[MlService] predictTweets - tweet = ${tweet.idStr}, predictedClass = ${predictedClass}`);

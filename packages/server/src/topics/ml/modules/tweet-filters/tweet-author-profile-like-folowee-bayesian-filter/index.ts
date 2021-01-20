@@ -4,7 +4,7 @@ import { TweetFilterTrain } from '../interfaces/tweet-filter-train.interface';
 import { Tweet } from 'src/topics/ml/entities/tweet.entity';
 import { TweetFilterHelper } from '../../tweet-filter-helper';
 import * as TinySegmenter from 'tiny-segmenter';
-import * as Bayes from 'bayes';
+import * as Bayes from 'bayes-multiple-categories';
 
 export class TweetAuthorProfileLikeFoloweeBayesianFilter implements TweetFilter, TweetFilterBatch, TweetFilterTrain {
   // 形態素解析器
@@ -36,10 +36,8 @@ export class TweetAuthorProfileLikeFoloweeBayesianFilter implements TweetFilter,
     // ツイートした人のプロフィールからベイジアンフィルタでカテゴリを予測
     const userProfile = JSON.parse(tweet.rawJSONData).user.description;
     const category = await this.bayes.categorize(userProfile);
-    //console.log(`[TweetAuthorProfileLikeFoloweeBayesianFilter] filter - Categorized... ${category}, ${userProfile}`);
     // カテゴリに応じた数値を返す
     return category === 'accept' ? 1 : 0;
-    return 1;
   }
 
   async train(tweet: Tweet, isSelected: boolean) {

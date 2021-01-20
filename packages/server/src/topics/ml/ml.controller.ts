@@ -49,7 +49,7 @@ export class MlController {
   })
   async trainAndValidate(@Body(ValidationPipe) dto: TrainAndValidateDto): Promise<number> {
     // trainer キューへジョブを追加
-    const job = await this.trainerQueue.add('trainer', {
+    const job = await this.trainerQueue.add({
       dto: dto,
     });
 

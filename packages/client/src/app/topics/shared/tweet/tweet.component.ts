@@ -7,11 +7,9 @@ import { Component, OnInit, Input, EventEmitter, Output } from '@angular/core';
 })
 export class TweetComponent implements OnInit {
   @Input() tweet: any;
+  @Input() mode: any;
   @Output() onSelectChangedEvent = new EventEmitter<boolean>();
   isSelected = null;
-
-  // モード
-  mode: any;
 
   // ツイートのデータ
   rawData: any;
@@ -19,9 +17,17 @@ export class TweetComponent implements OnInit {
   constructor() {}
 
   ngOnInit(): void {
-    this.isSelected = this.tweet.selected != undefined ? this.tweet.selected : false;
+    if (!this.mode) {
+      this.mode = this.tweet.predictedSelect !== undefined ? 'validation' : 'training';
+    }
+
+    if (this.mode == 'dashboard') {
+      this.isSelected = this.tweet.predictedClass === 'accept' ? true : false;
+    } else {
+      this.isSelected = this.tweet.selected != undefined ? this.tweet.selected : false;
+    }
+
     this.rawData = JSON.parse(this.tweet.rawJSONData);
-    this.mode = this.tweet.predictedSelect !== undefined ? 'validation' : 'training';
   }
 
   /**

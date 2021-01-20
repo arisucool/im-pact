@@ -11,7 +11,7 @@ mat-toolbar.header {
   left: 0px;
   right: 0px;
   width: 100%;
-  box-shadow: 0 3px 5px -1px rgba(0,0,0,.2), 0 6px 10px 0 rgba(0,0,0,.14), 0 1px 18px 0 rgba(0,0,0,.12);
+  box-shadow: 0 3px 5px -1px rgba(0, 0, 0, 0.2), 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12);
   z-index: 1000;
 }
 
@@ -39,7 +39,6 @@ mat-toolbar.header a.active button.mat-button {
   border-bottom: 1px solid #01579b85;
 }
 
-
 // フッタ
 
 mat-toolbar.footer {
@@ -50,7 +49,7 @@ mat-toolbar.footer {
   min-height: 32px;
   right: 0px;
   width: 100%;
-  box-shadow: 0 3px 5px -1px rgba(0,0,0,.2), 0 6px 10px 0 rgba(0,0,0,.14), 0 1px 18px 0 rgba(0,0,0,.12);
+  box-shadow: 0 3px 5px -1px rgba(0, 0, 0, 0.2), 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12);
   z-index: 1000;
 }
 
@@ -68,7 +67,6 @@ mat-toolbar.footer .app-credit a:visited {
   font-size: 0.8rem;
 }
 
-
 // コンテンツ
 
 .content-container {
@@ -77,30 +75,25 @@ mat-toolbar.footer .app-credit a:visited {
   left: 0px;
   right: 0px;
   height: 90%;
-  width: 90%;
-  margin: 0 5% 0 5%;
+  width: 93%;
+  margin: 0 4% 0 3%;
 }
 
 @media (max-width: 599px) {
-
   .content-container {
     top: 72px;
   }
-
 }
 
 @media (min-width: 600px) {
-
   .content-container {
     top: 85px;
   }
-
 }
-
 
 // 見出し
 
-::ng-deep .caption {
+::ng-deep div.caption {
   background: #4f4ba5;
   box-sizing: border-box;
   box-shadow: -7px 3px 5px -1px rgba(0, 0, 0, 0.2);
@@ -108,27 +101,28 @@ mat-toolbar.footer .app-credit a:visited {
   display: inline-block;
   height: 60px;
   line-height: 60px;
-  margin-left: -6%;
+  margin-left: -4%;
   padding: 7px 0;
   position: relative;
   text-align: center;
 }
 
-::ng-deep .caption h2 {
+::ng-deep div.caption h2 {
   font-size: 1.4rem;
   font-family: 'Cinzel Decorative', cursive;
   margin: 0;
   line-height: 46px;
   padding: 0 6rem 0 2.5rem;
+  white-space: nowrap;
 }
 
-::ng-deep .caption h2 mat-icon {
+::ng-deep div.caption h2 mat-icon {
   font-size: 1.8rem;
   margin-top: -2px;
   vertical-align: middle;
 }
 
-::ng-deep .caption:after {
+::ng-deep div.caption:after {
   position: absolute;
   content: '';
   z-index: 1;
@@ -140,7 +134,6 @@ mat-toolbar.footer .app-credit a:visited {
   border-color: transparent #efefef transparent transparent;
   border-style: solid;
 }
-
 
 // リンク
 

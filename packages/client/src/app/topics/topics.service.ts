@@ -81,6 +81,64 @@ export class TopicsService {
   }
 
   /**
+   * 指定されたトピックIDによる抽出済みツイートの取得
+   * @param topicId トピックID
+   * @param predictedClass 分類されたクラス
+   * @param lastActionIndex アクション番号 (承認ツイートを取得する場合に添える)
+   * @param lastExtractedAt 抽出日時 (この日付より古い項目が取得される)
+   * @return 抽出済みツイート
+   */
+  async getClassifiedTweets(
+    topicId: number,
+    predictedClass: string,
+    lastActionIndex?: number,
+    lastExtractedAt?: Date,
+  ): Promise<any[]> {
+    return await this.api
+      .topicsControllerGetExtractedTweets(topicId, predictedClass, lastActionIndex, lastExtractedAt?.getTime())
+      .toPromise();
+  }
+
+  /**
+   * 指定されたツイートの承認
+   * @param topicId トピックID
+   * @param tweet ツイート
+   * @param actionIndex アクション番号 (-1ならば最初のアクションから実行される。未指定ならば現在の次のアクションから実行される。)
+   */
+  async acceptTweet(topicId: number, tweet: any, actionIndex?: number) {
+    return await this.api.topicsControllerAcceptTweet(topicId, tweet.id, actionIndex).toPromise();
+  }
+
+  /**
+   * 指定されたツイートの拒否
+   * @param topicId トピックID
+   * @param tweet ツイート
+   */
+  async rejectTweet(topicId: number, tweet: any) {
+    return await this.api.topicsControllerRejectTweet(topicId, tweet.id).toPromise();
+  }
+
+  /**
+   * 指定されたトピックにおける収集の実行
+   * @param topicId トピックID
+   */
+  async execCrawl(topicId: number): Promise<void> {
+    const jobId: number = (await this.api.topicsControllerCrawl(topicId).toPromise()) as any;
+    // TODO: 完了を通知可能に
+    return null;
+  }
+
+  /**
+   * 指定されたトピックにおける収集の実行
+   * @param topicId トピックID
+   */
+  async execActions(topicId: number): Promise<void> {
+    const jobId: number = (await this.api.topicsControllerExecActions(topicId).toPromise()) as any;
+    // TODO: 完了を通知可能に
+    return null;
+  }
+
+  /**
    * 利用可能なソーシャルアカウントの取得
    */
   async getAvailableSocialAccounts() {

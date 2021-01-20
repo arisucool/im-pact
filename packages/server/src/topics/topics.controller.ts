@@ -10,8 +10,9 @@ import {
   Delete,
   Put,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiOperation, ApiOkResponse, ApiUnauthorizedResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiOperation, ApiOkResponse, ApiUnauthorizedResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { TopicsService } from './topics.service';
 import { Topic } from './entities/topic.entity';
 import { CreateTopicDto } from './dto/create-topic.dto';
@@ -158,12 +159,103 @@ export class TopicsController {
   }
 
   /**
+   * 指定されたトピックにおける抽出済みツイートの取得
+   * @param id トピックID
+   */
+  @Get(':id/extractedTweets/:predictedClass')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  // ドキュメントの設定
+  @ApiOperation({ summary: '指定されたトピックにおける抽出済みツイートの取得' })
+  @ApiOkResponse({
+    type: ExtractedTweet,
+    description: '該当ツイートの配列',
+    isArray: true,
+  })
+  @ApiUnauthorizedResponse({
+    description: '権限のエラー',
+  })
+  @ApiQuery({
+    name: 'pendingActionIndex',
+    type: Number,
+    description: 'アクション番号 (フィルタ用)',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'lastExtractedAt',
+    type: Number,
+    description: '抽出日時 (ページング用であり、この値よりも収集日時の古い項目が取得される)',
+    required: false,
+  })
+  getExtractedTweets(
+    @Param('id') id: number,
+    @Param('predictedClass') predictedClass: string,
+    @Query('pendingActionIndex') pendingActionIndex?: number,
+    @Query('lastExtractedAt') lastExtractedAt?: number,
+  ) {
+    const lastExtractedAtAsDate = lastExtractedAt ? new Date(+lastExtractedAt) : new Date();
+    return this.topicsService.getExtractedTweets(id, predictedClass, pendingActionIndex, lastExtractedAtAsDate);
+  }
+
+  /**
+   * 指定されたトピックおよびツイートに対する承認
+   * @param id トピックID
+   * @param extractedTweetId 抽出済みツイートのID
+   */
+  @Post(':id/tweets/:extractedTweetId/accept')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  // ドキュメントの設定
+  @ApiOperation({ summary: '指定されたツイートの承認' })
+  @ApiOkResponse({
+    type: Topic,
+    description: '承認されたツイート',
+  })
+  @ApiUnauthorizedResponse({
+    description: '権限のエラー',
+  })
+  @ApiQuery({
+    name: 'actionIndex',
+    description:
+      'アクション番号 (-1ならば最初のアクションから実行される。未指定ならば現在の次のアクションから実行される。)',
+    required: false,
+  })
+  acceptTweet(
+    @Param('id') id: number,
+    @Param('extractedTweetId') extractedTweetId: number,
+    @Query('actionIndex') actionIndex?: number,
+  ) {
+    return this.topicsService.acceptTweet(id, extractedTweetId, null, actionIndex);
+  }
+
+  /**
+   * 指定されたトピックおよびツイートに対する拒否
+   * @param id トピックID
+   * @param extractedTweetId 抽出済みツイートのID
+   */
+  @Post(':id/tweets/:extractedTweetId/reject')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  // ドキュメントの設定
+  @ApiOperation({ summary: '指定されたツイートの拒否' })
+  @ApiOkResponse({
+    type: Topic,
+    description: '拒否されたツイート',
+  })
+  @ApiUnauthorizedResponse({
+    description: '権限のエラー',
+  })
+  rejectTweet(@Param('id') id: number, @Param('extractedTweetId') extractedTweetId: number) {
+    return this.topicsService.rejectTweet(id, extractedTweetId, null);
+  }
+
+  /**
    * 指定されたトピックおよびツイートに対する承認
    * @param id トピックID
    * @param extractedTweetId 抽出済みツイートのID
    * @param token 拒否用URLのトークン
    */
-  @Get(':id/tweets/:extractedTweetId/accept')
+  @Get(':id/tweets/:extractedTweetId/acceptWithAction')
   @HttpCode(200)
   // ドキュメントの設定
   @ApiOperation({ summary: '指定された承認用URLによるアクションの承認' })
@@ -174,11 +266,14 @@ export class TopicsController {
   @ApiUnauthorizedResponse({
     description: '権限のエラー',
   })
-  acceptTweet(
+  acceptTweetWithAction(
     @Param('id') id: number,
     @Param('extractedTweetId') extractedTweetId: number,
     @Query('token') token: string,
   ) {
+    if (token === null) {
+      throw new BadRequestException('token is null');
+    }
     return this.topicsService.acceptTweet(id, extractedTweetId, token);
   }
 
@@ -188,7 +283,7 @@ export class TopicsController {
    * @param extractedTweetId 抽出済みツイートのID
    * @param token 拒否用URLのトークン
    */
-  @Get(':id/tweets/:extractedTweetId/reject')
+  @Get(':id/tweets/:extractedTweetId/rejectWithAction')
   @HttpCode(200)
   // ドキュメントの設定
   @ApiOperation({ summary: '指定された拒否用URLによるアクションの拒否' })
@@ -199,7 +294,7 @@ export class TopicsController {
   @ApiUnauthorizedResponse({
     description: '権限のエラー',
   })
-  rejectTweet(
+  rejectTweetWithAction(
     @Param('id') id: number,
     @Param('extractedTweetId') extractedTweetId: number,
     @Query('token') token: string,

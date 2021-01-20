@@ -46,7 +46,7 @@ export class ActionHelper extends BaseHelper {
   getAcceptUrlByTweet(tweet: ExtractedTweet): string {
     return `${process.env.BASE_URL}/api/topics/${this.topic.id}/tweets/${
       tweet.id
-    }/accept?token=t${this.getOwnActionIndex()}-${tweet.idStr}-${tweet.crawledAt.getTime()}`;
+    }/acceptWithAction?token=t${this.getOwnActionIndex()}-${tweet.idStr}-${tweet.crawledAt.getTime()}`;
   }
 
   /**
@@ -55,6 +55,6 @@ export class ActionHelper extends BaseHelper {
   getRejectUrlByTweet(tweet: ExtractedTweet): string {
     return `${process.env.BASE_URL}/api/topics/${this.topic.id}/tweets/${
       tweet.id
-    }/reject?token=t${this.getOwnActionIndex()}-${tweet.idStr}-${tweet.crawledAt.getTime()}`;
+    }/rejectWithAction?token=t${this.getOwnActionIndex()}-${tweet.idStr}-${tweet.crawledAt.getTime()}`;
   }
 }

@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { Cron } from '@nestjs/schedule';
-import { Repository } from 'typeorm';
+import { Repository, LessThan, LessThanOrEqual } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as cronParser from 'cron-parser';
 import { CreateTopicDto } from './dto/create-topic.dto';
@@ -25,8 +25,8 @@ export class TopicsService {
     private extractedTweetRepository: Repository<ExtractedTweet>,
     @InjectQueue('crawler')
     private readonly crawlQueue: Queue,
-    @InjectQueue('trainer')
-    private readonly trainerQueue: Queue,
+    @InjectQueue('retrainer')
+    private readonly retrainerQueue: Queue,
     @InjectQueue('action')
     private readonly actionQueue: Queue,
   ) {}
@@ -243,21 +243,60 @@ export class TopicsService {
   }
 
   /**
+   * 指定されたトピックにおける抽出済みツイートの取得
+   * @param topicId トピックID
+   * @param predictedClass 分類されたクラス
+   * @param pendingActionIndex ツイートのアクション番号
+   * @param lastExtractedAt 抽出日時 (ページング用。この値よりも収集日時の古い項目が取得される。)
+   */
+  async getExtractedTweets(
+    topicId: number,
+    predictedClass: string,
+    pendingActionIndex?: number,
+    lastExtractedAt?: Date,
+  ): Promise<any[]> {
+    let where: any = {
+      topic: topicId,
+      predictedClass: predictedClass,
+      extractedAt: LessThanOrEqual(lastExtractedAt),
+    };
+
+    if (pendingActionIndex) {
+      where.completeActionIndex = pendingActionIndex - 1;
+    }
+
+    const tweets = await this.extractedTweetRepository.find({
+      where: where,
+      order: {
+        extractedAt: 'DESC',
+      },
+      take: 50,
+    });
+    return tweets;
+  }
+
+  /**
    * 指定されたトピックおよびツイートに対する承認
    * @param topicId トピックID
    * @param extractedTweetId 抽出済みツイートのID
-   * @param token 承認用URLのトークン
+   * @param tokenStr 承認用URLのトークン
+   * @oaram actionIndex アクション番号 (-1ならば最初のアクションから実行される。未指定ならば現在の次のアクションから実行される。)
    */
-  async acceptTweet(topicId: number, extractedTweetId: number, token: string) {
+  async acceptTweet(topicId: number, extractedTweetId: number, tokenStr?: string, actionIndex?: number) {
     // URLトークンを確認
-    if (!token.match(/^t(\d+)-(\d+)-(\d+)$/)) {
-      throw new BadRequestException('Invalid url token');
+    let token = null;
+    const shouldConfirmToken = tokenStr !== null;
+    if (shouldConfirmToken) {
+      if (!tokenStr.match(/^t(\d+)-(\d+)-(\d+)$/)) {
+        throw new BadRequestException('Invalid url token');
+      }
+      // URLトークンからパラメータを取得
+      token = {
+        actionIndex: parseInt(RegExp.$1),
+        tweetIdStr: RegExp.$2,
+        tweetCrawledAt: RegExp.$3,
+      };
     }
-
-    // URLトークンからパラメータを取得
-    const actionIndex = parseInt(RegExp.$1);
-    const tweetIdStr = RegExp.$2;
-    const tweetCrawledAt = RegExp.$3;
 
     // データベースからツイートを取得
     const tweet = await this.extractedTweetRepository.findOne(extractedTweetId, {
@@ -270,19 +309,21 @@ export class TopicsService {
     const tweetTopicId = (tweet.topic as unknown) as number;
 
     // パラメータを照合
-    if (
-      tweet.lastActionIndex != actionIndex ||
-      actionIndex <= tweet.completeActionIndex ||
-      tweetTopicId != topicId ||
-      tweet.idStr != tweetIdStr ||
-      tweet.crawledAt.getTime().toString() != tweetCrawledAt
-    ) {
-      throw new BadRequestException('Invalid url token');
+    if (shouldConfirmToken) {
+      if (
+        tweet.lastActionIndex != token.actionIndex ||
+        token.actionIndex <= tweet.completeActionIndex ||
+        tweetTopicId != topicId ||
+        tweet.idStr != token.tweetIdStr ||
+        tweet.crawledAt.getTime().toString() != token.tweetCrawledAt
+      ) {
+        throw new BadRequestException('Invalid url token');
+      }
     }
 
-    // ツイートの分類を承認へ (次のアクションへ遷移)
+    // ツイートの分類を承認へ (指定されたアクションまたは次のアクションへ遷移)
     tweet.predictedClass = 'accept';
-    tweet.completeActionIndex += 1;
+    tweet.completeActionIndex = actionIndex !== null ? actionIndex : tweet.completeActionIndex + 1;
     await tweet.save();
 
     // ツイートを用いて再トレーニング
@@ -301,16 +342,21 @@ export class TopicsService {
    * @param extractedTweetId 抽出済みツイートのID
    * @param token 拒否用URLのトークン
    */
-  async rejectTweet(topicId: number, extractedTweetId: number, token: string) {
+  async rejectTweet(topicId: number, extractedTweetId: number, tokenStr?: string) {
     // URLトークンを確認
-    if (!token.match(/^t(\d+)-(\d+)-(\d+)$/)) {
-      throw new BadRequestException('Invalid url token');
+    let token = null;
+    const shouldConfirmToken = tokenStr !== null;
+    if (shouldConfirmToken) {
+      if (!tokenStr.match(/^t(\d+)-(\d+)-(\d+)$/)) {
+        throw new BadRequestException('Invalid url token');
+      }
+      // URLトークンからパラメータを取得
+      token = {
+        actionIndex: parseInt(RegExp.$1),
+        tweetIdStr: RegExp.$2,
+        tweetCrawledAt: RegExp.$3,
+      };
     }
-
-    // URLトークンからパラメータを取得
-    const actionIndex = parseInt(RegExp.$1);
-    const tweetIdStr = RegExp.$2;
-    const tweetCrawledAt = RegExp.$3;
 
     // データベースからツイートを取得
     const tweet = await this.extractedTweetRepository.findOne(extractedTweetId, {
@@ -323,15 +369,16 @@ export class TopicsService {
     const tweetTopicId = (tweet.topic as unknown) as number;
 
     // パラメータを照合
-    if (
-      tweet.lastActionIndex != actionIndex ||
-      actionIndex <= tweet.completeActionIndex ||
-      tweetTopicId != topicId ||
-      tweet.idStr != tweetIdStr ||
-      tweet.crawledAt.getTime().toString() != tweetCrawledAt ||
-      tweet.predictedClass == 'reject'
-    ) {
-      throw new BadRequestException('Invalid url token');
+    if (shouldConfirmToken) {
+      if (
+        tweet.lastActionIndex != token.actionIndex ||
+        token.actionIndex <= tweet.completeActionIndex ||
+        tweetTopicId != topicId ||
+        tweet.idStr != token.tweetIdStr ||
+        tweet.crawledAt.getTime().toString() != token.tweetCrawledAt
+      ) {
+        throw new BadRequestException('Invalid url token');
+      }
     }
 
     // ツイートの分類を拒否へ
@@ -362,7 +409,7 @@ export class TopicsService {
       isSelected: tweet.predictedClass === 'accepted',
       tweet: tweet,
     };
-    const job = await this.trainerQueue.add('retrainer', {
+    const job = await this.retrainerQueue.add({
       dto: dto,
     });
 

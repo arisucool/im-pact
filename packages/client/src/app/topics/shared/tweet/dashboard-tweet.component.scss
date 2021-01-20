@@ -1,0 +1,69 @@
+// カード領域
+.mat-card-content {
+  // アイテムメニューを表示したときにカードのマージンが変動する現象の対策
+  margin-bottom: 0px;
+}
+
+// アイテムメニュー領域
+
+.item-menu-container {
+  background-color: #fafafaee;
+  border-radius: 4px;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  bottom: 0px;
+  right: 0px;
+
+  .caption {
+    margin: 1.6rem 1rem 0.2rem 1rem;
+    text-align: center;
+  }
+
+  .item-menu {
+    position: absolute;
+    overflow-y: auto;
+    top: 2.8rem;
+    bottom: 1rem;
+    left: 0px;
+    right: 0px;
+
+    ul {
+      box-sizing: border-box;
+      list-style-type: none;
+      padding: 0 1rem 0 1rem;
+      width: 100%;
+
+      // メニュー項目
+
+      li {
+        margin: 0.5rem 0 0.5rem 0;
+
+        // ボタン
+        button {
+          width: 100%;
+          overflow: hidden;
+        }
+      }
+    }
+  }
+
+  // ツイートフィルタの実行結果 (デバッグ用)
+  .filters-result {
+    box-sizing: border-box;
+    border-radius: 4px;
+    color: #555555;
+    font-size: 0.8rem;
+    padding: 0 1rem 1.7rem 1rem;
+    position: absolute;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    width: 100%;
+    height: 1.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-break: keep-all;
+  }
+}

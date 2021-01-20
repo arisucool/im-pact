@@ -1,5 +1,7 @@
 <mat-card>
   <mat-card-content>
+    <div class="width-spacer" style="min-width: 400px;"></div>
+
     <div class="tweet-user">
       <img
         src="{{ rawData.user.profile_image_url }}"
@@ -31,7 +33,7 @@
           rel="noopener"
           matTooltip="クリックすると、新しいタブで画像を表示します"
         >
-          <img src="{{ media.media_url }}" />
+          <img src="{{ media.media_url }}:thumb" [ngClass]="{ 'possibly-sensitive': rawData.possibly_sensitive }" />
         </a>
       </li>
     </ul>
@@ -40,6 +42,18 @@
     <div class="classification-btn-container" *ngIf="mode == 'training'">
       <div (click)="onClassificationButtonClicked()" class="classification-btn" [ngClass]="{ selected: isSelected }">
         <mat-icon>thumb_up</mat-icon>
+      </div>
+    </div>
+    <!---->
+    <!-- アイテムメニューボタン (ダッシュボード用) -->
+    <div class="classification-btn-container" *ngIf="mode == 'dashboard'">
+      <div
+        (click)="onItemButtonClicked()"
+        class="classification-btn"
+        [ngClass]="{ selected: isSelected }"
+        matTooltip="クリックすると、このアイテムのメニューを表示します"
+      >
+        <mat-icon>more_vert</mat-icon>
       </div>
     </div>
     <!---->
@@ -65,29 +79,29 @@
     <footer>
       <!-- ツイートの日付 -->
       <div class="tweet-date">
-        {{ tweet.createdAt | date }}
+        <a href="{{ tweet.url }}" target="_blank" rel="noopener">{{ tweet.createdAt | date }}</a>
       </div>
       <!---->
 
       <!-- フィルタの実行結果 (トレーニング＆検証用) -->
-      <div class="filters-result" *ngIf="tweet.filtersResult">[ {{ tweet.filtersResult?.join(', ') }} ]</div>
+      <!--<div class="filters-result" *ngIf="tweet.filtersResult">[ {{ tweet.filtersResult?.join(', ') }} ]</div>-->
       <!---->
 
-      <!-- View on Twitter リンク -->
-      <div class="tweet-open-link">
-        <a href="{{ tweet.url }}" target="_blank" rel="noopener">View on Twitter</a>
-      </div>
-      <!---->
-
-      <!-- いいね数 / リツイート数 -->
+      <!-- ツイートのエンゲージメント -->
       <div class="tweet-engagement">
-        <mat-icon>star</mat-icon>
-        &nbsp;
-        {{ rawData.favorite_count }}
+        <!-- いいね数 -->
+        <a href="https://twitter.com/intent/like?tweet_id={{ tweet.idStr }}" target="_blank" rel="noopener">
+          <mat-icon>star</mat-icon>
+          {{ rawData.favorite_count }}
+        </a>
+        <!---->
         &nbsp; &nbsp;
-        <mat-icon>sync</mat-icon>
-        &nbsp;
-        {{ tweet.crawledRetweetCount }}
+        <!-- リツイート数 -->
+        <a href="https://twitter.com/intent/retweet?tweet_id={{ tweet.idStr }}" target="_blank" rel="noopener">
+          <mat-icon>sync</mat-icon>
+          {{ tweet.crawledRetweetCount }}
+        </a>
+        <!---->
       </div>
       <!---->
 

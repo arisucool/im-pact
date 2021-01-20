@@ -2,7 +2,9 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
+// Angulra Material
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatBottomSheetModule } from '@angular/material/bottom-sheet';
 import { MatButtonModule } from '@angular/material/button';
@@ -29,12 +31,21 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 
+// angular/flex-layout
+import { FlexLayoutModule } from '@angular/flex-layout';
+
+// ngx-masonry (グリッド表示用ライブラリ)
+import { NgxMasonryModule } from 'ngx-masonry';
+
+// その他
 import { TopicsRoutingModule } from './topics-routing.module';
 import { TopicEditorComponent } from './topic-editor/topic-editor.component';
 import { ModuleChooserSheetComponent } from './topic-editor/module-chooser-sheet/module-chooser-sheet.component';
 import { TrainerDialogComponent } from './topic-editor/trainer-dialog/trainer-dialog.component';
 import { TweetComponent } from './shared/tweet/tweet.component';
+import { DashboardTweetComponent } from './shared/tweet/dashboard-tweet.component';
 import { TrainingAndValidationDialogComponent } from './topic-editor/training-and-validation-dialog/training-and-validation-dialog.component';
+import { TopicDashboardComponent } from './topic-dashboard/topic-dashboard.component';
 
 @NgModule({
   declarations: [
@@ -42,7 +53,9 @@ import { TrainingAndValidationDialogComponent } from './topic-editor/training-an
     ModuleChooserSheetComponent,
     TrainerDialogComponent,
     TweetComponent,
+    DashboardTweetComponent,
     TrainingAndValidationDialogComponent,
+    TopicDashboardComponent,
   ],
   imports: [
     CommonModule,
@@ -51,6 +64,7 @@ import { TrainingAndValidationDialogComponent } from './topic-editor/training-an
 
     // Angular Material
     MatAutocompleteModule,
+    MatBadgeModule,
     MatButtonModule,
     MatBottomSheetModule,
     MatChipsModule,
@@ -72,6 +86,12 @@ import { TrainingAndValidationDialogComponent } from './topic-editor/training-an
     MatToolbarModule,
     MatTooltipModule,
     MatDatepickerModule,
+
+    // Flex Layout
+    FlexLayoutModule,
+
+    // ngx-masonry
+    NgxMasonryModule,
   ],
   exports: [TopicEditorComponent],
 })

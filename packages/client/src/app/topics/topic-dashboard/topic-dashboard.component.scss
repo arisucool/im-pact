@@ -1,0 +1,461 @@
+// アニメーション定義
+
+@keyframes Blinker {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes Rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// 読み込み中表示 (追加読み込み用)
+
+.loading-indicator {
+  color: #777;
+  margin: 1rem auto 1rem auto;
+  position: relative;
+  text-align: center;
+  mat-icon {
+    animation: 2s linear infinite Rotation;
+    transform-origin: center center;
+    font-size: 4rem;
+    width: 4rem;
+    height: 4rem;
+  }
+}
+
+// ページャ領域
+
+.pager-container {
+  text-align: center;
+  padding: 0.5rem 0 1.5rem 0;
+}
+
+// FAB 領域
+
+.fabs {
+  position: fixed;
+  right: 2rem;
+  bottom: 3rem;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+
+  // FAB 展開ボタン
+
+  button.fab-open-button {
+  }
+
+  // 各ミニボタン
+
+  .fab-menu {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+
+    button {
+      margin-bottom: 1rem;
+    }
+
+    // 各ミニボタン - トピック編集ボタン
+    .topic-edit-btn {
+      mat-icon {
+        margin-top: -2px;
+      }
+    }
+
+    // 各ミニボタン - トピック収集ボタン
+    .topic-crawl-btn {
+      mat-icon {
+        margin-top: -2px;
+      }
+    }
+
+    // 各ミニボタン- トピックアクション実行ボタン
+    .topic-exec-action-btn {
+      mat-icon {
+        margin-top: -2px;
+      }
+    }
+  }
+}
+
+// 承認ツイート表示領域
+
+.accepted-tweets-container {
+  box-shadow: 0px 0px 10px 0px #bdbdbd inset;
+  box-sizing: border-box;
+  position: relative;
+  width: 100%;
+  height: auto;
+  min-height: 300px;
+  margin: 10px 0 64px 0;
+  border: solid 1rem #eee;
+  border-radius: 10px;
+  background-color: #dfdfdf;
+
+  // ツイートが空のときのメッセージ
+
+  .tweet-empty-message-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    margin: auto;
+    width: 80%;
+    height: 3.2rem;
+    text-align: center;
+    .tweet-empty-message {
+      color: #777;
+      font-size: 0.9rem;
+      margin-top: -0.5rem;
+    }
+    a {
+      color: #777;
+    }
+  }
+
+  // ツイート
+
+  .accepted-tweets {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 1% 1% 1% 1%;
+
+    .tweet-container {
+      box-sizing: border-box;
+      margin: 0 0.5% 0 0.5%;
+      app-tweet {
+      }
+    }
+  }
+}
+
+// 承認ツイート表示領域 (デバイス別)
+
+@media (max-width: 599px) {
+  .accepted-tweets-container {
+    margin: 50px 0 64px 0;
+  }
+}
+
+@media (min-width: 600px) {
+  .accepted-tweets-container {
+    margin: 10px 0 64px 0;
+  }
+}
+
+// 承認ツイート表示領域 > アクションラベル
+
+.action-label {
+  position: absolute;
+  right: 0px;
+  top: -3.2rem;
+  padding: 0.5rem 1rem 0.5rem 1rem;
+  border-top-right-radius: 5px;
+  z-index: -100;
+  border-top-left-radius: 5px;
+  color: #fefefe;
+  font-family: 'Lora';
+  float: right;
+  height: 1.2rem;
+  overflow: hidden;
+  .action-order-number {
+    display: inline-block;
+    font-size: 1.7rem;
+    font-style: italic;
+    margin: 0 1rem 3px 0;
+    width: 1rem;
+    vertical-align: middle;
+  }
+
+  .action-name {
+  }
+
+  .num-of-tweets {
+    font-size: 0.8rem;
+  }
+}
+
+// ドロワ領域のコンテナ
+
+.drawer-container {
+  position: fixed;
+  left: 2.5%;
+  top: 120px;
+  bottom: 30px;
+  width: 95%;
+  height: auto; //90%;
+  z-index: 50;
+
+  // ドロワ展開ボタン領域
+  .drawer-opener-btn-container {
+    position: absolute;
+    left: 50%;
+    margin-left: -100px;
+    top: 0px;
+    width: 200px;
+    height: 50px;
+    overflow: hidden;
+
+    .drawer-opener-btn {
+      position: absolute;
+      left: 0px;
+      top: 5px;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: #bedbfd;
+      box-shadow: 0px 0px 5px 0px #bdbdbd;
+      opacity: 0.9;
+      -webkit-user-select: none;
+
+      mat-icon {
+        font-size: 2rem;
+        position: absolute;
+        top: 0.5rem;
+        left: 50%;
+        margin-left: -1rem;
+        color: #fefefe;
+        vertical-align: middle;
+      }
+    }
+
+    .drawer-opener-btn:hover {
+      cursor: pointer;
+      opacity: 1;
+      box-shadow: 0px 0px 8px 0px #bdbdbd;
+    }
+  }
+
+  // ドロワ領域 (装飾)
+
+  .drawer-decration-border-outer {
+    position: relative;
+    margin-top: 50px;
+    background-color: #bbb;
+    border: 0.1rem solid #ddd;
+    border-bottom: 0px;
+    border-top-left-radius: 50px 50px;
+    border-top-right-radius: 50px 50px;
+    box-sizing: border-box;
+    box-shadow: 0px 0px 7px 1px #bbb;
+    padding-bottom: 50px;
+    height: 100%;
+    z-index: 100;
+    .drawer-decration-border-inner {
+      position: relative;
+      background-color: #bbb;
+      border: 0.2rem solid #bbb;
+      border-bottom: 0px;
+      border-top-left-radius: 50px 50px;
+      border-top-right-radius: 50px 50px;
+      box-sizing: border-box;
+      height: 100%;
+
+      // ドロワ領域
+
+      .drawer {
+        background-color: #fdfdfd;
+        border: 2rem solid #444444;
+        border-bottom: 0px;
+        border-top-left-radius: 50px 50px;
+        border-top-right-radius: 50px 50px;
+        box-sizing: border-box;
+        height: 100%;
+        width: 100%;
+        overflow: auto;
+
+        // ドロワ領域 > 拒否ツイートグリッド
+
+        .rejected-tweets-container {
+          background-color: #dfdfdf;
+          border-top-left-radius: 20px 20px;
+          border-top-right-radius: 20px 20px;
+          box-sizing: border-box;
+          position: relative;
+          width: 100%;
+          height: auto;
+          min-height: 300px;
+
+          // ツイートが空のときのメッセージ
+
+          .tweet-empty-message-container {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            margin: auto;
+            width: 80%;
+            height: 3.2rem;
+            text-align: center;
+            .tweet-empty-message {
+              color: #777;
+              font-size: 0.9rem;
+              margin-top: -0.5rem;
+            }
+            a {
+              color: #777;
+            }
+          }
+
+          // ツイート
+
+          .rejected-tweets {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 1% 1% 1% 1%;
+
+            .tweet-container {
+              box-sizing: border-box;
+              margin: 0 0.5% 0 0.5%;
+              app-tweet {
+              }
+            }
+          }
+        }
+
+        // ドロワ領域 > ローディングスプラッシュ
+
+        .loading-splash-container {
+          display: table;
+          height: 100%;
+          width: 100%;
+
+          .loading-splash {
+            display: table-cell;
+            color: #bedbfd;
+            font-size: 3rem;
+            font-family: 'Lora';
+            vertical-align: middle;
+            text-align: center;
+
+            .loading-message {
+              animation: Blinker 1s infinite;
+              font-size: 1.5rem;
+              margin-top: 5rem;
+            }
+          }
+        }
+      }
+
+      // ドロワ領域 (読み込み中)
+
+      .drawer.loading {
+        overflow: hidden;
+      }
+
+      // ドロワ領域 (通常時)
+
+      .drawer:not(.loading) {
+        // 角の色を拒否アイテムグリッドと同色へ
+        background-color: #dfdfdf;
+      }
+
+      // ドロワ領域 > スクロールバー
+
+      .drawer::-webkit-scrollbar {
+        width: 5px;
+        background: #444444;
+        border-radius: 3px;
+      }
+
+      .drawer::-webkit-scrollbar:horizontal {
+        height: 5px;
+      }
+
+      .drawer::-webkit-scrollbar-button {
+        width: 5px;
+        height: 5px;
+        background: #444444;
+      }
+
+      .drawer::-webkit-scrollbar-piece {
+        background: #444444;
+      }
+
+      .drawer::-webkit-scrollbar-piece:start {
+        background: #444444;
+      }
+
+      .drawer::-webkit-scrollbar-thumb {
+        background: #888888;
+        border-radius: 3px;
+      }
+
+      .drawer::-webkit-scrollbar-corner {
+        background: #444444;
+        border-radius: 3px;
+      }
+    }
+  }
+
+  // ドロワ領域 (装飾)
+
+  .drawer-border-decration-btn-1 {
+    position: absolute;
+    height: 3px;
+    background-color: #bbb;
+    width: 70px;
+    top: 46px;
+    right: 60px;
+    box-shadow: 0px 0px 7px 1px #bbb;
+    border-radius: 5px;
+    border-top: 1px solid #eee;
+    border-right: 3px solid #888;
+    border-left: 3px solid #888;
+    z-index: 75;
+  }
+
+  .drawer-border-decration-btn-2,
+  .drawer-border-decration-btn-3 {
+    position: absolute;
+    height: 50px;
+    background-color: #bbb;
+    width: 5px;
+    top: 150px;
+    right: -3px;
+    box-shadow: 0px 0px 7px 1px #bbb;
+    border-radius: 5px;
+    border-right: 1px solid #eee;
+    border-top: 3px solid #888;
+    border-bottom: 3px solid #666;
+    z-index: 75;
+  }
+  .drawer-border-decration-btn-3 {
+    top: 220px;
+  }
+}
+
+// ドロワ領域のコンテナ (デバイス別)
+
+@media (max-width: 599px) {
+  .drawer-container {
+    top: 60px;
+  }
+}
+
+@media (min-width: 600px) {
+  .drawer-container {
+    top: 120px;
+  }
+}
+
+// ドロワ領域のコンテナ (収納状態)
+
+.drawer-container.closed {
+  top: auto;
+  height: 60px;
+}

@@ -1,0 +1,161 @@
+<mat-card>
+  <mat-card-content>
+    <div class="width-spacer" style="min-width: 400px;"></div>
+
+    <!-- ツイート投稿者 -->
+    <div class="tweet-user">
+      <img
+        src="{{ rawData.user.profile_image_url }}"
+        class="user-profile-image"
+        matTooltip="{{ rawData.user.description }}"
+      />
+      <p>
+        <a
+          href="https://twitter.com/{{ tweet.userScreenName }}"
+          target="_blank"
+          rel="noopener"
+          matTooltip="クリックすると、新しいタブでユーザを表示します"
+        >
+          <span class="user-name"> {{ tweet.userName }}</span>
+          <br />
+          <span class="user-screen-name">@{{ tweet.userScreenName }}</span>
+        </a>
+      </p>
+    </div>
+    <!---->
+
+    <!-- ツイート本文 -->
+    <div class="tweet-text">
+      {{ tweet.text }}
+    </div>
+    <!---->
+
+    <!-- メディア -->
+    <ul class="tweet-medias">
+      <li *ngFor="let media of rawData.extended_entities?.media">
+        <a
+          href="{{ media.expanded_url }}"
+          target="_blank"
+          rel="noopener"
+          matTooltip="クリックすると、新しいタブで画像を表示します"
+        >
+          <img src="{{ media.media_url }}:thumb" [ngClass]="{ 'possibly-sensitive': rawData.possibly_sensitive }" />
+        </a>
+      </li>
+    </ul>
+    <!---->
+
+    <!-- アイテムメニューボタン (ダッシュボード用) -->
+    <div class="classification-btn-container">
+      <div
+        (click)="isShowingItemMenu = true"
+        class="classification-btn"
+        [ngClass]="{ selected: isSelected }"
+        matTooltip="クリックすると、このアイテムのメニューを表示します"
+      >
+        <mat-icon>more_vert</mat-icon>
+      </div>
+    </div>
+    <!---->
+
+    <!-- ツイートのフッタ -->
+    <footer>
+      <!-- ツイートの日付 -->
+      <div class="tweet-date">
+        <a href="{{ tweet.url }}" target="_blank" rel="noopener">{{ tweet.createdAt | date }}</a>
+      </div>
+      <!---->
+
+      <!-- ツイートのエンゲージメント -->
+      <div class="tweet-engagement">
+        <!-- いいね数 -->
+        <a href="https://twitter.com/intent/like?tweet_id={{ tweet.idStr }}" target="_blank" rel="noopener">
+          <mat-icon>star</mat-icon>
+          {{ rawData.favorite_count }}
+        </a>
+        <!---->
+        &nbsp; &nbsp;
+        <!-- リツイート数 -->
+        <a href="https://twitter.com/intent/retweet?tweet_id={{ tweet.idStr }}" target="_blank" rel="noopener">
+          <mat-icon>sync</mat-icon>
+          {{ tweet.crawledRetweetCount }}
+        </a>
+        <!---->
+      </div>
+      <!---->
+
+      <br style="clear: both;" />
+    </footer>
+    <!---->
+  </mat-card-content>
+
+  <!-- アイテムメニュー領域 -->
+  <mat-card-content class="item-menu-container" *ngIf="isShowingItemMenu">
+    <!-- アイテムメニュークローズボタン -->
+    <div class="classification-btn-container">
+      <div
+        (click)="isShowingItemMenu = false"
+        class="classification-btn"
+        matTooltip="クリックすると、このアイテムのメニューを閉じます"
+      >
+        <mat-icon>close</mat-icon>
+      </div>
+    </div>
+    <!---->
+    <p class="caption">このツイートを...&nbsp;&nbsp;</p>
+    <div class="item-menu">
+      <ul>
+        <!-- ツイート拒否＆再トレーニングボタン (承認ツイートの場合のみ) -->
+        <li style="margin-bottom: 1rem;" *ngIf="isSelected">
+          <button
+            (click)="onItemRejected()"
+            type="button"
+            mat-stroked-button
+            color="warn"
+            matTooltip="このツイートを拒否するとともに、AIに再トレーニングさせます"
+          >
+            拒否
+          </button>
+        </li>
+        <!---->
+
+        <!-- マージン (拒否ツイートの場合のみ) -->
+        <li *ngIf="!isSelected" style="margin-bottom: 1rem;">
+          &nbsp;&nbsp;
+        </li>
+        <!---->
+
+        <!-- 承認＆再トレーニングボタン / アクション遷移ボタン -->
+        <li *ngFor="let action of detinationActions">
+          <button
+            *ngIf="!isSelected"
+            (click)="onItemAccepted(action.index)"
+            type="button"
+            mat-stroked-button
+            color="primary"
+            matTooltip="このツイートを承認するとともに、AIに再トレーニングさせ、さらに {{
+              action.index + 1
+            }} 番のアクションを実行させます"
+          >
+            承認 ＆ {{ action.index + 1 }}. {{ action.name }} へ
+          </button>
+          <button
+            *ngIf="isSelected"
+            (click)="onItemAccepted(action.index)"
+            type="button"
+            mat-stroked-button
+            color="primary"
+            matTooltip="このツイートを承認のまま、{{ action.index + 1 }} 番のアクションを実行させます"
+          >
+            {{ action.index + 1 }}. {{ action.name }} へ
+          </button>
+        </li>
+        <!---->
+      </ul>
+    </div>
+    <!-- フィルタの実行結果 (トレーニング＆検証用) -->
+    <div class="filters-result" *ngIf="tweet.filtersResult">Filter: {{ filtersResult?.join(' / ') }}</div>
+    <!---->
+  </mat-card-content>
+  <!---->
+</mat-card>

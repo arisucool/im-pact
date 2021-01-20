@@ -1,0 +1,255 @@
+<!-- キャプション -->
+<div class="caption">
+  <h2>
+    <mat-icon style="margin-top: -10px;">topic</mat-icon>
+    &nbsp;&nbsp;&nbsp; {{ topic.name }}
+  </h2>
+</div>
+<!---->
+
+<!-- 承認ツイート表示領域 -->
+<div
+  class="accepted-tweets-container"
+  *ngFor="let tweetsOfAction of acceptedTweetsByActions; let actionIndex = index"
+  style="border-color: {{ getActionColor(actionIndex) }}70;"
+>
+  <div class="action-label" style="background-color: {{ getActionColor(actionIndex) }}aa;">
+    <!-- アクション番号 -->
+    <span class="action-order-number" *ngIf="actionIndex == actionIndexOfAllActionCompleted">
+      X
+    </span>
+    <span class="action-order-number" *ngIf="actionIndex != actionIndexOfAllActionCompleted">
+      {{ actionIndex + 1 }}
+    </span>
+    <!---->
+    <!-- アクション名 -->
+    <span class="action-name" *ngIf="actionIndex == actionIndexOfAllActionCompleted">
+      アクション全完了
+    </span>
+    <span class="action-name" *ngIf="actionIndex != actionIndexOfAllActionCompleted">
+      {{ topic.actions[actionIndex].name }}
+    </span>
+    <!---->
+    <!-- 当該アクションのツイート数 -->
+    <span
+      class="num-of-tweets"
+      *ngIf="acceptedTweetsByActions[actionIndex] && actionIndex == actionIndexOfAllActionCompleted"
+    >
+      ({{ acceptedTweetsByActions[actionIndex].length }} 件)
+    </span>
+    <span
+      class="num-of-tweets"
+      *ngIf="acceptedTweetsByActions[actionIndex] && actionIndex != actionIndexOfAllActionCompleted"
+    >
+      (未完了: {{ acceptedTweetsByActions[actionIndex].length }} 件)
+    </span>
+    <!---->
+  </div>
+  <!-- ツイートが空のときのメッセージ -->
+  <div class="tweet-empty-message-container">
+    <p
+      class="tweet-empty-message"
+      *ngIf="!acceptedTweetsByActions[actionIndex] || acceptedTweetsByActions[actionIndex].length <= 0"
+    >
+      <span>
+        分類されたツイートがありません
+      </span>
+      <br />
+      <a routerLink="/topics/{{ topic.id }}/edit">
+        <button type="button" mat-stroked-button style="margin-top: 1.5rem;">
+          <mat-icon style="margin-top: -5px;">edit</mat-icon>&nbsp; トピックの設定を編集
+        </button>
+      </a>
+    </p>
+  </div>
+  <!---->
+  <!-- アクション別承認ツイートグリッド -->
+  <ngx-masonry class="accepted-tweets tweets-grid" [updateLayout]="updateLayout">
+    <!-- 各ツイート -->
+    <div
+      ngxMasonryItem
+      fxFlex="23.5"
+      fxFlex.md="31.6"
+      fxFlex.sm="48"
+      fxFlex.xs="97"
+      *ngFor="let tweet of acceptedTweetsByActions[actionIndex]"
+      class="tweet-container"
+    >
+      <app-dashboard-tweet
+        [tweet]="tweet"
+        [actions]="topic.actions"
+        (onItemButtonClickedEvent)="onItemButtonClicked(tweet.idStr, $event)"
+      >
+      </app-dashboard-tweet>
+    </div>
+    <!---->
+  </ngx-masonry>
+  <!---->
+  <!-- ページャ領域 (アクション別承認アイテム) -->
+  <div
+    class="pager-container"
+    *ngIf="!isLoadingAcceptedTweetsByActions[actionIndex] && 1 <= acceptedTweetsByActions[actionIndex].length"
+  >
+    <button (click)="loadMoreAcceptedTweets(actionIndex)" mat-button mat-stroked-button type="button">
+      <mat-icon style="margin-top: -2px;">expand_more</mat-icon>
+      &nbsp; さらに古い項目を表示
+    </button>
+  </div>
+  <!---->
+  <!-- 読み込み中表示 (追加読み込み用) -->
+  <div class="loading-indicator" *ngIf="isLoadingAcceptedTweetsByActions[actionIndex]">
+    <mat-icon>refresh</mat-icon>
+  </div>
+  <!---->
+</div>
+<!---->
+
+<!-- ドロワ領域のコンテナ -->
+<div class="drawer-container" [ngClass]="{ closed: !isOpenedDrawer }">
+  <div class="drawer-opener-btn-container">
+    <!-- ドロワ展開ボタン -->
+    <div
+      (click)="isOpenedDrawer = true"
+      *ngIf="!isOpenedDrawer"
+      class="drawer-opener-btn"
+      matTooltip="クリックすると、拒否されたアイテムを表示します"
+    >
+      <mat-icon>expand_less</mat-icon>
+    </div>
+    <div
+      (click)="isOpenedDrawer = false"
+      *ngIf="isOpenedDrawer"
+      class="drawer-opener-btn"
+      matTooltip="クリックすると、拒否されたアイテムを非表示にします"
+    >
+      <mat-icon>expand_more</mat-icon>
+    </div>
+    <!---->
+  </div>
+  <div class="drawer-decration-border-outer">
+    <div class="drawer-decration-border-inner">
+      <!-- ドロワ領域 -->
+      <section class="drawer" [ngClass]="{ loading: isInitialLoading }">
+        <!-- ローディングスプラッシュ -->
+        <div class="loading-splash-container" *ngIf="isInitialLoading">
+          <div class="loading-splash">
+            <p>
+              im pact&nbsp;
+              <span style="font-size: 1rem; vertical-align: top;">by arisu.cool</span>
+            </p>
+            <p class="loading-message">Loading...</p>
+          </div>
+        </div>
+        <!---->
+
+        <!-- 拒否アイテムグリッド -->
+        <div class="rejected-tweets-container">
+          <ngx-masonry class="rejected-tweets tweets-grid" [updateLayout]="updateLayout">
+            <!-- 各アイテム -->
+            <div
+              ngxMasonryItem
+              fxFlex="23.5"
+              fxFlex.md="31.6"
+              fxFlex.sm="48"
+              fxFlex.xs="97"
+              *ngFor="let tweet of rejectedTweets"
+              class="tweet-container"
+            >
+              <app-dashboard-tweet
+                [tweet]="tweet"
+                [actions]="topic.actions"
+                (onItemButtonClickedEvent)="onItemButtonClicked(tweet.idStr, $event)"
+              ></app-dashboard-tweet>
+            </div>
+            <!---->
+          </ngx-masonry>
+
+          <!-- ページャ領域 (拒否アイテム) -->
+          <div class="pager-container" *ngIf="!isLoadingRejectedTweets">
+            <button (click)="loadMoreRejectedTweets()" mat-button mat-stroked-button type="button">
+              <mat-icon style="margin-top: -2px;">expand_more</mat-icon>
+              &nbsp; さらに古い項目を表示
+            </button>
+          </div>
+          <!---->
+
+          <!-- 読み込み中表示 (追加読み込み用) -->
+          <div class="loading-indicator" *ngIf="isLoadingRejectedTweets">
+            <mat-icon>refresh</mat-icon>
+          </div>
+          <!---->
+        </div>
+        <!---->
+      </section>
+      <!---->
+    </div>
+  </div>
+  <div class="drawer-border-decration-btn-1"></div>
+  <div class="drawer-border-decration-btn-2"></div>
+  <div class="drawer-border-decration-btn-3"></div>
+</div>
+<!---->
+
+<!-- FAB 領域 -->
+<div class="fabs">
+  <!-- FAB メニュー -->
+  <div class="fab-menu" *ngIf="isOpenedFABMenu">
+    <!-- トピック編集ボタン -->
+    <a routerLink="/topics/{{ topic.id }}/edit">
+      <button
+        class="topic-edit-btn"
+        mat-mini-fab
+        type="button"
+        color="primary"
+        matTooltip="クリックすると、このトピックの設定を編集できます"
+      >
+        <mat-icon>edit</mat-icon>
+      </button>
+    </a>
+    <!---->
+
+    <!-- トピック収集ボタン -->
+    <button
+      (click)="execCrawl()"
+      class="topic-crawl-btn"
+      mat-mini-fab
+      type="button"
+      color="primary"
+      matTooltip="クリックすると、このトピックの収集を今すぐ行います"
+    >
+      <mat-icon>rss_feed</mat-icon>
+    </button>
+    <!---->
+
+    <!-- トピックアクション実行ボタン -->
+    <button
+      (click)="execActions()"
+      class="topic-exec-action-btn"
+      mat-mini-fab
+      type="button"
+      color="primary"
+      matTooltip="クリックすると、このトピックのアクションを今すぐ行います"
+    >
+      <mat-icon>flash_on</mat-icon>
+    </button>
+    <!---->
+  </div>
+  <!---->
+
+  <!-- FAB メニュー展開ボタン -->
+  <button
+    class="fab-open-btn"
+    (click)="isOpenedFABMenu = !isOpenedFABMenu"
+    mat-fab
+    type="button"
+    color="primary"
+    matTooltip="クリックすると、メニューを展開/収納します"
+  >
+    <mat-icon *ngIf="isOpenedFABMenu" style="margin-top: -2px;">close</mat-icon>
+    <mat-icon *ngIf="!isOpenedFABMenu" style="margin-top: -2px;">menu</mat-icon>
+  </button>
+  <!---->
+</div>
+<!---->
+
+<br style="margin-bottom: 32px;" />

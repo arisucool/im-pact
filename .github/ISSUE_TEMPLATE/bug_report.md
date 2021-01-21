@@ -1,54 +1,38 @@
 ---
-name: 不具合報告 / Bug report
-about: 不具合や問題のご報告 / Create a report to help us improve
+name: Bug report
+about: Create a report to help us improve
 title: ''
-labels: bug
+labels: ''
 assignees: ''
----## 不具合の概要 / Describe the bug
 
-◯◯ 画面にて、×× ボタンを押しても、何も表示されない問題がありました。
-致命的ではありませんが、△△ ができず、困っています。
+---
 
-## 再現手順 / To Reproduce
+**Describe the bug**
+A clear and concise description of what the bug is.
 
-1. ◯◯ 画面を開きます。
-2. ×× ボタンを押します。
-3. △△ が表示されるべきところ、何も表示されません。また Web ブラウザのコンソールにエラーログが表示されます (添付資料を参照)。
+**To Reproduce**
+Steps to reproduce the behavior:
+1. Go to '...'
+2. Click on '....'
+3. Scroll down to '....'
+4. See error
 
-## 期待される動作 / Expected behavior
+**Expected behavior**
+A clear and concise description of what you expected to happen.
 
-×× ボタンを押したとき、△△ が表示されること。
+**Screenshots**
+If applicable, add screenshots to help explain your problem.
 
-## 添付資料 / Attachments
+**Desktop (please complete the following information):**
+ - OS: [e.g. iOS]
+ - Browser [e.g. chrome, safari]
+ - Version [e.g. 22]
 
-無し
+**Smartphone (please complete the following information):**
+ - Device: [e.g. iPhone6]
+ - OS: [e.g. iOS8.1]
+ - Browser [e.g. stock browser, safari]
+ - Version [e.g. 22]
 
-### ログ / Logs
-
-無し
-
-### スクリーンショット / Screenshots
-
-無し
-
-### 実行環境 / Execution Environment
-
-あなたのサーバおよびクライアント環境に応じて、以下の選択肢から選んでください。
-/ Choose from the following options according to your server and client environment.
-
-- Server:
-  _ Docker on Heroku
-  _ Docker Compose on local \* Others (詳しく追記してください / Please describe in detail)
-
-- Client:
-  - OS:
-    - Windows 10
-    - Android vXX.X
-    - iOS vXX.X
-    - iPad OS vXX.X
-  - Web ブラウザ / Web browser:
-    - Google Chrome vXX.X.XXXX.XX
-    - Firefox vXX.X
-    - Safari vXX.X.X
-    - Others (詳しく追記してください / Please describe in detail)
-  - 機種名 / Model name: (追記してください / Please describe)
+**Additional context**
+Add any other context about the problem here.

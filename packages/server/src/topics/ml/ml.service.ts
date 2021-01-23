@@ -323,14 +323,15 @@ export class MlService {
   }
 
   protected flatOneHot(index: any) {
-    return Array.from(tf.oneHot([index], 3).dataSync());
+    // 目的変数 ('accept' または 'reject' の2種類) を行列形式へエンコード
+    return Array.from(tf.oneHot([index], 2).dataSync());
   }
 
   /**
    * 学習モデルの生成
    * @param trainingDataset 学習用データセット
    * @param validationDataset 検証用データセット
-   * @param numOfFeatures データセットの変数の数
+   * @param numOfFeatures データセットの説明変数の数
    * @return 生成されたモデル
    */
   protected async trainModel(trainingDataset: any, validationDataset: any, numOfFeatures: number) {
@@ -343,19 +344,30 @@ export class MlService {
     const model = tf.sequential();
     model.add(
       tf.layers.dense({
+        // 隠れ層のユニット数
         units: 10,
-        activation: 'sigmoid',
+        // 活性化関数
+        activation: 'sigmoid', // relu = 67
+        // 説明変数の数
         inputShape: [numOfFeatures],
       }),
     );
-    model.add(tf.layers.dense({ units: 3, activation: 'softmax' }));
+
+    // 分類結果を2種類 ('accept' または 'reject') とするために出力層のユニット数を2に設定
+    model.add(tf.layers.dense({ units: 2, activation: 'softmax' }));
+
+    // 学習モデルの層のサマリを出力 (デバッグ用)
     model.summary();
 
     console.log(`[MlService] trainModel - Compiling model...`);
-    const optimizer = tf.train.adam(LEARNING_RATE);
+
+    // モデルをコンパイル
     model.compile({
-      optimizer: optimizer,
+      // 最適化アルゴリズムを設定
+      optimizer: tf.train.adam(LEARNING_RATE),
+      // 損失関数を設定
       loss: 'categoricalCrossentropy',
+      // 評価関数を設定
       metrics: ['accuracy'],
     });
 

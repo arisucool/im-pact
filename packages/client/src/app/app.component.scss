@@ -5,18 +5,28 @@
 // ヘッダ
 
 mat-toolbar.header {
-  background: #bedbfd !important;
+  background: #fafafa !important;
   position: fixed;
   top: 0px;
   left: 0px;
   right: 0px;
   width: 100%;
+  border-bottom: 3px solid #bfbfff;
   box-shadow: 0 3px 5px -1px rgba(0, 0, 0, 0.2), 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12);
   z-index: 1000;
 }
 
 mat-toolbar.header a {
   color: #01579b;
+}
+
+// ヘッダ > アプリアイコン名
+
+mat-toolbar.header .app-icon {
+  img {
+    margin: 7px 0 0 16px;
+    height: 56px;
+  }
 }
 
 // ヘッダ > アプリ名
@@ -60,11 +70,20 @@ mat-toolbar.footer mat-toolbar-row {
 // フッタ > クレジット
 
 mat-toolbar.footer .app-credit,
+mat-toolbar.footer .app-credit a {
+  color: #777777;
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
 mat-toolbar.footer .app-credit a,
 mat-toolbar.footer .app-credit a:link,
 mat-toolbar.footer .app-credit a:visited {
-  color: #777777;
-  font-size: 0.8rem;
+  color: #666666;
+}
+
+mat-toolbar.footer .app-credit a:hover {
+  opacity: 0.8;
 }
 
 // コンテンツ

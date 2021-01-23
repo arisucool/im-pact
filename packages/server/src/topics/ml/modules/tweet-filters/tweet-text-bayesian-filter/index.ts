@@ -1,4 +1,4 @@
-import { TweetFilter } from '../interfaces/tweet-filter.interface';
+import { TweetFilter, TweetFilterSettingsDefinition } from '../interfaces/tweet-filter.interface';
 import { TweetFilterTrain } from '../interfaces/tweet-filter-train.interface';
 import { TweetFilterHelper } from '../../tweet-filter-helper';
 import { Tweet } from 'src/topics/ml/entities/tweet.entity';
@@ -25,7 +25,7 @@ export class TweetTextBayesianFilter implements TweetFilter, TweetFilterTrain {
     return 'ツイートの本文';
   }
 
-  getSettingsDefinition() {
+  getSettingsDefinition(): TweetFilterSettingsDefinition[] {
     return [];
   }
 

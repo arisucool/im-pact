@@ -1,4 +1,4 @@
-import { Action } from '../interfaces/action.interface';
+import { Action, ActionSettingsDefinition } from '../interfaces/action.interface';
 import { ActionHelper } from '../../action-helper';
 import { ExtractedTweet } from 'src/topics/ml/entities/extracted-tweet.entity';
 
@@ -9,7 +9,7 @@ export class WaitForSecondsAction implements Action {
     return '指定した時間が経過したら次のアクションへ遷移するアクション';
   }
 
-  getSettingsDefinition() {
+  getSettingsDefinition(): ActionSettingsDefinition[] {
     return [
       {
         name: 'waitSeconds',

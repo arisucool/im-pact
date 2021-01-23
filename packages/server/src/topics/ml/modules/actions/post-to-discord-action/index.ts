@@ -1,4 +1,4 @@
-import { Action } from '../interfaces/action.interface';
+import { Action, ActionSettingsDefinition } from '../interfaces/action.interface';
 import { ActionHelper } from '../../action-helper';
 import { ExtractedTweet } from 'src/topics/ml/entities/extracted-tweet.entity';
 import axios from 'axios';
@@ -10,7 +10,7 @@ export class PostToDiscordAction implements Action {
     return 'ツイートを Discord へ投稿するアクション';
   }
 
-  getSettingsDefinition() {
+  getSettingsDefinition(): ActionSettingsDefinition[] {
     return [
       {
         name: 'webhookUrl',

@@ -1,4 +1,4 @@
-import { TweetFilter } from '../interfaces/tweet-filter.interface';
+import { TweetFilter, TweetFilterSettingsDefinition } from '../interfaces/tweet-filter.interface';
 import { Tweet } from 'src/topics/ml/entities/tweet.entity';
 import { TweetFilterHelper } from '../../tweet-filter-helper';
 
@@ -15,7 +15,7 @@ export class TweetLikesFilter implements TweetFilter {
     return 'ツイートのいいね数';
   }
 
-  getSettingsDefinition() {
+  getSettingsDefinition(): TweetFilterSettingsDefinition[] {
     return [];
   }
 

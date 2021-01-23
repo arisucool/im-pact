@@ -1,4 +1,4 @@
-import { TweetFilter } from '../interfaces/tweet-filter.interface';
+import { TweetFilter, TweetFilterSettingsDefinition } from '../interfaces/tweet-filter.interface';
 import { Tweet } from 'src/topics/ml/entities/tweet.entity';
 import { TweetFilterHelper } from '../../tweet-filter-helper';
 import * as tf from '@tensorflow/tfjs-node';
@@ -28,7 +28,7 @@ export class TfIllustImageClassificationFilter implements TweetFilter {
     return 'ツイートの添付画像';
   }
 
-  getSettingsDefinition() {
+  getSettingsDefinition(): TweetFilterSettingsDefinition[] {
     return [];
   }
 

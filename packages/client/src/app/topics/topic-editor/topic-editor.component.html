@@ -331,6 +331,20 @@
                     ></textarea>
                   </mat-form-field>
                   <!---->
+                  <!-- セレクトボックス入力欄 -->
+                  <mat-form-field *ngIf="settingItem.type === 'select'" appearance="outline" floatLabel="always">
+                    <mat-label>{{ settingItem.title }}</mat-label>
+                    <mat-select
+                      name="filter_{{ filterIndex }}_{{ settingItem.name }}"
+                      placeholder="{{ settingItem.placeholder }}"
+                      [(ngModel)]="moduleSetting.settings[settingItem.name]"
+                    >
+                      <mat-option *ngFor="let option of settingItem.options | keyvalue" [value]="option.key">{{
+                        option.value
+                      }}</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                  <!---->
                 </p>
                 <!---->
                 <!-- 設定項目 (一つも存在しない場合) -->
@@ -633,6 +647,20 @@
                   </button>
                 </mat-menu>
                 <!---->
+              </mat-form-field>
+              <!---->
+              <!-- セレクトボックス入力欄 -->
+              <mat-form-field *ngIf="settingItem.type === 'select'" appearance="outline" floatLabel="always">
+                <mat-label>{{ settingItem.title }}</mat-label>
+                <mat-select
+                  name="filter_{{ filterIndex }}_{{ settingItem.name }}"
+                  placeholder="{{ settingItem.placeholder }}"
+                  [(ngModel)]="moduleSetting.settings[settingItem.name]"
+                >
+                  <mat-option *ngFor="let option of settingItem.options | keyvalue" [value]="option.key">{{
+                    option.value
+                  }}</mat-option>
+                </mat-select>
               </mat-form-field>
               <!---->
             </p>

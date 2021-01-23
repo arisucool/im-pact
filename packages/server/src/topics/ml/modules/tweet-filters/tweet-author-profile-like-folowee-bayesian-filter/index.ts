@@ -1,4 +1,4 @@
-import { TweetFilter } from '../interfaces/tweet-filter.interface';
+import { TweetFilter, TweetFilterSettingsDefinition } from '../interfaces/tweet-filter.interface';
 import { TweetFilterBatch } from '../interfaces/tweet-filter-batch.interface';
 import { TweetFilterTrain } from '../interfaces/tweet-filter-train.interface';
 import { Tweet } from 'src/topics/ml/entities/tweet.entity';
@@ -26,7 +26,7 @@ export class TweetAuthorProfileLikeFoloweeBayesianFilter implements TweetFilter,
     return 'ツイートした人のプロフィール';
   }
 
-  getSettingsDefinition() {
+  getSettingsDefinition(): TweetFilterSettingsDefinition[] {
     return [];
   }
 

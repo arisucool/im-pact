@@ -36,6 +36,20 @@ export class TopicsService {
    */
   @Cron('* * * * *')
   async onIntervalMinutes() {
+    // 全てのトピックIDを取得
+    const topicIds = await this.getTopicIds();
+
+    // 各トピックのアクション実行ジョブをキューへ追加
+    for (const topicId of topicIds) {
+      const job = await this.actionQueue.add({
+        topicId: topicId,
+      });
+      Logger.debug(
+        `Add job to action queue... (Topic ID: ${topicId}, Job ID: ${job.id})`,
+        'TopicsService/onIntervalMinutes',
+      );
+    }
+
     // このタイミングで収集を実行すべきトピックIDを取得
     const crawlTopicIds = await this.getTopicIdsToBeCrawledOnNow();
     if (crawlTopicIds.length === 0) return;
@@ -53,24 +67,10 @@ export class TopicsService {
   }
 
   /**
-   * 15分毎の定期処理
+   * 10分毎の定期処理
    */
-  @Cron('*/15 * * * *') // TODO:
-  async onIntervalTenMinutes() {
-    // 全てのトピックIDを取得
-    const topicIds = await this.getTopicIds();
-
-    // 各トピックのアクション実行ジョブをキューへ追加
-    for (const topicId of topicIds) {
-      const job = await this.actionQueue.add({
-        topicId: topicId,
-      });
-      Logger.debug(
-        `Add job to action queue... (Topic ID: ${topicId}, Job ID: ${job.id})`,
-        'TopicsService/onIntervalTenMinutes',
-      );
-    }
-  }
+  @Cron('*/10 * * * *') // TODO:
+  async onIntervalTenMinutes() {}
 
   /**
    * 全てのトピックIDの取得

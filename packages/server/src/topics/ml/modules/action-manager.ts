@@ -10,6 +10,7 @@ import { ApprovalOnDiscordAction } from './actions/approval-on-discord-action';
 import { PostToDiscordAction } from './actions/post-to-discord-action';
 import { WaitForSecondsAction } from './actions/wait-for-seconds-action';
 import { Topic } from 'src/topics/entities/topic.entity';
+import { WaitForScheduleAction } from './actions/wait-for-schedule-action';
 
 /**
  * アクションモジュールを管理するためのクラス
@@ -84,9 +85,12 @@ export class ActionManager {
     const nextAction = this.actionSettings[nextActionIndex];
 
     // アクションを初期化
-    const mod: Action = await this.getModule(nextAction.name, nextActionIndex, topic);
+    const mod: any = await this.getModule(nextAction.name, nextActionIndex, topic);
     if (mod === null) {
       throw new Error(`[ActionManager] - actionTweet - This action was invalid... ${nextAction.name}`);
+    } else if (mod.execAction === undefined) {
+      // 単体アクション実行に非対応ならば
+      return false;
     }
 
     // 当該アクションでアクションを実行
@@ -136,6 +140,8 @@ export class ActionManager {
         return new PostToDiscordAction(moduleHelper);
       case 'WaitForSecondsAction':
         return new WaitForSecondsAction(moduleHelper);
+      case 'WaitForScheduleAction':
+        return new WaitForScheduleAction(moduleHelper);
     }
 
     return null;

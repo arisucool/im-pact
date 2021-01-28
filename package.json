@@ -1,13 +1,15 @@
 {
   "name": "im-pact",
-  "description": "\"im pact\" is Twitter crawler and bot for Producers and Everyone.",
   "version": "0.0.0",
   "private": true,
+  "description": "\"im pact\" is Twitter crawler and bot for Producers and Everyone.",
   "scripts": {
+    "build": "lerna run build --scope=server --stream && lerna run build --scope=client --stream",
+    "postinstall": "lerna bootstrap",
     "start": "lerna run start:prod --scope=server --stream",
     "start:dev": "lerna run start:dev --stream",
-    "build": "lerna run build --scope=server --stream && lerna run build --scope=client --stream",
-    "postinstall": "lerna bootstrap"
+    "test": "lerna run test --scope=server --stream",
+    "test-ci": "lerna run test:cov --scope=server --stream"
   },
   "dependencies": {
     "lerna": "^3.20.2",

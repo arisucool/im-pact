@@ -1,0 +1,81 @@
+name: CI on Docker
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get directory name
+        shell: bash
+        run: echo ::set-output name=dir_name::$(echo "${PWD##*/}")
+        id: get_dir_name
+
+      - name: Get git ref
+        run: echo ::set-output name=git_ref::${GITHUB_REF#refs/*/}
+        id: get_git_ref
+
+      - id: docker-cache
+        uses: actions/cache@v2
+        with:
+          path: /tmp/docker-cache/
+          key: ${{ steps.get_git_ref.outputs.git_ref }}-${{ hashFiles('Dockerfile', 'package.json', 'packages/*/package.json') }}
+          restore-keys: |
+            ${{ steps.get_git_ref.outputs.git_ref }}-
+            ${{ steps.get_git_ref.outputs.git_ref }}
+            main-
+            master-
+
+      - name: Load a cache of docker image
+        shell: bash
+        run: |
+          if [ -f /tmp/docker-cache/app.tar ]; then
+            docker load -i /tmp/docker-cache/app.tar || true
+          fi
+
+      - name: Build docker image
+        shell: bash
+        run: |
+          docker build --build-arg NODE_ENV=development --cache-from="${{ steps.get_dir_name.outputs.dir_name }}_app" --tag "${{ steps.get_dir_name.outputs.dir_name }}_app" .
+
+      - name: Save docker image as a cache (background)
+        shell: bash
+        run: |
+          mkdir -p /tmp/docker-cache/
+          docker save -o /tmp/docker-cache/app.tar "${{ steps.get_dir_name.outputs.dir_name }}_app" &
+
+      - name: Test
+        shell: bash
+        env:
+          COMPOSE_INTERACTIVE_NO_CLI: 1
+        run: |
+          docker-compose run app npm run test-ci | tee /tmp/npm-test-log.txt
+
+      - name: Collect test reports
+        shell: bash
+        run: |
+          container_id=`docker ps --filter "name=app_run_*" --format "{{ .ID }}" --last 1`
+          docker cp ${container_id}:/opt/app/packages/server/coverage/ /tmp/ || echo "Could not collect server coverage report"
+          mkdir -p /tmp/coverages/server/
+          mv /tmp/coverage/* /tmp/coverages/server/
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-reports
+          path: |
+            /tmp/npm-test-log.txt
+            /tmp/coverages
+
+      - uses: codecov/codecov-action@v1
+        with:
+          directory: /tmp/coverages/
+          verbose: true

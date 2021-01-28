@@ -60,14 +60,18 @@ jobs:
           docker-compose run app npm run test-ci | tee /tmp/npm-test-log.txt
 
       - name: Collect test reports
+        if: ${{ always() }}
         shell: bash
         run: |
           container_id=`docker ps --filter "name=app_run_*" --format "{{ .ID }}" --last 1`
           docker cp ${container_id}:/opt/app/packages/server/coverage/ /tmp/ || echo "Could not collect server coverage report"
-          mkdir -p /tmp/coverages/server/
-          mv /tmp/coverage/* /tmp/coverages/server/
+          if [ -d /tmp/coverage/ ]; then
+            mkdir -p /tmp/coverages/server/
+            mv /tmp/coverage/* /tmp/coverages/server/
+          fi
 
       - name: Upload test reports
+        if: ${{ always() }}
         uses: actions/upload-artifact@v2
         with:
           name: test-reports
@@ -76,6 +80,7 @@ jobs:
             /tmp/coverages
 
       - uses: codecov/codecov-action@v1
+        if: ${{ always() }}
         with:
           directory: /tmp/coverages/
           verbose: true

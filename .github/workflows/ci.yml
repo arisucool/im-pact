@@ -64,10 +64,26 @@ jobs:
         shell: bash
         run: |
           container_id=`docker ps --filter "name=app_run_*" --format "{{ .ID }}" --last 1`
-          docker cp ${container_id}:/opt/app/packages/server/coverage/ /tmp/ || echo "Could not collect server coverage report"
+
+          # Copy the reports for server from the container
+          docker cp ${container_id}:/opt/app/packages/server/test-report/coverage/ /tmp/ || echo "Could not collect server coverage report"
           if [ -d /tmp/coverage/ ]; then
             mkdir -p /tmp/coverages/server/
             mv /tmp/coverage/* /tmp/coverages/server/
+            rm /tmp/coverage/ -R
+          fi
+          docker cp ${container_id}:/opt/app/packages/server/test-report/result/ /tmp/ || echo "Could not collect server coverage report"
+          if [ -d /tmp/result/ ]; then
+            mkdir -p /tmp/results/server/
+            mv /tmp/result/* /tmp/results/server/
+            rm /tmp/result/ -R
+          fi
+
+          # Copy the reports for client from the container
+          docker cp ${container_id}:/opt/app/packages/client/test-report/coverage/ /tmp/ || echo "Could not collect server coverage report"
+          if [ -d /tmp/coverage/ ]; then
+            mkdir -p /tmp/coverages/client/
+            mv /tmp/coverage/* /tmp/coverages/client/
             rm /tmp/coverage/ -R
           fi
           docker cp ${container_id}:/opt/app/packages/client/test-report/result/ /tmp/ || echo "Could not collect server coverage report"
@@ -75,12 +91,6 @@ jobs:
             mkdir -p /tmp/results/client/
             mv /tmp/result/* /tmp/results/client/
             rm /tmp/result/ -R
-          fi
-          docker cp ${container_id}:/opt/app/packages/client/test-report/coverage/ /tmp/ || echo "Could not collect server coverage report"
-          if [ -d /tmp/coverage/ ]; then
-            mkdir -p /tmp/coverages/client/
-            mv /tmp/coverage/* /tmp/coverages/client/
-            rm /tmp/coverage/ -R
           fi
 
       - name: Upload test reports to Artifacts of GitHub Actions
@@ -93,7 +103,7 @@ jobs:
             /tmp/coverages
             /tmp/results
 
-      - name: Upload test result of client to GitHub Checks
+      - name: Upload unit test result of client to GitHub Checks
         uses: mikepenz/action-junit-report@v2.1.1
         if: ${{ always() }}
         with:
@@ -102,7 +112,16 @@ jobs:
           require_tests: true
           report_paths: '/tmp/results/client/*.xml'
 
-      - name: 'Upload test coverages to Codecov'
+      - name: Upload unit test result of server to GitHub Checks
+        uses: mikepenz/action-junit-report@v2.1.1
+        if: ${{ always() }}
+        with:
+          check_name: Server - Unit Test
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          require_tests: true
+          report_paths: '/tmp/results/server/*.xml'
+
+      - name: 'Upload unit test coverages to Codecov'
         uses: codecov/codecov-action@v1
         if: ${{ always() }}
         with:

@@ -68,9 +68,22 @@ jobs:
           if [ -d /tmp/coverage/ ]; then
             mkdir -p /tmp/coverages/server/
             mv /tmp/coverage/* /tmp/coverages/server/
+            rm /tmp/coverage/ -R
+          fi
+          docker cp ${container_id}:/opt/app/packages/client/test-report/result/ /tmp/ || echo "Could not collect server coverage report"
+          if [ -d /tmp/result/ ]; then
+            mkdir -p /tmp/results/client/
+            mv /tmp/result/* /tmp/results/client/
+            rm /tmp/result/ -R
+          fi
+          docker cp ${container_id}:/opt/app/packages/client/test-report/coverage/ /tmp/ || echo "Could not collect server coverage report"
+          if [ -d /tmp/coverage/ ]; then
+            mkdir -p /tmp/coverages/client/
+            mv /tmp/coverage/* /tmp/coverages/client/
+            rm /tmp/coverage/ -R
           fi
 
-      - name: Upload test reports
+      - name: Upload test reports to Artifacts of GitHub Actions
         if: ${{ always() }}
         uses: actions/upload-artifact@v2
         with:
@@ -78,8 +91,19 @@ jobs:
           path: |
             /tmp/npm-test-log.txt
             /tmp/coverages
+            /tmp/results
 
-      - uses: codecov/codecov-action@v1
+      - name: Upload test result of client to GitHub Checks
+        uses: mikepenz/action-junit-report@v2.1.1
+        if: ${{ always() }}
+        with:
+          check_name: Client - Unit Test
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          require_tests: true
+          report_paths: '/tmp/results/client/*.xml'
+
+      - name: 'Upload test coverages to Codecov'
+        uses: codecov/codecov-action@v1
         if: ${{ always() }}
         with:
           directory: /tmp/coverages/

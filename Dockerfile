@@ -10,13 +10,31 @@ WORKDIR /opt/app/
 EXPOSE 4200
 
 # Install apt packages
+ARG NODE_ENV="production"
+ENV NODE_ENV "${NODE_ENV}"
+ARG TEST_CHROMIUM_REVISION="848009"
 RUN echo "Installing packages..." && \
     export DEBIAN_FRONTEND="noninteractive" && \
     mkdir -p /usr/share/man/man1 && \
     apt-get update --yes && \
     apt-get install --yes --no-install-recommends --quiet \
-        build-essential curl default-jre procps python && \
-    echo "packages installed." || exit 1 && \
+        build-essential curl default-jre procps python wget \
+        || exit 1 && \
+    echo "packages installed." && \
+    \
+    if [ "${NODE_ENV}" = "development" ]; then \
+        echo "Install packages for testing..." && \
+        apt-get install --yes --no-install-recommends --quiet \
+            fonts-ipafont-gothic unzip || exit 1 && \
+        cd /tmp/ && \
+        wget --no-verbose --output-document=chromium.zip https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Linux_x64%2F${TEST_CHROMIUM_REVISION}%2Fchrome-linux.zip?alt=media || exit 1 && \
+        unzip -q chromium.zip || exit 1 && \
+        rm chromium.zip && \
+        mv chrome-linux/ /opt/chromium/ && \
+        /opt/chromium/chrome --version && \
+        echo "packages for testing installed."; \
+    fi; \
+    \
     apt-get clean
 
 # Copy files related to openapi-generator from another container
@@ -38,13 +56,11 @@ RUN echo "Installing npm modules..." && \
 COPY . /opt/app/
 
 # Build for production env
-ARG NODE_ENV="production"
-ENV NODE_ENV "${NODE_ENV}"
 RUN if [ "${NODE_ENV}" = "production" ]; then \
     echo "Building app...\n" && \
     export DATABASE_URL="" JWT_TOKEN_SECRET="BUILD" && \
     npm run build || exit 1; \
-    echo "build was completed." ; \
+    echo "build completed." ; \
 fi
 
 # Start app

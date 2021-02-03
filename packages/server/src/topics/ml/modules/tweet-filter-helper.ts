@@ -4,16 +4,18 @@ import { SocialAccount } from 'src/social-accounts/entities/social-account.entit
 import { Repository } from 'typeorm';
 import { ModuleStorage } from './module-storage';
 import * as ModuleStorageEntity from '../entities/module-storage.entity';
+import { ModuleTweetStorage } from './module-tweet-storage';
 
 export class TweetFilterHelper extends BaseHelper {
   private constructor(
     protected moduleName: string,
     protected moduleStorage: Readonly<ModuleStorage>,
+    protected moduleTweetStorage: Readonly<ModuleTweetStorage>,
     protected moduleSetting: any,
     protected socialAccount: SocialAccount,
     protected topicKeywords: string[],
   ) {
-    super(moduleName, moduleStorage, moduleSetting, socialAccount);
+    super(moduleName, moduleStorage, moduleTweetStorage, moduleSetting, socialAccount);
   }
 
   /**
@@ -22,11 +24,19 @@ export class TweetFilterHelper extends BaseHelper {
   static readonly factory = (
     moduleName: string,
     moduleStorage: Readonly<ModuleStorage>,
+    moduleTweetStorage: Readonly<ModuleTweetStorage>,
     moduleSetting: any,
     socialAccount: SocialAccount,
     topicKeywords: string[],
   ): Readonly<TweetFilterHelper> => {
-    return new TweetFilterHelper(moduleName, moduleStorage, moduleSetting, socialAccount, topicKeywords);
+    return new TweetFilterHelper(
+      moduleName,
+      moduleStorage,
+      moduleTweetStorage,
+      moduleSetting,
+      socialAccount,
+      topicKeywords,
+    );
   };
 
   /**

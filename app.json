@@ -3,6 +3,11 @@
     "description": "\"im pact\" is Twitter crawler and bot for Producers and Everyone.",
     "repository": "https://github.com/arisucool/im-pact",
     "env": {
+        "AUTO_CLEANUP_MAX_DB_ROWS": {
+            "description": "Maximum rows of the database. When database rows have been reached to this value, automated cleanup will be executed. For example, if you plan to use the free plan of Heroku Postgres, you should specify 7500.",
+            "required": false,
+            "value": "7500"
+        },
         "BASE_URL": {
             "description": "Your application URL (e.g. 'https://****.herokuapp.com'). **** is the same with the 'App name'.",
             "required": true

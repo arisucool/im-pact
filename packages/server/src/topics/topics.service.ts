@@ -29,6 +29,8 @@ export class TopicsService {
     private readonly retrainerQueue: Queue,
     @InjectQueue('action')
     private readonly actionQueue: Queue,
+    @InjectQueue('cleaner')
+    private readonly cleanerQueue: Queue,
   ) {}
 
   /**
@@ -71,6 +73,16 @@ export class TopicsService {
    */
   @Cron('*/10 * * * *') // TODO:
   async onIntervalTenMinutes() {}
+
+  /**
+   * 30分毎の定期処理
+   */
+  @Cron('*/30 * * * *')
+  async onIntervalHalfHours() {
+    // 自動クリーンアップをキューへ追加
+    this.cleanerQueue.add({});
+    Logger.debug(`Add job to cleaner queue...`, 'TopicsService/onIntervalHalfHours');
+  }
 
   /**
    * 全てのトピックIDの取得

@@ -1,13 +1,13 @@
 import * as Twitter from 'twitter';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
-import { Repository } from 'typeorm';
 import { ModuleStorage } from './module-storage';
-import * as ModuleStorageEntity from '../entities/module-storage.entity';
+import { ModuleTweetStorage } from './module-tweet-storage';
 
 export abstract class BaseHelper {
   constructor(
     protected moduleName: string,
     protected moduleStorage: Readonly<ModuleStorage>,
+    protected moduleTweetStorage: Readonly<ModuleTweetStorage>,
     protected moduleSetting: any,
     protected socialAccount: SocialAccount,
   ) {}
@@ -17,6 +17,13 @@ export abstract class BaseHelper {
    */
   getStorage(): Readonly<ModuleStorage> {
     return this.moduleStorage;
+  }
+
+  /**
+   * ツイート別モジュールストレージの取得
+   */
+  getTweetStorage(): Readonly<ModuleTweetStorage> {
+    return this.moduleTweetStorage;
   }
 
   /**

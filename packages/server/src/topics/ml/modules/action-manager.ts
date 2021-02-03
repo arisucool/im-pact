@@ -11,6 +11,7 @@ import { PostToDiscordAction } from './actions/post-to-discord-action';
 import { WaitForSecondsAction } from './actions/wait-for-seconds-action';
 import { Topic } from 'src/topics/entities/topic.entity';
 import { WaitForScheduleAction } from './actions/wait-for-schedule-action';
+import { ModuleTweetStorage } from './module-tweet-storage';
 
 /**
  * アクションモジュールを管理するためのクラス
@@ -19,12 +20,14 @@ export class ActionManager {
   /**
    * コンストラクタ
    * @param moduleStorageRepository モジュールストレージを読み書きするためのリポジトリ
+   * @param extractedTweetRepository 抽出済みツイートを読み書きするためのリポジトリ
    * @param socialAccountRepository ソーシャルアカウントを読み書きするためのリポジトリ
    * @param actionSettings アクション設定
    * @param topicKeywords トピックのキーワード (実際に検索が行われるわけではない。キーワードを用いて何か処理を行うために使用される。)
    */
   constructor(
     private moduleStorageRepository: Repository<ModuleStorageEntity.ModuleStorage>,
+    private extractedTweetRepository: Repository<ExtractedTweet>,
     private socialAccountRepository: Repository<SocialAccount>,
     private actionSettings: { [key: string]: any }[],
     private topicKeywords: string[],
@@ -108,7 +111,10 @@ export class ActionManager {
    */
   async getModule(actionName: string, actionIndex: number = -1, topic: Topic) {
     // ModuleStorage の初期化
-    const moduleStorage = ModuleStorage.factory(actionName, this.moduleStorageRepository);
+    const moduleStorage = await ModuleStorage.factory(actionName, this.moduleStorageRepository);
+
+    // ModuleTweetStorage の初期化
+    const moduleTweetStorage = ModuleTweetStorage.factory(actionName, this.extractedTweetRepository, moduleStorage);
 
     // ソーシャルアカウントの取得
     // TODO: 複数アカウントの対応
@@ -125,6 +131,7 @@ export class ActionManager {
     const moduleHelper = ActionHelper.factory(
       actionName,
       moduleStorage,
+      moduleTweetStorage,
       actionSetting,
       socialAccount,
       topic,

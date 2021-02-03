@@ -3,6 +3,7 @@ import { Repository } from 'typeorm';
 import { TweetFilterHelper } from './tweet-filter-helper';
 import { ModuleStorage } from './module-storage';
 import * as ModuleStorageEntity from '../entities/module-storage.entity';
+import { CrawledTweet } from '../entities/crawled-tweet.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
 import { TweetFilter } from './tweet-filters/interfaces/tweet-filter.interface';
 import { TweetFilterBatch } from './tweet-filters/interfaces/tweet-filter-batch.interface';
@@ -12,6 +13,7 @@ import { TweetLikesFilter } from './tweet-filters/tweet-likes-filter';
 import { TweetAuthorProfileLikeFoloweeBayesianFilter } from './tweet-filters/tweet-author-profile-like-folowee-bayesian-filter';
 import { TweetTextBayesianFilter } from './tweet-filters/tweet-text-bayesian-filter';
 import { TfIllustImageClassificationFilter } from './tweet-filters/tf-illust-image-classification-filter';
+import { ModuleTweetStorage } from './module-tweet-storage';
 
 /**
  * ツイートフィルタモジュールを管理するためのクラス
@@ -22,12 +24,14 @@ export class TweetFilterManager {
   /**
    * コンストラクタ
    * @param moduleStorageRepository モジュールストレージを読み書きするためのリポジトリ
+   * @param crawledTweetRepository 収集済みツイートを読み書きするためのリポジトリ
    * @param socialAccountRepository ソーシャルアカウントを読み書きするためのリポジトリ
    * @param filterSettings ツイートフィルタ設定
    * @param topicKeywords トピックのキーワード (実際に検索が行われるわけではない。ベイジアンフィルタ等で学習からキーワードを除いて精度を上げる場合などに使用される。)
    */
   constructor(
     private moduleStorageRepository: Repository<ModuleStorageEntity.ModuleStorage>,
+    private crawledTweetRepository: Repository<CrawledTweet>,
     private socialAccountRepository: Repository<SocialAccount>,
     private filterSettings: { [key: string]: any }[],
     private topicKeywords: string[],
@@ -160,7 +164,10 @@ export class TweetFilterManager {
     if (this.modules[filterName]) return this.modules[filterName];
 
     // ModuleStorage の初期化
-    const moduleStorage = ModuleStorage.factory(filterName, this.moduleStorageRepository);
+    const moduleStorage = await ModuleStorage.factory(filterName, this.moduleStorageRepository);
+
+    // ModuleTweetStorage の初期化
+    const moduleTweetStorage = ModuleTweetStorage.factory(filterName, this.crawledTweetRepository, moduleStorage);
 
     // ソーシャルアカウントの取得
     // TODO: 複数アカウントの対応
@@ -177,6 +184,7 @@ export class TweetFilterManager {
     const moduleHelper = TweetFilterHelper.factory(
       filterName,
       moduleStorage,
+      moduleTweetStorage,
       filterSetting,
       socialAccount,
       this.topicKeywords,

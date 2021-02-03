@@ -103,4 +103,11 @@ export abstract class Tweet extends BaseEntity {
   @Column()
   @IsNotEmpty()
   rawJSONData: string;
+
+  // モジュールのデータ
+  @Column({
+    default: '{}',
+  })
+  @IsNotEmpty()
+  moduleData: string;
 }

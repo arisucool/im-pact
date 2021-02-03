@@ -88,6 +88,7 @@ export class ActionConsumer {
     }
     const actionManager = new ActionManager(
       this.moduleStorageRepository,
+      this.extractedTweetRepository,
       this.socialAccountRepository,
       actionSettings,
       topic.keywords,
@@ -182,6 +183,7 @@ export class ActionConsumer {
     }
     const actionManager = new ActionManager(
       this.moduleStorageRepository,
+      this.extractedTweetRepository,
       this.socialAccountRepository,
       actionSettings,
       topic.keywords,

@@ -13,6 +13,7 @@ import { ActionConsumer } from './worker-consumers/action.consumer';
 import { CrawlerConsumer } from './worker-consumers/crawler.consumer';
 import { TrainerConsumer } from './worker-consumers/trainer.consumer';
 import { RetrainerConsumer } from './worker-consumers/retrainer.consumer';
+import { CleanerConsumer } from './worker-consumers/cleaner.consumer';
 
 /**
  * トピックに関するキュー処理のためのモジュール
@@ -24,6 +25,9 @@ import { RetrainerConsumer } from './worker-consumers/retrainer.consumer';
     // キューを登録
     BullModule.registerQueue({
       name: 'action', // ./worker-consumers/action.consumer.ts にて処理される
+    }),
+    BullModule.registerQueue({
+      name: 'cleaner', // ./worker-consumers/cleaner.consumer.ts にて処理される
     }),
     BullModule.registerQueue({
       name: 'crawler', // ./worker-consumers/crawler.consumer.ts にて処理される
@@ -42,6 +46,7 @@ import { RetrainerConsumer } from './worker-consumers/retrainer.consumer';
     TwitterCrawlerService,
     // キューを処理するための Consumer
     ActionConsumer,
+    CleanerConsumer,
     CrawlerConsumer,
     TrainerConsumer,
     RetrainerConsumer,

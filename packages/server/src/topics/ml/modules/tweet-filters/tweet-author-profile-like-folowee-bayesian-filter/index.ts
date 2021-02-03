@@ -48,7 +48,7 @@ export class TweetAuthorProfileLikeFoloweeBayesianFilter implements TweetFilter,
     const label = isSelected ? 'accept' : 'reject';
     await this.bayes.learn(userProfile, label);
     // ベイジアンフィルタを保存
-    this.helper.getStorage().set('storedClassifier', this.bayes.toJson());
+    await this.helper.getStorage().set('storedClassifier', this.bayes.toJson());
   }
 
   async batch() {
@@ -108,7 +108,7 @@ export class TweetAuthorProfileLikeFoloweeBayesianFilter implements TweetFilter,
     }
 
     // 学習結果を保存
-    this.helper.getStorage().set('storedClassifier', this.bayes.toJson());
+    await this.helper.getStorage().set('storedClassifier', this.bayes.toJson());
   }
 
   protected async getFolowees(): Promise<any[]> {

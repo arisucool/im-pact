@@ -17,10 +17,4 @@ export class ModuleStorage extends BaseEntity {
   })
   @IsNotEmpty()
   value: string;
-
-  // 期限
-  @Column({
-    nullable: true,
-  })
-  expiresAt: Date;
 }

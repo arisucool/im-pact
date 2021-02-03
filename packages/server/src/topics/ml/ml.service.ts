@@ -11,6 +11,7 @@ import { MlModel } from './entities/ml-model.entity';
 import { Topic } from '../entities/topic.entity';
 import { ActionManager } from './modules/action-manager';
 import { ExtractedTweet } from './entities/extracted-tweet.entity';
+import { CrawledTweet } from './entities/crawled-tweet.entity';
 
 @Injectable()
 export class MlService {
@@ -21,13 +22,15 @@ export class MlService {
     private moduleStorageRepository: Repository<ModuleStorage>,
     @InjectRepository(MlModel)
     private mlModelRepository: Repository<MlModel>,
+    @InjectRepository(CrawledTweet)
+    private crawledTweetRepository: Repository<CrawledTweet>,
   ) {}
 
   /**
    * 利用可能なアクションの取得
    */
   async getAvailableActions() {
-    const actionManager = new ActionManager(this.moduleStorageRepository, this.socialAccountRepository, [], []);
+    const actionManager = new ActionManager(this.moduleStorageRepository, null, this.socialAccountRepository, [], []);
     const actionNames = await actionManager.getAvailableModuleNames();
 
     let actions = {};
@@ -64,7 +67,13 @@ export class MlService {
    * 利用可能なツイートフィルタの取得
    */
   async getAvailableTweetFilters() {
-    const filterManager = new TweetFilterManager(this.moduleStorageRepository, this.socialAccountRepository, [], []);
+    const filterManager = new TweetFilterManager(
+      this.moduleStorageRepository,
+      null,
+      this.socialAccountRepository,
+      [],
+      [],
+    );
     const filterNames = await filterManager.getAvailableModuleNames();
 
     let filters = {};
@@ -110,9 +119,21 @@ export class MlService {
    * @return トレーニングおよび検証の結果
    */
   async trainAndValidate(dto: TrainAndValidateDto) {
+    // データベース上のツイートとマージ
+    const trainingTweets = [];
+    for (const tweet of dto.trainingTweets) {
+      const crawledTweet = this.crawledTweetRepository.findOne(tweet.id) as any;
+      if (crawledTweet && crawledTweet.idStr === tweet.idStr) {
+        crawledTweet.selected = tweet.selected;
+        trainingTweets.push(crawledTweet);
+      } else {
+        trainingTweets.push(tweet);
+      }
+    }
+
     // データセットを生成
     Logger.log('getTrainingDatasets...', 'MlService/trainAndValidate');
-    let generatedDatasets = await this.getTrainingDatasets(dto.trainingTweets, dto.filters, dto.topicKeywords);
+    let generatedDatasets = await this.getTrainingDatasets(trainingTweets, dto.filters, dto.topicKeywords);
 
     // データセットの変数の数を取得
     const numOfFeatures = generatedDatasets.numOfFeatures;
@@ -143,7 +164,7 @@ export class MlService {
     // お手本分類の結果による検証を実行
     const resultOfTrainingTweets = await this.validateByTrainingTweets(
       trainedModel,
-      dto.trainingTweets,
+      trainingTweets,
       numOfFeatures,
       dto.filters,
       dto.topicKeywords,
@@ -154,7 +175,7 @@ export class MlService {
     // お手本分類の結果のうち、選択済みのツイートのみによる検証を実行
     const resultOfTrainingTweetsExceptUnselect = await this.validateByTrainingTweets(
       trainedModel,
-      dto.trainingTweets,
+      trainingTweets,
       numOfFeatures,
       dto.filters,
       dto.topicKeywords,
@@ -239,6 +260,7 @@ export class MlService {
     // ツイートフィルタを管理するモジュールを初期化
     const filterManager = new TweetFilterManager(
       this.moduleStorageRepository,
+      this.crawledTweetRepository,
       this.socialAccountRepository,
       filterSettings,
       topicKeywords,
@@ -265,7 +287,13 @@ export class MlService {
     for (let tweet of trainingTweets) {
       //console.log(`[MlService] getTrainingDatasets - Tweet: ${tweet.idStr}, ${tweet.selected}`);
       // 当該ツイートに対してツイートフィルタを実行し、分類のための変数を取得
-      let allFiltersResult = await filterManager.filterTweet(tweet);
+      let allFiltersResult = [];
+      try {
+        allFiltersResult = await filterManager.filterTweet(tweet);
+      } catch (e) {
+        Logger.error('Error occurred on tweet filters...', e.stack, 'MlService/getTrainingDatasets');
+        continue;
+      }
       const allFiltersResultFlat = [].concat(...allFiltersResult);
       numOfFeatures = allFiltersResultFlat.length;
       // 生データセットの行を生成
@@ -456,6 +484,7 @@ export class MlService {
     // フィルタマネージャを初期化
     const filterManager = new TweetFilterManager(
       this.moduleStorageRepository,
+      this.crawledTweetRepository,
       this.socialAccountRepository,
       filterSettings,
       topicKeywords,
@@ -530,6 +559,7 @@ export class MlService {
     // フィルタマネージャを初期化
     const filterManager = new TweetFilterManager(
       this.moduleStorageRepository,
+      this.crawledTweetRepository,
       this.socialAccountRepository,
       filterSettings,
       topicKeywords,

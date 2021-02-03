@@ -14,6 +14,11 @@ import { ModuleStorage } from './ml/entities/module-storage.entity';
 import { TwitterCrawlerService } from './ml/twitter-crawler.service';
 import { MlModel } from './ml/entities/ml-model.entity';
 
+// 自動クリーンアップ - 完了またはエラーにより終了したジョブを残す数
+// (この数を超えた古いジョブは削除される)
+const AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT = 3;
+const AUTO_CLEANUP_NUM_OF_FINISHED_TRAINER_QUEUE_JOBS_LEFT = 2;
+
 /**
  * トピックに関する WebAPI を構築するためのモジュール
  * (../app.module.ts から呼び出される)
@@ -26,15 +31,38 @@ import { MlModel } from './ml/entities/ml-model.entity';
     // (但し、キューの処理は、別アプリケーション (../worker-app.module.ts) にて行われる)
     BullModule.registerQueue({
       name: 'action',
+      defaultJobOptions: {
+        removeOnComplete: AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT,
+        removeOnFail: AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT,
+      },
+    }),
+    BullModule.registerQueue({
+      name: 'cleaner',
+      defaultJobOptions: {
+        removeOnComplete: AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT,
+        removeOnFail: AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT,
+      },
     }),
     BullModule.registerQueue({
       name: 'crawler',
+      defaultJobOptions: {
+        removeOnComplete: AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT,
+        removeOnFail: AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT,
+      },
     }),
     BullModule.registerQueue({
       name: 'trainer',
+      defaultJobOptions: {
+        removeOnComplete: AUTO_CLEANUP_NUM_OF_FINISHED_TRAINER_QUEUE_JOBS_LEFT,
+        removeOnFail: AUTO_CLEANUP_NUM_OF_FINISHED_TRAINER_QUEUE_JOBS_LEFT,
+      },
     }),
     BullModule.registerQueue({
       name: 'retrainer',
+      defaultJobOptions: {
+        removeOnComplete: AUTO_CLEANUP_NUM_OF_FINISHED_TRAINER_QUEUE_JOBS_LEFT,
+        removeOnFail: AUTO_CLEANUP_NUM_OF_FINISHED_TRAINER_QUEUE_JOBS_LEFT,
+      },
     }),
   ],
   controllers: [TopicsController, MlController],

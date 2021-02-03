@@ -1,9 +1,7 @@
 import { BaseHelper } from './base-helper';
-import * as Twitter from 'twitter';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
-import { Repository } from 'typeorm';
 import { ModuleStorage } from './module-storage';
-import * as ModuleStorageEntity from '../entities/module-storage.entity';
+import { ModuleTweetStorage } from './module-tweet-storage';
 import { ExtractedTweet } from '../entities/extracted-tweet.entity';
 import { Topic } from 'src/topics/entities/topic.entity';
 
@@ -11,12 +9,13 @@ export class ActionHelper extends BaseHelper {
   private constructor(
     protected moduleName: string,
     protected moduleStorage: Readonly<ModuleStorage>,
+    protected moduleTweetStorage: Readonly<ModuleTweetStorage>,
     protected moduleSetting: any,
     protected socialAccount: SocialAccount,
     protected topic: Topic,
     protected actionIndex: number,
   ) {
-    super(moduleName, moduleStorage, moduleSetting, socialAccount);
+    super(moduleName, moduleStorage, moduleTweetStorage, moduleSetting, socialAccount);
   }
 
   /**
@@ -25,12 +24,21 @@ export class ActionHelper extends BaseHelper {
   static readonly factory = (
     moduleName: string,
     moduleStorage: Readonly<ModuleStorage>,
+    moduleTweetStorage: Readonly<ModuleTweetStorage>,
     moduleSetting: any,
     socialAccount: SocialAccount,
     topic: Topic,
     actionIndex: number,
   ): Readonly<ActionHelper> => {
-    return new ActionHelper(moduleName, moduleStorage, moduleSetting, socialAccount, topic, actionIndex);
+    return new ActionHelper(
+      moduleName,
+      moduleStorage,
+      moduleTweetStorage,
+      moduleSetting,
+      socialAccount,
+      topic,
+      actionIndex,
+    );
   };
 
   /**

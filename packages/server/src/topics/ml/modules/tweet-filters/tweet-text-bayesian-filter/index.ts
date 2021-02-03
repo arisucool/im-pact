@@ -120,6 +120,6 @@ export class TweetTextBayesianFilter implements TweetFilter, TweetFilterTrain {
       await this.bayes.learn(tweet.text, label);
     }
     // ベイジアンフィルタを保存
-    this.helper.getStorage().set('storedClassifier', this.bayes.toJson());
+    await this.helper.getStorage().set('storedClassifier', this.bayes.toJson());
   }
 }

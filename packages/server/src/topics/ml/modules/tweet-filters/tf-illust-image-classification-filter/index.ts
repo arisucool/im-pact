@@ -72,12 +72,12 @@ export class TfIllustImageClassificationFilter implements TweetFilter {
     await this.initialize();
 
     // 当該ツイートの判定結果のキャッシュを検索
-    const cachedClassifiedNumber = await this.helper.getStorage().get(`classfiedCache-${tweet.idStr}`);
+    const cachedClassifiedNumber = await this.helper.getTweetStorage().get(tweet.id, 'classfiedCache');
     if (cachedClassifiedNumber) {
       // キャッシュがあれば、キャッシュから返す
-      /*console.log(
-        `[TfIllustImageClassificationFilter] filter - return from cache... ${cachedClassifiedNumber} for ID: ${tweet.idStr}`,
-      );*/
+      console.log(
+        `[TfIllustImageClassificationFilter] filter - return from cache... ${cachedClassifiedNumber} for ID: ${tweet.idStr} (extractedTweetId = ${tweet.id})`,
+      );
       return +cachedClassifiedNumber;
     }
 
@@ -115,7 +115,7 @@ export class TfIllustImageClassificationFilter implements TweetFilter {
     }
 
     // 値をキャッシュとして保存
-    await this.helper.getStorage().set(`classfiedCache-${tweet.idStr}`, classifiedNumber);
+    await this.helper.getTweetStorage().set(tweet.id, 'classfiedCache', classifiedNumber);
 
     // 値を返す
     return classifiedNumber;

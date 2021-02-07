@@ -1,19 +1,15 @@
 import * as fs from 'fs';
 import { Repository } from 'typeorm';
-import { TweetFilterHelper } from './tweet-filter-helper';
+import { TweetFilterHelper } from './module-helpers/tweet-filter.helper';
 import { ModuleStorage } from './module-storage';
 import * as ModuleStorageEntity from '../entities/module-storage.entity';
+import { ModuleTweetStorage } from './module-tweet-storage';
 import { CrawledTweet } from '../entities/crawled-tweet.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
 import { TweetFilter } from './tweet-filters/interfaces/tweet-filter.interface';
 import { TweetFilterBatch } from './tweet-filters/interfaces/tweet-filter-batch.interface';
 import { TweetFilterTrain } from './tweet-filters/interfaces/tweet-filter-train.interface';
-import { TweetRetweetsFilter } from './tweet-filters/tweet-retweets-filter';
-import { TweetLikesFilter } from './tweet-filters/tweet-likes-filter';
-import { TweetAuthorProfileLikeFoloweeBayesianFilter } from './tweet-filters/tweet-author-profile-like-folowee-bayesian-filter';
-import { TweetTextBayesianFilter } from './tweet-filters/tweet-text-bayesian-filter';
-import { TfIllustImageClassificationFilter } from './tweet-filters/tf-illust-image-classification-filter';
-import { ModuleTweetStorage } from './module-tweet-storage';
+import { ManagerHelper } from './manager.helper';
 
 /**
  * ツイートフィルタモジュールを管理するためのクラス
@@ -40,37 +36,10 @@ export class TweetFilterManager {
   }
 
   /**
-   * 利用可能なモジュール名の取得
+   * 利用可能なツイートフィルタ名の取得
    */
-  async getAvailableModuleNames(): Promise<string[]> {
-    // ツイートフィルタのモジュールディレクトリからディレクトリを列挙
-    let moduleDirNames: string[] = await new Promise((resolve, reject) => {
-      fs.readdir(`${__dirname}/tweet-filters/`, (err, files) => {
-        let directories: string[] = [];
-        files
-          .filter(filePath => {
-            return !fs.statSync(`${__dirname}/tweet-filters/${filePath}`).isFile();
-          })
-          .filter(filePath => {
-            return filePath !== 'interfaces';
-          })
-          .forEach(filePath => {
-            directories.push(filePath);
-          });
-        resolve(directories);
-      });
-    });
-    // 各ディレクトリ名をモジュール名 (キャメルケース) へ変換
-    moduleDirNames = moduleDirNames.map(str => {
-      let arr = str.split('-');
-      let capital = arr.map((item, index) =>
-        index ? item.charAt(0).toUpperCase() + item.slice(1).toLowerCase() : item.toLowerCase(),
-      );
-      let lowerCamelChars = capital.join('').split('');
-      lowerCamelChars[0] = lowerCamelChars[0].toUpperCase();
-      return lowerCamelChars.join('');
-    });
-    return moduleDirNames;
+  async getAvailableTweetFilterNames(): Promise<string[]> {
+    return await ManagerHelper.getAvailableTweetFilterNames();
   }
 
   /**
@@ -191,24 +160,17 @@ export class TweetFilterManager {
     );
 
     // モジュールの初期化
-    switch (filterName) {
-      case 'TfIllustImageClassificationFilter':
-        this.modules[filterName] = new TfIllustImageClassificationFilter(moduleHelper);
-        return this.modules[filterName];
-      case 'TweetAuthorProfileLikeFoloweeBayesianFilter':
-        this.modules[filterName] = new TweetAuthorProfileLikeFoloweeBayesianFilter(moduleHelper);
-        return this.modules[filterName];
-      case 'TweetLikesFilter':
-        this.modules[filterName] = new TweetLikesFilter(moduleHelper);
-        return this.modules[filterName];
-      case 'TweetRetweetsFilter':
-        this.modules[filterName] = new TweetRetweetsFilter(moduleHelper);
-        return this.modules[filterName];
-      case 'TweetTextBayesianFilter':
-        this.modules[filterName] = new TweetTextBayesianFilter(moduleHelper);
-        return this.modules[filterName];
+    const moduleDirectoryPath = await ManagerHelper.getDirectoryPathByTweetFilterName(filterName);
+    if (!moduleDirectoryPath) {
+      throw new Error(`There is no matched module (filterName = ${filterName}).`);
     }
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod = require(moduleDirectoryPath);
+    if (mod.default === undefined) {
+      throw new Error(`There is no default export on tweet filter (path = ${moduleDirectoryPath}).`);
+    }
+    this.modules[filterName] = new mod.default(moduleHelper);
 
-    return null;
+    return this.modules[filterName];
   }
 }

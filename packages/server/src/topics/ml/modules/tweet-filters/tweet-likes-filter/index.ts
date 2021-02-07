@@ -1,6 +1,6 @@
 import { TweetFilter, TweetFilterSettingsDefinition } from '../interfaces/tweet-filter.interface';
 import { Tweet } from 'src/topics/ml/entities/tweet.entity';
-import { TweetFilterHelper } from '../../tweet-filter-helper';
+import { TweetFilterHelper } from '../../module-helpers/tweet-filter.helper';
 
 export class TweetLikesFilter implements TweetFilter {
   constructor(private helper: Readonly<TweetFilterHelper>) {

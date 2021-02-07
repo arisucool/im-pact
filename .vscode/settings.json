@@ -1,0 +1,9 @@
+{
+  "eslint.validate": ["javascript", "typescript"],
+  "eslint.workingDirectories": [
+    { "directory": "./packages/client/", "changeProcessCWD": true },
+    { "directory": "./packages/server/", "changeProcessCWD": true },
+    { "pattern": "./module_packages/*/", "changeProcessCWD": true }
+  ],
+  "eslint.enable": true
+}

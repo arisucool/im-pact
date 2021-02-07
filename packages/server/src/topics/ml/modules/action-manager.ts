@@ -1,17 +1,13 @@
 import * as fs from 'fs';
 import { Repository } from 'typeorm';
 import * as ModuleStorageEntity from '../entities/module-storage.entity';
-import { ActionHelper } from './action-helper';
+import { ActionHelper } from './module-helpers/action.helper';
 import { ModuleStorage } from './module-storage';
+import { ModuleTweetStorage } from './module-tweet-storage';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
 import { ExtractedTweet } from '../entities/extracted-tweet.entity';
-import { Action } from './actions/interfaces/action.interface';
-import { ApprovalOnDiscordAction } from './actions/approval-on-discord-action';
-import { PostToDiscordAction } from './actions/post-to-discord-action';
-import { WaitForSecondsAction } from './actions/wait-for-seconds-action';
 import { Topic } from 'src/topics/entities/topic.entity';
-import { WaitForScheduleAction } from './actions/wait-for-schedule-action';
-import { ModuleTweetStorage } from './module-tweet-storage';
+import { ManagerHelper } from './manager.helper';
 
 /**
  * アクションモジュールを管理するためのクラス
@@ -34,37 +30,10 @@ export class ActionManager {
   ) {}
 
   /**
-   * 利用可能なアクションモジュール名の取得
+   * 利用可能なアクション名の取得
    */
-  async getAvailableModuleNames(): Promise<string[]> {
-    // アクションのモジュールディレクトリからディレクトリを列挙
-    let moduleDirNames: string[] = await new Promise((resolve, reject) => {
-      fs.readdir(`${__dirname}/actions/`, (err, files) => {
-        let directories: string[] = [];
-        files
-          .filter(filePath => {
-            return !fs.statSync(`${__dirname}/actions/${filePath}`).isFile();
-          })
-          .filter(filePath => {
-            return filePath !== 'interfaces';
-          })
-          .forEach(filePath => {
-            directories.push(filePath);
-          });
-        resolve(directories);
-      });
-    });
-    // 各ディレクトリ名をモジュール名 (キャメルケース) へ変換
-    moduleDirNames = moduleDirNames.map(str => {
-      let arr = str.split('-');
-      let capital = arr.map((item, index) =>
-        index ? item.charAt(0).toUpperCase() + item.slice(1).toLowerCase() : item.toLowerCase(),
-      );
-      let lowerCamelChars = capital.join('').split('');
-      lowerCamelChars[0] = lowerCamelChars[0].toUpperCase();
-      return lowerCamelChars.join('');
-    });
-    return moduleDirNames;
+  async getAvailableActionNames(): Promise<string[]> {
+    return await ManagerHelper.getAvailableActionNames();
   }
 
   /**
@@ -109,7 +78,7 @@ export class ActionManager {
    * @param actionIndex アクションのインデックス番号
    * @param topic トピック
    */
-  async getModule(actionName: string, actionIndex: number = -1, topic: Topic) {
+  async getModule(actionName: string, actionIndex = -1, topic: Topic) {
     // ModuleStorage の初期化
     const moduleStorage = await ModuleStorage.factory(actionName, this.moduleStorageRepository);
 
@@ -140,17 +109,15 @@ export class ActionManager {
 
     // モジュールの初期化
     // NOTE: ツイートフィルタと異なり、アクションはツイートごとにモジュールおよびヘルパを初期化する
-    switch (actionName) {
-      case 'ApprovalOnDiscordAction':
-        return new ApprovalOnDiscordAction(moduleHelper);
-      case 'PostToDiscordAction':
-        return new PostToDiscordAction(moduleHelper);
-      case 'WaitForSecondsAction':
-        return new WaitForSecondsAction(moduleHelper);
-      case 'WaitForScheduleAction':
-        return new WaitForScheduleAction(moduleHelper);
+    const moduleDirectoryPath = await ManagerHelper.getDirectoryPathByActionName(actionName);
+    if (!moduleDirectoryPath) {
+      throw new Error(`There is no matched module (actionName = ${actionName}).`);
     }
-
-    return null;
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod = require(moduleDirectoryPath);
+    if (mod.default === undefined) {
+      throw new Error(`There is no default export on action (path = ${moduleDirectoryPath}).`);
+    }
+    return new mod.default(moduleHelper);
   }
 }

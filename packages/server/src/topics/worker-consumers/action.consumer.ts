@@ -197,8 +197,15 @@ export class ActionConsumer {
       const action = actionSettings[actionIndex];
 
       // 当該アクションモジュールを取得
-      const mod: any = await actionManager.getModule(action.name, actionIndex, topic);
-      if (mod.execActionBulk == undefined) {
+      let mod: any = null,
+        moduleError = null;
+      try {
+        mod = await actionManager.getModule(action.name, actionIndex, topic);
+      } catch (e) {
+        // アクションモジュールの初期化に失敗したときは、モジュールエラーとして保持しておく
+        moduleError = e;
+      }
+      if (mod && mod.execActionBulk == undefined) {
         // 当該アクションがアクション一括実行に非対応ならば、次のアクションへ
         continue;
       }
@@ -222,23 +229,23 @@ export class ActionConsumer {
 
       // アクションを一括実行
       let results = {};
-      try {
-        results = await mod.execActionBulk(tweets);
-      } catch (e) {
-        // エラーを出力
-        Logger.error(
-          `Error occurred at action ${action.name} (actionIndex= ${actionIndex})... `,
-          e.stack,
-          'ActionConsumer/execBulkActions',
-        );
-        // 全ツイートともエラーとする
-        for (const tweet of tweets) {
-          results[tweet.id] = e;
+      if (!moduleError) {
+        try {
+          results = await mod.execActionBulk(tweets);
+        } catch (e) {
+          // 一括実行に致命的なエラーがあれば、モジュールエラーとして保持
+          moduleError = e;
         }
       }
 
-      if (results === null || results === undefined) {
-        // 全ツイートともエラーとする
+      // エラー処理
+      if (moduleError) {
+        // モジュールエラーがあれば、全ツイートともエラーとする
+        for (const tweet of tweets) {
+          results[tweet.id] = moduleError;
+        }
+      } else if (results === null || results === undefined) {
+        // 実行結果が空ならば、全ツイートともエラーとする
         results = {};
         for (const tweet of tweets) {
           results[tweet.id] = new Error(`Action ${action.name} returns null or undefined`);

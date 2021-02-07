@@ -31,9 +31,9 @@ export class MlService {
    */
   async getAvailableActions() {
     const actionManager = new ActionManager(this.moduleStorageRepository, null, this.socialAccountRepository, [], []);
-    const actionNames = await actionManager.getAvailableModuleNames();
+    const actionNames = await actionManager.getAvailableActionNames();
 
-    let actions = {};
+    const actions = {};
     for (const actionName of actionNames) {
       let mod = null;
       try {
@@ -50,7 +50,7 @@ export class MlService {
 
       actions[actionName] = {
         // アクションのバージョン
-        version: '1.0.0', // TODO
+        version: '1.0.0', // TODO:
         // アクションの説明
         description: mod.getDescription(),
         // アクション設定の定義
@@ -74,7 +74,7 @@ export class MlService {
       [],
       [],
     );
-    const filterNames = await filterManager.getAvailableModuleNames();
+    const filterNames = await filterManager.getAvailableTweetFilterNames();
 
     let filters = {};
     for (const filterName of filterNames) {
@@ -93,7 +93,7 @@ export class MlService {
 
       filters[filterName] = {
         // フィルタのバージョン
-        version: '1.0.0', // TODO
+        version: '1.0.0', // TODO:
         // フィルタの説明
         description: mod.getDescription(),
         // フィルタの適用範囲
@@ -394,8 +394,8 @@ export class MlService {
       epochs: TRAIN_EPOCHS,
       validationData: validationDataset,
       callbacks: {
-        onEpochEnd: async (epoch, epoch_log) => {
-          logs.push(epoch_log);
+        onEpochEnd: async (epoch, epochLog) => {
+          logs.push(epochLog);
         },
       },
     });
@@ -463,7 +463,7 @@ export class MlService {
     numOfFeatures: number,
     filterSettings: any[],
     topicKeywords: string[],
-    excludeUnselectedTweets: boolean = false,
+    excludeUnselectedTweets = false,
   ): Promise<{ score: number; tweets: any[] }> {
     // 検証するツイートを抽出
     let validationTweets: any[] = [];

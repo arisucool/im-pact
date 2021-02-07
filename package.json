@@ -4,15 +4,17 @@
   "private": true,
   "description": "\"im pact\" is Twitter crawler and bot for Producers and Everyone.",
   "scripts": {
-    "build": "lerna run build --scope=server --stream && lerna run build --scope=client --stream",
+    "build": "lerna run build --scope=@arisucool/im-pact-core --stream && lerna run build --scope=client --stream && lerna run build --scope={@arisucool/,}im-pact-{action,filter}-* --stream",
     "commit": "cz",
     "postinstall": "lerna bootstrap --hoist --nohoist=@types/jasmine --loglevel=verbose",
-    "start": "lerna run start:prod --scope=server --stream",
-    "start:dev": "lerna run start:dev --stream",
-    "test": "npm run test:server && npm run test:client",
-    "test-ci": "npm run test:server -- -- -- --coverage && npm run test:client -- -- -- --no-watch --code-coverage",
-    "test:client": "lerna run build:api-client --scope=server && lerna run test --scope=client --stream",
-    "test:server": "lerna run test --scope=server --stream"
+    "start": "lerna run start:prod --scope=@arisucool/im-pact-core --stream",
+    "start:dev": "lerna run start:dev --concurrency=100  --no-sort --stream",
+    "test": "npm run test:server && npm run test:client && npm run test:actions && npm run test:filters",
+    "test-ci": "lerna run build --scope=@arisucool/im-pact-core --stream && npm run test:server -- -- -- --coverage && npm run test:client -- -- -- --no-watch --code-coverage && npm run test:actions -- -- -- --coverage && npm run test:filters -- -- -- --coverage",
+    "test:actions": "lerna run test --scope={@arisucool/,}im-pact-action-* --stream",
+    "test:client": "lerna run test --scope=client --stream",
+    "test:filters": "lerna run test --scope={@arisucool/,}im-pact-filter-* --stream",
+    "test:server": "lerna run test --scope=@arisucool/im-pact-core --stream"
   },
   "husky": {
     "hooks": {

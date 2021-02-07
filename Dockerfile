@@ -3,6 +3,14 @@
 FROM openapitools/openapi-generator-cli:latest-release AS build-openapi-generator
 
 
+FROM node:14-slim AS package-jsons
+
+# Extract package.json of Actions and Tweet Filters from the build context
+COPY module_packages/ /opt/app/module_packages/
+RUN find /opt/app/module_packages -type f | grep -v -E 'package.json' | xargs rm -rf && \
+    rm -R /opt/app/module_packages/*/*/
+
+
 FROM node:14-slim
 
 WORKDIR /opt/app/
@@ -45,6 +53,7 @@ COPY --from=build-openapi-generator /usr/local/bin/docker-entrypoint.sh /opt/ope
 COPY lerna.json package.json ./
 COPY packages/client/package.json ./packages/client/
 COPY packages/server/package.json ./packages/server/
+COPY --from=package-jsons /opt/app/module_packages/ ./module_packages/
 
 RUN echo "Installing npm modules..." && \
     npm install || exit 1 && \

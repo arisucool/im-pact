@@ -57,7 +57,15 @@ jobs:
         env:
           COMPOSE_INTERACTIVE_NO_CLI: 1
         run: |
-          docker-compose run app npm run test-ci | tee /tmp/npm-test-log.txt
+          # Prevent node_modules directory in Action and Tweet Filter modules from disappearing by volume mounting
+          volumes=()
+          for dir in $( ls -1 -d module_packages/* | grep -Po "(im-pact-)*(action|filter)-.*" ); do
+          volumes+=( "--volume=/opt/app/module_packages/${dir}" )
+          done
+          volumes="$(IFS=" "; echo "${volumes[*]}")"
+
+          echo "Executing... docker-compose run --volume=${volumes} app npm run test-ci"
+          docker-compose run ${volumes} app npm run test-ci | tee /tmp/npm-test-log.txt
 
       - name: Collect test reports
         if: ${{ always() }}
@@ -80,18 +88,37 @@ jobs:
           fi
 
           # Copy the reports for client from the container
-          docker cp ${container_id}:/opt/app/packages/client/test-report/coverage/ /tmp/ || echo "Could not collect server coverage report"
+          docker cp ${container_id}:/opt/app/packages/client/test-report/coverage/ /tmp/ || echo "Could not collect client coverage report"
           if [ -d /tmp/coverage/ ]; then
             mkdir -p /tmp/coverages/client/
             mv /tmp/coverage/* /tmp/coverages/client/
             rm /tmp/coverage/ -R
           fi
-          docker cp ${container_id}:/opt/app/packages/client/test-report/result/ /tmp/ || echo "Could not collect server coverage report"
+          docker cp ${container_id}:/opt/app/packages/client/test-report/result/ /tmp/ || echo "Could not collect client coverage report"
           if [ -d /tmp/result/ ]; then
             mkdir -p /tmp/results/client/
             mv /tmp/result/* /tmp/results/client/
             rm /tmp/result/ -R
           fi
+
+          # Copy the reports for Actions and Tweet Filters from the container
+
+          for dir in $( ls -1 -d module_packages/* | grep -Po "(im-pact-)*(action|filter)-.*" ); do
+            docker cp ${container_id}:/opt/app/module_packages/${dir}/test-report/coverage/ /tmp/ || echo "Could not collect ${dir} coverage report"
+            if [ -d /tmp/coverage/ ]; then
+              mkdir -p /tmp/coverages/${dir}/
+              mv /tmp/coverage/* /tmp/coverages/${dir}/
+              rm /tmp/coverage/ -R
+            fi
+
+            docker cp ${container_id}:/opt/app/module_packages/${dir}/test-report/result/ /tmp/ || echo "Could not collect ${dir} coverage report"
+            if [ -d /tmp/result/ ]; then
+              mkdir -p /tmp/results/${dir}/
+              mv /tmp/result/* /tmp/results/${dir}/
+              rm /tmp/result/ -R
+            fi
+
+          done
 
       - name: Upload test reports to Artifacts of GitHub Actions
         if: ${{ always() }}
@@ -120,6 +147,28 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           require_tests: true
           report_paths: '/tmp/results/server/*.xml'
+
+      - name: Upload unit test result of actions to GitHub Checks
+        uses: mikepenz/action-junit-report@v2.1.1
+        if: ${{ always() }}
+        with:
+          check_name: Actions - Unit Test
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          require_tests: true
+          report_paths: |
+            /tmp/results/action-*/*.xml
+            /tmp/results/im-pact-action-*/*.xml
+
+      - name: Upload unit test result of Tweet Filters to GitHub Checks
+        uses: mikepenz/action-junit-report@v2.1.1
+        if: ${{ always() }}
+        with:
+          check_name: Tweet Filters - Unit Test
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          require_tests: true
+          report_paths: |
+            /tmp/results/filter-*/*.xml
+            /tmp/results/im-pact-filter-*/*.xml
 
       - name: 'Upload unit test coverages to Codecov'
         uses: codecov/codecov-action@v1

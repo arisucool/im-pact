@@ -5,6 +5,7 @@
   "description": "\"im pact\" is Twitter crawler and bot for Producers and Everyone.",
   "scripts": {
     "build": "lerna run build --scope=server --stream && lerna run build --scope=client --stream",
+    "commit": "cz",
     "postinstall": "lerna bootstrap --hoist --nohoist=@types/jasmine --loglevel=verbose",
     "start": "lerna run start:prod --scope=server --stream",
     "start:dev": "lerna run start:dev --stream",
@@ -13,11 +14,35 @@
     "test:client": "lerna run build:api-client --scope=server && lerna run test --scope=client --stream",
     "test:server": "lerna run test --scope=server --stream"
   },
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ],
+    "rules": {
+      "subject-case": [
+        0
+      ]
+    }
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
   "dependencies": {
     "lerna": "^3.20.2",
     "ts-node": "^9.1.1"
   },
   "devDependencies": {
+    "@commitlint/cli": "^11.0.0",
+    "@commitlint/config-conventional": "^11.0.0",
+    "cz-conventional-changelog": "^3.3.0",
+    "husky": "^4.3.8",
     "prettier": "^1.19.1"
   }
 }

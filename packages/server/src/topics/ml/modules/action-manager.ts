@@ -80,10 +80,14 @@ export class ActionManager {
    */
   async getModule(actionName: string, actionIndex = -1, topic: Topic) {
     // ModuleStorage の初期化
-    const moduleStorage = await ModuleStorage.factory(actionName, this.moduleStorageRepository);
+    const moduleStorage = await ModuleStorage.factory(`Action${actionName}`, this.moduleStorageRepository);
 
     // ModuleTweetStorage の初期化
-    const moduleTweetStorage = ModuleTweetStorage.factory(actionName, this.extractedTweetRepository, moduleStorage);
+    const moduleTweetStorage = ModuleTweetStorage.factory(
+      `Action${actionName}`,
+      this.extractedTweetRepository,
+      moduleStorage,
+    );
 
     // ソーシャルアカウントの取得
     // TODO: 複数アカウントの対応
@@ -98,7 +102,7 @@ export class ActionManager {
 
     // ヘルパの初期化
     const moduleHelper = ActionHelper.factory(
-      actionName,
+      `Action${actionName}`,
       moduleStorage,
       moduleTweetStorage,
       actionSetting,

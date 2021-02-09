@@ -133,10 +133,14 @@ export class TweetFilterManager {
     if (this.modules[filterName]) return this.modules[filterName];
 
     // ModuleStorage の初期化
-    const moduleStorage = await ModuleStorage.factory(filterName, this.moduleStorageRepository);
+    const moduleStorage = await ModuleStorage.factory(`Filter${filterName}`, this.moduleStorageRepository);
 
     // ModuleTweetStorage の初期化
-    const moduleTweetStorage = ModuleTweetStorage.factory(filterName, this.crawledTweetRepository, moduleStorage);
+    const moduleTweetStorage = ModuleTweetStorage.factory(
+      `Filter${filterName}`,
+      this.crawledTweetRepository,
+      moduleStorage,
+    );
 
     // ソーシャルアカウントの取得
     // TODO: 複数アカウントの対応
@@ -151,7 +155,7 @@ export class TweetFilterManager {
 
     // ヘルパの初期化
     const moduleHelper = TweetFilterHelper.factory(
-      filterName,
+      `Filter${filterName}`,
       moduleStorage,
       moduleTweetStorage,
       filterSetting,

@@ -82,7 +82,7 @@ export default class FilterTfCgIllustImageClassification implements TweetFilter 
 
     // ツイートから画像URLを取得
     let tweetImageUrls = null;
-    if (1 <= tweet.imageUrls.length) {
+    if (tweet.imageUrls && 1 <= tweet.imageUrls.length) {
       tweetImageUrls = tweet.imageUrls;
     } else {
       // TODO: 開発中の古い仕様のために、このコードを残している。

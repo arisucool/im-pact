@@ -84,7 +84,7 @@ export class RetrainerConsumer {
       const crawledTweets = await this.crawledTweetRepository.find({
         where: {
           //socialAccount: tweet.socialAccount,
-          crawlKeyword: tweet.crawlKeyword,
+          crawlQuery: tweet.crawlQuery,
           idStr: tweet.idStr,
         },
       });
@@ -117,7 +117,7 @@ export class RetrainerConsumer {
         return JSON.parse(trainingTweetJSON);
       }),
       filters: filterPattern.filters,
-      topicKeywords: topic.keywords,
+      topicKeywords: topic.searchCondition.keywords,
     };
     const result = await this.mlService.trainAndValidate(trainAndValidateDto);
     // ジョブのステータスを更新
@@ -139,7 +139,7 @@ export class RetrainerConsumer {
       filterPattern.trainedModelId,
       [tweet],
       filterPattern.filters,
-      topic.keywords,
+      topic.searchCondition.keywords,
     );
 
     // 分類されたツイートを取得してデータベースを更新

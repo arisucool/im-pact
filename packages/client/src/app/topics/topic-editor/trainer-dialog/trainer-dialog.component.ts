@@ -18,7 +18,7 @@ export class TrainerDialogComponent implements OnInit {
   public static RECOMMENDED_MIN_NUM_OF_SELECTED_TWEETS = 50;
   // Twitter の検索条件
   public crawlSocialAccountId: number;
-  public keywords: string[];
+  public searchCondition: any;
   // Twitter の検索結果
   public isLoading = false;
   public tweets: any[];
@@ -39,7 +39,7 @@ export class TrainerDialogComponent implements OnInit {
   async ngOnInit() {
     // コンポーネントから渡された値を取得
     this.crawlSocialAccountId = +this.data.crawlSocialAccountId;
-    this.keywords = this.data.keywords;
+    this.searchCondition = this.data.searchCondition;
     this.tweets = this.data.tweets || null;
     // 値を初期化
     this.status = 'しばらくお待ちください...';
@@ -63,12 +63,8 @@ export class TrainerDialogComponent implements OnInit {
    */
   async getSampleTweets() {
     this.isLoading = true;
-    let tweets = [];
-    for (const keyword of this.keywords) {
-      this.status = `ツイートを検索しています... ${keyword}`;
-      const keywordTweets = await this.topicsService.getSampleTweets(this.crawlSocialAccountId, keyword);
-      tweets = tweets.concat(keywordTweets);
-    }
+    this.status = `ツイートを検索しています...`;
+    let tweets = await this.topicsService.getSampleTweets(this.crawlSocialAccountId, this.searchCondition);
     this.status = `お待ちください...`;
     // リツイート数でソート
     tweets = tweets.sort((a: any, b: any) => b.crawledRetweetCount - a.crawledRetweetCount);
@@ -83,11 +79,8 @@ export class TrainerDialogComponent implements OnInit {
   async getMoreSampleTweets() {
     this.isLoading = true;
     let tweets = this.tweets;
-    for (const keyword of this.keywords) {
-      this.status = `ツイートを追加検索しています... ${keyword}`;
-      const keywordTweets = await this.topicsService.getSampleTweets(this.crawlSocialAccountId, keyword);
-      tweets = tweets.concat(keywordTweets);
-    }
+    this.status = `ツイートを追加検索しています...`;
+    tweets = tweets.concat(await this.topicsService.getSampleTweets(this.crawlSocialAccountId, this.searchCondition));
     this.status = `お待ちください...`;
     // 重複を除去
     tweets = tweets.filter((item, i, self) => self.findIndex(item_ => item.idStr === item_.idStr) === i);

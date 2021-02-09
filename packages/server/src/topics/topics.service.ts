@@ -165,7 +165,7 @@ export class TopicsService {
   async create(dto: CreateTopicDto): Promise<Topic> {
     const topic = new Topic();
     topic.name = dto.name;
-    topic.keywords = dto.keywords;
+    topic.searchCondition = dto.searchCondition;
     topic.crawlSocialAccount = new SocialAccount();
     topic.crawlSocialAccount.id = dto.crawlSocialAccountId;
     topic.crawlSchedule = dto.crawlSchedule;

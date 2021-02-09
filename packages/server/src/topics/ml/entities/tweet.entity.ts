@@ -11,11 +11,18 @@ export abstract class Tweet extends BaseEntity {
   @IsNotEmpty()
   crawledAt: Date;
 
-  // 収集時に使用されたキーワード文字列
+  // 収集時に使用されたクエリ文字列
   @Column({
     nullable: true,
   })
-  crawlKeyword: string;
+  crawlQuery: string;
+
+  // 収集時に使用された検索言語
+  @Column({
+    nullable: false,
+    default: 'ja',
+  })
+  crawlLanguage: string;
 
   // ツイートの本文
   @Column()
@@ -46,6 +53,15 @@ export abstract class Tweet extends BaseEntity {
   // ツイートのURL
   @Column()
   url: string;
+
+  // ツイートの画像URL
+  @Column({
+    type: 'text',
+    array: true,
+    nullable: true,
+    default: () => 'array[]::text[]',
+  })
+  imageUrls: string[];
 
   // ツイートのハッシュタグ
   @Column({

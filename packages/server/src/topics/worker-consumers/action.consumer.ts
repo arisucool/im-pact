@@ -91,7 +91,7 @@ export class ActionConsumer {
       this.extractedTweetRepository,
       this.socialAccountRepository,
       actionSettings,
-      topic.keywords,
+      topic.searchCondition.keywords,
     );
 
     // 各ツイートを反復
@@ -186,7 +186,7 @@ export class ActionConsumer {
       this.extractedTweetRepository,
       this.socialAccountRepository,
       actionSettings,
-      topic.keywords,
+      topic.searchCondition.keywords,
     );
 
     // アクション実行結果を代入する連想配列 (キーは収集済みツイートのID) を初期化
@@ -327,7 +327,7 @@ export class ActionConsumer {
    * @param numOfTweets 要求するツイート件数
    * @return 分類済みツイートの配列
    */
-  protected async getActionUncompletedTweets(topic: Topic, numOfTweets: number = 50): Promise<ExtractedTweet[]> {
+  protected async getActionUncompletedTweets(topic: Topic, numOfTweets = 50): Promise<ExtractedTweet[]> {
     // トピックのアクション数を取得
     const numOfActions = topic.actions.length;
 

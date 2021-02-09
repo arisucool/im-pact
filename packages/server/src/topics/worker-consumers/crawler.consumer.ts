@@ -4,15 +4,10 @@ import { Job, DoneCallback } from 'bull';
 import { MlService } from '../ml/ml.service';
 import { TwitterCrawlerService } from '../ml/twitter-crawler.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
 import { Repository, MoreThanOrEqual } from 'typeorm';
 import { CrawledTweet } from '../ml/entities/crawled-tweet.entity';
 import { ExtractedTweet } from '../ml/entities/extracted-tweet.entity';
 import { Topic } from '../entities/topic.entity';
-
-export default function(job: Job, cb: DoneCallback) {
-  cb(null, 'It works');
-}
 
 /**
  * 収集に関するキューを処理するためのコンシューマ
@@ -91,7 +86,7 @@ export class CrawlerConsumer {
       trainedModelId,
       unextractedTweets,
       filterSettings,
-      topic.keywords,
+      topic.searchCondition.keywords,
     );
 
     // ジョブのステータスを更新
@@ -131,21 +126,17 @@ export class CrawlerConsumer {
    * @param numOfRequestTweets 要求するツイート件数
    * @return 未分類ツイートの配列
    */
-  private async getUnextractedTweets(topic: Topic, numOfRequestTweets: number = 50): Promise<CrawledTweet[]> {
-    // トピックのキーワードを反復
-    for (const keyword of topic.keywords) {
-      // 当該キーワードにてツイートを収集
-      const NUM_OF_MAX_CRAWL_TWEETS_OF_EACH_KEYWORD = numOfRequestTweets * 3; // TODO: API のコール制限を考えつつ調整できるようにしたい
-      await this.twitterCrawlerService.crawlTweets(
-        topic.crawlSocialAccount.id,
-        keyword,
-        NUM_OF_MAX_CRAWL_TWEETS_OF_EACH_KEYWORD,
-      );
-    }
+  private async getUnextractedTweets(topic: Topic, numOfRequestTweets = 50): Promise<CrawledTweet[]> {
+    // ツイートを収集
+    await this.twitterCrawlerService.crawlTweets(
+      topic.crawlSocialAccount.id,
+      topic.searchCondition,
+      numOfRequestTweets * 3 * topic.searchCondition.keywords.length,
+    );
 
     // トピックのキーワードを再度反復
     let tweets = [];
-    for (const keyword of topic.keywords) {
+    for (const keyword of topic.searchCondition.keywords) {
       // 当該キーワードにて最近収集されたツイートを検索
       const NUM_OF_MAX_FIND_TWEETS_OF_EACH_KEYWORD = numOfRequestTweets * 10;
       const RANGE_OF_HOURS_TO_FIND = 24; // 24時間前に収集したツイートまで
@@ -155,7 +146,7 @@ export class CrawlerConsumer {
 
       const tweetsOfThisKeyword = await this.crawledTweetRepository.find({
         where: {
-          crawlKeyword: keyword,
+          crawlQuery: keyword,
           crawledAt: MoreThanOrEqual(whereCrawledAt),
         },
         order: {

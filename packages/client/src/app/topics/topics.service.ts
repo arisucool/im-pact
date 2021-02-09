@@ -45,7 +45,15 @@ export class TopicsService {
     name: any;
     crawlSocialAccount: any;
     crawlSchedule: any;
-    keywords: any[];
+    searchCondition: {
+      keywords: string[];
+      language: string;
+      to: string;
+      minFaves: number;
+      minRetweets: number;
+      minReplies: number;
+      images: boolean;
+    };
     filterPatterns: any[];
     enabledFilterPatternIndex: number;
     actions: any[];
@@ -57,7 +65,7 @@ export class TopicsService {
         name: topic.name,
         crawlSchedule: topic.crawlSchedule,
         crawlSocialAccountId: +topic.crawlSocialAccount.id,
-        keywords: topic.keywords,
+        searchCondition: topic.searchCondition,
         filterPatterns: topic.filterPatterns,
         enabledFilterPatternIndex: topic.enabledFilterPatternIndex,
         actions: topic.actions,
@@ -70,7 +78,7 @@ export class TopicsService {
         id: topic.id,
         name: topic.name,
         crawlSchedule: topic.crawlSchedule,
-        keywords: topic.keywords,
+        searchCondition: topic.searchCondition,
         filterPatterns: topic.filterPatterns,
         enabledFilterPatternIndex: topic.enabledFilterPatternIndex,
         actions: topic.actions,
@@ -180,10 +188,21 @@ export class TopicsService {
   /**
    * 学習用サンプルツイートの取得
    */
-  async getSampleTweets(crawlSocialAccountId: number, keyword: string) {
+  async getSampleTweets(
+    crawlSocialAccountId: number,
+    searchCondition: {
+      keywords: string[];
+      language: string;
+      to?: string;
+      minFaves?: number;
+      minRetweets?: number;
+      minReplies?: number;
+      images?: boolean;
+    },
+  ) {
     const dto: GetExampleTweetsDto = {
       crawlSocialAccountId: crawlSocialAccountId,
-      keyword: keyword,
+      searchCondition: searchCondition,
     };
     const tweets: any[] = await this.api.mlControllerGetExampleTweets(dto).toPromise();
     for (const tweet of tweets) {

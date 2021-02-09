@@ -36,8 +36,16 @@ export class TopicEditorComponent implements OnInit {
     },
     // 収集スケジュール
     crawlSchedule: null,
-    // キーワード
-    keywords: [],
+    // 検索条件
+    searchCondition: {
+      keywords: [],
+      language: null,
+      to: null,
+      minFaves: 0,
+      minRetweets: 0,
+      minReplies: 0,
+      images: false,
+    },
     // ツイートフィルタ
     filterPatterns: [
       {
@@ -142,11 +150,14 @@ export class TopicEditorComponent implements OnInit {
    * キーワードの追加
    */
   addKeyword(): void {
-    if (1 <= this.topic.keywords.length && this.topic.keywords[this.topic.keywords.length - 1].length === 0) {
+    if (
+      1 <= this.topic.searchCondition.keywords.length &&
+      this.topic.searchCondition.keywords[this.topic.searchCondition.keywords.length - 1].length === 0
+    ) {
       // 既に空のキーワードがあれば何もしない
       return;
     }
-    this.topic.keywords.push('');
+    this.topic.searchCondition.keywords.push('');
   }
 
   /**
@@ -154,7 +165,9 @@ export class TopicEditorComponent implements OnInit {
    * @param delete_keyword キーワード
    */
   deleteKeyword(deleteKeyword: string): void {
-    this.topic.keywords = this.topic.keywords.filter(keyword => keyword !== deleteKeyword);
+    this.topic.searchCondition.keywords = this.topic.searchCondition.keywords.filter(
+      keyword => keyword !== deleteKeyword,
+    );
   }
 
   /**
@@ -162,7 +175,7 @@ export class TopicEditorComponent implements OnInit {
    */
   async openTrainerDialog() {
     // 設定状況を確認
-    if (this.topic.keywords.length <= 0 || this.topic.keywords[0].length <= 0) {
+    if (this.topic.searchCondition.keywords.length <= 0 || this.topic.searchCondition.keywords[0].length <= 0) {
       // キーワードが一つも登録されていなければ、エラーを表示
       this.snackBar.open('エラー: キーワードが一つも追加されていません。先にキーワードの追加を行ってください。', null, {
         duration: 5000,
@@ -174,7 +187,7 @@ export class TopicEditorComponent implements OnInit {
     const dialogRef = this.dialog.open(TrainerDialogComponent, {
       data: {
         crawlSocialAccountId: this.topic.crawlSocialAccount.id,
-        keywords: this.topic.keywords,
+        searchCondition: this.topic.searchCondition,
         // 前回のお手本分類の結果 (お手本分類の編集を行う場合のために)
         tweets: this.topic.trainingTweets || null,
       },
@@ -197,7 +210,7 @@ export class TopicEditorComponent implements OnInit {
     }
 
     // 設定状況を確認
-    if (this.topic.keywords.length <= 0 || this.topic.keywords[0].length <= 0) {
+    if (this.topic.searchCondition.keywords.length <= 0 || this.topic.searchCondition.keywords[0].length <= 0) {
       // キーワードが一つも登録されていなければ、エラーを表示
       this.snackBar.open('エラー: キーワードが一つも追加されていません。先にキーワードの追加を行ってください。', null, {
         duration: 5000,
@@ -226,7 +239,7 @@ export class TopicEditorComponent implements OnInit {
       data: {
         topicId: this.topic.id,
         filters: this.topic.filterPatterns[filterPatternIndex].filters,
-        topicKeywords: this.topic.keywords,
+        topicKeywords: this.topic.searchCondition.keywords,
         trainingTweets: this.topic.trainingTweets,
       },
     });

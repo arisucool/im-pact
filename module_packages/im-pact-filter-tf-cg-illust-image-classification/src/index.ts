@@ -81,7 +81,13 @@ export default class FilterTfCgIllustImageClassification implements TweetFilter 
     }
 
     // ツイートから画像URLを取得
-    const tweetImageUrls = this.getImageUrlsByTweet(JSON.parse(tweet.rawJSONData));
+    let tweetImageUrls = null;
+    if (1 <= tweet.imageUrls.length) {
+      tweetImageUrls = tweet.imageUrls;
+    } else {
+      // TODO: 開発中の古い仕様のために、このコードを残している。
+      tweetImageUrls = this.getImageUrlsByTweet(JSON.parse(tweet.rawJSONData));
+    }
     if (tweetImageUrls.length === 0) {
       // 画像がなければ、0を返す
       return 0;

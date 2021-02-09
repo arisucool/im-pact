@@ -92,7 +92,7 @@ export class TopicDashboardComponent implements OnInit {
     await this.loadTopic(topicId);
 
     // 承認ツイートの読み込み (アクション別)
-    for (const [actionIndex] of this.topic.actions) {
+    for (const [actionIndex] of this.topic.actions.entries()) {
       this.isLoadingAcceptedTweetsByActions[actionIndex] = true;
       await this.loadAcceptedTweets(actionIndex, null);
     }

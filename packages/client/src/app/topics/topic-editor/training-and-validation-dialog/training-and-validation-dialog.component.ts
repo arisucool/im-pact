@@ -27,7 +27,7 @@ export class TrainingAndValidationDialogComponent implements OnInit {
   tweets: any[];
 
   // 絞り込みモード
-  filterMode: string = 'all';
+  filterMode = 'all';
 
   // トピックID
   topicId: number;
@@ -60,7 +60,7 @@ export class TrainingAndValidationDialogComponent implements OnInit {
     await this.trainAndValidate();
   }
 
-  async onChangeFilterMode(event: any) {
+  async onChangeFilterMode() {
     this.loadTweets();
   }
 
@@ -87,8 +87,8 @@ export class TrainingAndValidationDialogComponent implements OnInit {
 
     // トレーニングおよび検証を実行
     this.status = 'AIがトレーニングしています...';
-    let trainingResult,
-      validationResult = null;
+    let trainingResult = null;
+    let validationResult = null;
     try {
       const result = await this.topicsService.trainAndValidate(
         this.topicId,
@@ -140,22 +140,16 @@ export class TrainingAndValidationDialogComponent implements OnInit {
     let tweets = this.validationResult.classifiedTweets;
 
     // 絞り込み
-    if (this.filterMode == 'correct') {
+    if (this.filterMode === 'correct') {
       // 正解ツイートのみならば
-      tweets = tweets.filter((tweet: any) => {
-        return tweet.predictedSelect === tweet.selected;
-      });
+      tweets = tweets.filter((tweet: any) => tweet.predictedSelect === tweet.selected);
     } else if (this.filterMode === 'incorrect') {
       // 不正解ツイートのみならば
-      tweets = tweets.filter((tweet: any) => {
-        return tweet.predictedSelect !== tweet.selected;
-      });
+      tweets = tweets.filter((tweet: any) => tweet.predictedSelect !== tweet.selected);
     }
 
     // リツイート数でソート
-    tweets = tweets.sort((a: any, b: any) => {
-      return b.crawledRetweetCount - a.crawledRetweetCount;
-    });
+    tweets = tweets.sort((a: any, b: any) => b.crawledRetweetCount - a.crawledRetweetCount);
 
     // ツイートの表示
     this.tweets = tweets;

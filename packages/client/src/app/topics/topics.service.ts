@@ -18,7 +18,7 @@ export class TopicsService {
    * @param topicId トピックID
    */
   async getTopic(topicId: number) {
-    let topic: any = await this.api.topicsControllerFindOne(topicId).toPromise();
+    const topic: any = await this.api.topicsControllerFindOne(topicId).toPromise();
 
     // JSON でシリアライズされた項目をパース
     // TODO: APIクライアント側でどうにかする方法がないのかを考える
@@ -53,7 +53,7 @@ export class TopicsService {
   }) {
     if (topic.id === null) {
       // 新規作成
-      let dto: CreateTopicDto = {
+      const dto: CreateTopicDto = {
         name: topic.name,
         crawlSchedule: topic.crawlSchedule,
         crawlSocialAccountId: +topic.crawlSocialAccount.id,
@@ -66,7 +66,7 @@ export class TopicsService {
       return await this.api.topicsControllerCreate(dto).toPromise();
     } else {
       // 編集
-      let dto: UpdateTopicDto = {
+      const dto: UpdateTopicDto = {
         id: topic.id,
         name: topic.name,
         crawlSchedule: topic.crawlSchedule,
@@ -185,8 +185,8 @@ export class TopicsService {
       crawlSocialAccountId: crawlSocialAccountId,
       keyword: keyword,
     };
-    let tweets: any[] = await this.api.mlControllerGetExampleTweets(dto).toPromise();
-    for (let tweet of tweets) {
+    const tweets: any[] = await this.api.mlControllerGetExampleTweets(dto).toPromise();
+    for (const tweet of tweets) {
       tweet.selected = false;
     }
     return tweets;
@@ -223,7 +223,7 @@ export class TopicsService {
           .mlControllerGetStatusOfTrainAndValidate(jobId)
           .toPromise()
           .then((jobStatus: any) => {
-            if (jobStatus.status != 'completed' && jobStatus.status != 'failed') return;
+            if (jobStatus.status !== 'completed' && jobStatus.status !== 'failed') return;
             clearInterval(interval);
             if (jobStatus.status === 'failed') {
               return reject(jobStatus.errorMessage);

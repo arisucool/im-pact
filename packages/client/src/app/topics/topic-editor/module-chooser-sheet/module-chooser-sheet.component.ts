@@ -7,7 +7,7 @@ import { TopicsService } from '../../topics.service';
  * (ツイートフィルタまたはアクションを追加するときに用いられる)
  */
 @Component({
-  selector: 'module-chooser-sheet',
+  selector: 'app-module-chooser-sheet',
   templateUrl: './module-chooser-sheet.component.html',
 })
 export class ModuleChooserSheetComponent implements OnInit {
@@ -18,7 +18,7 @@ export class ModuleChooserSheetComponent implements OnInit {
 
   constructor(
     @Inject(MAT_BOTTOM_SHEET_DATA) public data: any,
-    private _bottomSheetRef: MatBottomSheetRef<ModuleChooserSheetComponent>,
+    private bottomSheetRef: MatBottomSheetRef<ModuleChooserSheetComponent>,
     private topicsService: TopicsService,
   ) {
     this.moduleType = data.moduleType || null;
@@ -46,7 +46,7 @@ export class ModuleChooserSheetComponent implements OnInit {
 
     // 連想配列から配列へ変換
     this.items = [];
-    for (let key of Object.keys(itemsObject)) {
+    for (const key of Object.keys(itemsObject)) {
       const item = itemsObject[key];
       item.name = key;
       this.items.push(item);
@@ -55,12 +55,12 @@ export class ModuleChooserSheetComponent implements OnInit {
 
   /**
    * アイテムがクリックされたときに呼び出されるイベントハンドラ
-   * @param item_name 選ばれた選択肢
+   * @param itemName 選ばれた選択肢
    * @param event マウスイベント
    */
-  onItemClick(item_name: string, event: MouseEvent): void {
+  onItemClick(itemName: string, event: MouseEvent): void {
     // ボトムシートを閉じて、呼出元へ選択されたアイテムを返す
-    this._bottomSheetRef.dismiss(item_name);
+    this.bottomSheetRef.dismiss(itemName);
     event.preventDefault();
   }
 }

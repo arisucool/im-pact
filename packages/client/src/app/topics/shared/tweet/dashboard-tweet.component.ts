@@ -9,7 +9,7 @@ import { TweetComponent } from './tweet.component';
 export class DashboardTweetComponent extends TweetComponent implements OnInit {
   @Input() tweet: any;
   @Input() actions: any[];
-  @Output() onItemButtonClickedEvent = new EventEmitter<{
+  @Output() itemButtonClickedEvent = new EventEmitter<{
     tweetIdStr: string;
     selected: boolean;
     actionIndex?: number;
@@ -23,7 +23,7 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
   filtersResult: string[];
 
   // アイテムメニューを表示しているか否か
-  isShowingItemMenu: boolean = false;
+  isShowingItemMenu = false;
 
   // アイテムメニューの選択肢
   detinationActions: string[];
@@ -37,14 +37,14 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
     this.rawData = JSON.parse(this.tweet.rawJSONData);
     this.filtersResult = this.tweet.filtersResult.map(result => {
       if (Number.isInteger(result) || !result.match(/\./)) {
-        return new String(result);
+        return String(result);
       } else {
         return parseFloat(result).toFixed(1);
       }
     });
 
     // 当該ツイートがどのアクションまで実行されたかを取得
-    let completeActionIndex = this.tweet.completeActionIndex;
+    const completeActionIndex = this.tweet.completeActionIndex;
 
     // 当該ツイートの遷移可能なアクションを列挙
     this.detinationActions = JSON.parse(JSON.stringify(this.actions)).map((action: any, index: number) => {
@@ -53,9 +53,7 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
     });
     if (this.isSelected) {
       // 承認済みツイートならば、現在所属しているアクションを除く
-      this.detinationActions = this.detinationActions.filter((action: any, index: number) => {
-        return completeActionIndex + 1 !== index;
-      });
+      this.detinationActions = this.detinationActions.filter((action: any, index: number) => completeActionIndex + 1 !== index);
     }
   }
 
@@ -64,7 +62,7 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
    */
   onItemAccepted(actionIndex: number) {
     // 親コンポーネントへイベントを送信
-    this.onItemButtonClickedEvent.emit({
+    this.itemButtonClickedEvent.emit({
       tweetIdStr: this.tweet.idStr,
       selected: true,
       actionIndex: actionIndex,
@@ -76,7 +74,7 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
    */
   onItemRejected() {
     // 親コンポーネントへイベントを送信
-    this.onItemButtonClickedEvent.emit({
+    this.itemButtonClickedEvent.emit({
       tweetIdStr: this.tweet.idStr,
       selected: false,
     });

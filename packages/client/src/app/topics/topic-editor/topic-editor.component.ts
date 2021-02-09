@@ -18,6 +18,10 @@ import { MatTabGroup } from '@angular/material/tabs';
   styleUrls: ['./topic-editor.component.scss'],
 })
 export class TopicEditorComponent implements OnInit {
+  // ツイートフィルタのパターンのタブを制御するための変数
+  @ViewChild(MatTabGroup) tabGroup: MatTabGroup;
+  currentShowingFilterPatternTabIndex = 0;
+
   // トピック
   topic = {
     // トピックID
@@ -64,10 +68,6 @@ export class TopicEditorComponent implements OnInit {
 
 # 【例】 7月31日の毎時0分・15分・30分・45分に実行する場合
 0,15,30,45  *  31  7  *`;
-
-  // ツイートフィルタのパターンのタブを制御するための変数
-  @ViewChild(MatTabGroup) tabGroup: MatTabGroup;
-  currentShowingFilterPatternTabIndex = 0;
 
   constructor(
     private topicsService: TopicsService,
@@ -127,7 +127,7 @@ export class TopicEditorComponent implements OnInit {
   async save() {
     console.log(this.topic);
     try {
-      let savedTopic: any = await this.topicsService.saveTopic(this.topic);
+      const savedTopic: any = await this.topicsService.saveTopic(this.topic);
 
       this.snackBar.open('トピックを保存しました', null, { duration: 1000 });
 
@@ -153,10 +153,8 @@ export class TopicEditorComponent implements OnInit {
    * 指定されたキーワードの削除
    * @param delete_keyword キーワード
    */
-  deleteKeyword(delete_keyword: string): void {
-    this.topic.keywords = this.topic.keywords.filter(keyword => {
-      return keyword !== delete_keyword;
-    });
+  deleteKeyword(deleteKeyword: string): void {
+    this.topic.keywords = this.topic.keywords.filter(keyword => keyword !== deleteKeyword);
   }
 
   /**
@@ -194,7 +192,7 @@ export class TopicEditorComponent implements OnInit {
    * @param filterPatternIndex 使用するツイートフィルタパターンのインデックス番号
    */
   async openTrainingAndValidationDialog(filterPatternIndex: number = null) {
-    if (filterPatternIndex == -1) {
+    if (filterPatternIndex === -1) {
       filterPatternIndex = this.topic.enabledFilterPatternIndex;
     }
 
@@ -262,7 +260,7 @@ export class TopicEditorComponent implements OnInit {
     let filterPatternNameNumber = 0;
     for (const pattern of this.topic.filterPatterns) {
       if (pattern.name.match(/(\d+)$/)) {
-        const num = parseInt(RegExp.$1);
+        const num = parseInt(RegExp.$1, 10);
         if (filterPatternNameNumber < num) {
           filterPatternNameNumber = num;
         }
@@ -290,7 +288,7 @@ export class TopicEditorComponent implements OnInit {
    * 全ツイートフィルタパターンのスコアのリセット
    */
   cleanScoreOfAllTweetFilterPatterns(): void {
-    for (let filterPattern of this.topic.filterPatterns) {
+    for (const filterPattern of this.topic.filterPatterns) {
       filterPattern.score = null;
     }
   }
@@ -394,7 +392,7 @@ export class TopicEditorComponent implements OnInit {
    * @param actionIndex アクションのインデックス番号
    */
   moveActionToUp(actionIndex: number) {
-    if (actionIndex == 0 || this.topic.actions.length == 0) return;
+    if (actionIndex === 0 || this.topic.actions.length === 0) return;
 
     this.topic.actions.splice(actionIndex - 1, 2, this.topic.actions[actionIndex], this.topic.actions[actionIndex - 1]);
   }
@@ -403,7 +401,7 @@ export class TopicEditorComponent implements OnInit {
    * @param actionIndex アクションのインデックス番号
    */
   moveActionToDown(actionIndex: number) {
-    if (this.topic.actions.length - 1 == actionIndex || this.topic.actions.length == 0) return;
+    if (this.topic.actions.length - 1 === actionIndex || this.topic.actions.length === 0) return;
     actionIndex += 1;
     this.topic.actions.splice(actionIndex - 1, 2, this.topic.actions[actionIndex], this.topic.actions[actionIndex - 1]);
   }
@@ -426,7 +424,7 @@ export class TopicEditorComponent implements OnInit {
    * @param index
    * @param obj
    */
-  myTrackBy(index: number, obj: any): any {
+  myTrackBy(index: number): any {
     return index;
   }
 }

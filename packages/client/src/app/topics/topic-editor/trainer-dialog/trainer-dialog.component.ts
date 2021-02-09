@@ -20,7 +20,7 @@ export class TrainerDialogComponent implements OnInit {
   public crawlSocialAccountId: number;
   public keywords: string[];
   // Twitter の検索結果
-  public isLoading: boolean = false;
+  public isLoading = false;
   public tweets: any[];
   public numOfSelectedTweets = 0;
   // 検索の進捗状態
@@ -45,7 +45,7 @@ export class TrainerDialogComponent implements OnInit {
     this.status = 'しばらくお待ちください...';
     this.numOfSelectedTweets = 0;
     // ツイートの初期化
-    if (this.tweets === null || this.tweets.length == 0) {
+    if (this.tweets === null || this.tweets.length === 0) {
       // 教師データ生成用のサンプルツイートを収集
       await this.getSampleTweets();
     } else {
@@ -66,14 +66,12 @@ export class TrainerDialogComponent implements OnInit {
     let tweets = [];
     for (const keyword of this.keywords) {
       this.status = `ツイートを検索しています... ${keyword}`;
-      let keyword_tweets = await this.topicsService.getSampleTweets(this.crawlSocialAccountId, keyword);
-      tweets = tweets.concat(keyword_tweets);
+      const keywordTweets = await this.topicsService.getSampleTweets(this.crawlSocialAccountId, keyword);
+      tweets = tweets.concat(keywordTweets);
     }
     this.status = `お待ちください...`;
     // リツイート数でソート
-    tweets = tweets.sort((a: any, b: any) => {
-      return b.crawledRetweetCount - a.crawledRetweetCount;
-    });
+    tweets = tweets.sort((a: any, b: any) => b.crawledRetweetCount - a.crawledRetweetCount);
     // 完了
     this.tweets = tweets;
     this.isLoading = false;
@@ -87,22 +85,14 @@ export class TrainerDialogComponent implements OnInit {
     let tweets = this.tweets;
     for (const keyword of this.keywords) {
       this.status = `ツイートを追加検索しています... ${keyword}`;
-      let keyword_tweets = await this.topicsService.getSampleTweets(this.crawlSocialAccountId, keyword);
-      tweets = tweets.concat(keyword_tweets);
+      const keywordTweets = await this.topicsService.getSampleTweets(this.crawlSocialAccountId, keyword);
+      tweets = tweets.concat(keywordTweets);
     }
     this.status = `お待ちください...`;
     // 重複を除去
-    tweets = tweets.filter((item, i, self) => {
-      return (
-        self.findIndex(item_ => {
-          return item.idStr == item_.idStr;
-        }) === i
-      );
-    });
+    tweets = tweets.filter((item, i, self) => self.findIndex(item_ => item.idStr === item_.idStr) === i);
     // リツイート数でソート
-    tweets = tweets.sort((a: any, b: any) => {
-      return b.crawledRetweetCount - a.crawledRetweetCount;
-    });
+    tweets = tweets.sort((a: any, b: any) => b.crawledRetweetCount - a.crawledRetweetCount);
     // 完了
     this.tweets = tweets;
     this.isLoading = false;

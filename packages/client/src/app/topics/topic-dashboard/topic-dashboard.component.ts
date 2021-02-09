@@ -9,13 +9,6 @@ import { MatSnackBar } from '@angular/material/snack-bar';
   styleUrls: ['./topic-dashboard.component.scss'],
 })
 export class TopicDashboardComponent implements OnInit {
-  constructor(
-    private router: Router,
-    private route: ActivatedRoute,
-    private snackBar: MatSnackBar,
-    private topicsService: TopicsService,
-  ) {}
-
   // 読み込み中フラグ
   isInitialLoading = true;
   isLoadingRejectedTweets = true;
@@ -77,6 +70,13 @@ export class TopicDashboardComponent implements OnInit {
   // ツイートグリッドのレイアウトを更新するまでしばらく待つためのタイマー
   updateTimer: any = null;
 
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute,
+    private snackBar: MatSnackBar,
+    private topicsService: TopicsService,
+  ) {}
+
   /**
    * コンポーネントが初期化されたときに呼び出されるリスナ
    */
@@ -92,11 +92,9 @@ export class TopicDashboardComponent implements OnInit {
     await this.loadTopic(topicId);
 
     // 承認ツイートの読み込み (アクション別)
-    let actionIndex = 0;
-    for (const action of this.topic.actions) {
+    for (const [actionIndex] of this.topic.actions) {
       this.isLoadingAcceptedTweetsByActions[actionIndex] = true;
       await this.loadAcceptedTweets(actionIndex, null);
-      actionIndex++;
     }
 
     // 承認ツイートの読み込み (全アクション完了のツイート)
@@ -109,11 +107,8 @@ export class TopicDashboardComponent implements OnInit {
     // 読み込み完了
     this.isInitialLoading = false;
     this.isOpenedDrawer = false;
-    this.isLoadingRejectedTweets = false;
-    actionIndex = 0;
-    for (const action of this.topic.actions) {
+    for (const [actionIndex] of this.topic.actions.entries()) {
       this.isLoadingAcceptedTweetsByActions[actionIndex] = false;
-      actionIndex++;
     }
   }
 
@@ -173,13 +168,9 @@ export class TopicDashboardComponent implements OnInit {
       if (this.acceptedTweetsByActions && this.acceptedTweetsByActions[pendngActionIndex]) {
         acceptedTweets = this.acceptedTweetsByActions[pendngActionIndex].concat(acceptedTweets);
       }
-      acceptedTweets = acceptedTweets.filter((item, i, self) => {
-        return (
-          self.findIndex(item_ => {
-            return item.idStr == item_.idStr;
-          }) === i
-        );
-      });
+      acceptedTweets = acceptedTweets.filter(
+        (item, i, self) => self.findIndex(item_ => item.idStr === item_.idStr) === i,
+      );
 
       // 書き換え
       this.acceptedTweetsByActions[pendngActionIndex] = acceptedTweets;
@@ -220,13 +211,9 @@ export class TopicDashboardComponent implements OnInit {
       if (this.rejectedTweets) {
         rejectedTweets = this.rejectedTweets.concat(rejectedTweets);
       }
-      rejectedTweets = rejectedTweets.filter((item, i, self) => {
-        return (
-          self.findIndex(item_ => {
-            return item.idStr == item_.idStr;
-          }) === i
-        );
-      });
+      rejectedTweets = rejectedTweets.filter(
+        (item, i, self) => self.findIndex(item_ => item.idStr === item_.idStr) === i,
+      );
 
       // 書き換え
       this.rejectedTweets = rejectedTweets;
@@ -279,19 +266,15 @@ export class TopicDashboardComponent implements OnInit {
   async moveTweetToAccepted(tweetIdStr: string, actionIndex: number = null) {
     // 当該ツイートを取得
     let tweet = null;
-    let tweetIndex = this.rejectedTweets.findIndex((item: any) => {
-      return item.idStr === tweetIdStr;
-    });
+    let tweetIndex = this.rejectedTweets.findIndex((item: any) => item.idStr === tweetIdStr);
     if (0 <= tweetIndex) {
       tweet = this.rejectedTweets[tweetIndex];
       // 拒否ツイートの配列から当該ツイート削除
       this.rejectedTweets.splice(tweetIndex, 1);
     } else {
       // アクションを反復
-      for (const [actionIndexOld, action] of this.topic.actions.entries()) {
-        tweetIndex = this.acceptedTweetsByActions[actionIndexOld].findIndex((item: any) => {
-          return item.idStr === tweetIdStr;
-        });
+      for (const [actionIndexOld] of this.topic.actions.entries()) {
+        tweetIndex = this.acceptedTweetsByActions[actionIndexOld].findIndex((item: any) => item.idStr === tweetIdStr);
         if (0 <= tweetIndex) {
           tweet = this.acceptedTweetsByActions[actionIndexOld][tweetIndex];
           // 当該アクションに属する承認ツイートの配列から当該ツイートを削除
@@ -324,10 +307,8 @@ export class TopicDashboardComponent implements OnInit {
   async moveTweetToRejected(tweetIdStr: string) {
     // アクションを反復
     let tweet = null;
-    for (const [actionIndex, action] of this.topic.actions.entries()) {
-      let tweetIndex = this.acceptedTweetsByActions[actionIndex].findIndex((item: any) => {
-        return item.idStr === tweetIdStr;
-      });
+    for (const [actionIndex] of this.topic.actions.entries()) {
+      const tweetIndex = this.acceptedTweetsByActions[actionIndex].findIndex((item: any) => item.idStr === tweetIdStr);
       if (0 <= tweetIndex) {
         tweet = this.acceptedTweetsByActions[actionIndex][tweetIndex];
         // 当該アクションに属する承認ツイートの配列から当該ツイートを削除

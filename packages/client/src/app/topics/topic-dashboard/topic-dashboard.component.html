@@ -78,7 +78,7 @@
       <app-dashboard-tweet
         [tweet]="tweet"
         [actions]="topic.actions"
-        (onItemButtonClickedEvent)="onItemButtonClicked(tweet.idStr, $event)"
+        (itemButtonClickedEvent)="onItemButtonClicked(tweet.idStr, $event)"
       >
       </app-dashboard-tweet>
     </div>
@@ -158,7 +158,7 @@
               <app-dashboard-tweet
                 [tweet]="tweet"
                 [actions]="topic.actions"
-                (onItemButtonClickedEvent)="onItemButtonClicked(tweet.idStr, $event)"
+                (itemButtonClickedEvent)="onItemButtonClicked(tweet.idStr, $event)"
               ></app-dashboard-tweet>
             </div>
             <!---->

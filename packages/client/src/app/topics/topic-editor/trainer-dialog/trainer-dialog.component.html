@@ -18,7 +18,7 @@
   <!-- ツイート表示 -->
   <div *ngIf="!isLoading && tweets != null" class="tweets">
     <div *ngFor="let tweet of tweets" class="tweet-container">
-      <app-tweet [tweet]="tweet" (onSelectChangedEvent)="onTweetSelectChanged(tweet.idStr, $event)"></app-tweet>
+      <app-tweet [tweet]="tweet" (selectChangedEvent)="onTweetSelectChanged(tweet.idStr, $event)"></app-tweet>
     </div>
   </div>
   <!---->

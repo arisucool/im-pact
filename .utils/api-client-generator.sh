@@ -44,7 +44,7 @@ fi
 "${SERVER_DIR}/node_modules/.bin/json2yaml" ${TMP_DIR}api.json > "${TMP_DIR}api.yaml"
 
 # OpenAPI Generator でAPIクライアントを生成
-/opt/openapi-generator/docker-entrypoint.sh generate -i "${TMP_DIR}api.yaml" -g typescript-angular -o "${CLIENT_DIR}/src/.api-client/" rm "${TMP_DIR}api.json"
+/opt/openapi-generator/docker-entrypoint.sh generate -i "${TMP_DIR}api.yaml" -g typescript-angular -o "${CLIENT_DIR}/src/.api-client/" || rm "${TMP_DIR}api.json"
 
 # 完了
 exit 0

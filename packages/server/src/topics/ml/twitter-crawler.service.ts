@@ -393,7 +393,7 @@ export class TwitterCrawlerService {
    * @param keyword 検索条件に含まれたキーワードのうちの一つ
    * @return クエリ文字列
    */
-  protected getQueryBySearchConditionAndKeyword(searchCondition: SearchCondition, keyword: string): string {
+  public getQueryBySearchConditionAndKeyword(searchCondition: SearchCondition, keyword: string): string {
     // クエリを生成
     let query = `"${keyword}"`;
     if (searchCondition.images) {

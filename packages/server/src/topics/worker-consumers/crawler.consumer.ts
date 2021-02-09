@@ -146,7 +146,8 @@ export class CrawlerConsumer {
 
       const tweetsOfThisKeyword = await this.crawledTweetRepository.find({
         where: {
-          crawlQuery: keyword,
+          crawlQuery: this.twitterCrawlerService.getQueryBySearchConditionAndKeyword(topic.searchCondition, keyword),
+          crawlLanguage: topic.searchCondition.language,
           crawledAt: MoreThanOrEqual(whereCrawledAt),
         },
         order: {

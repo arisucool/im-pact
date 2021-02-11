@@ -307,10 +307,11 @@
             >
               <!-- 見出し -->
               <div class="module-setting-caption">
-                <h4>{{ moduleSetting.name }}</h4>
+                <h4>{{ moduleSetting.filterName }}</h4>
                 <span class="description">
-                  {{ availableTweetFilters[moduleSetting.name]?.description }}&nbsp;&nbsp;/&nbsp;&nbsp;
-                  適用範囲:&nbsp;{{ availableTweetFilters[moduleSetting.name]?.scope }}
+                  {{ availableTweetFilters[moduleSetting.filterName]?.description }}&nbsp;&nbsp;/&nbsp;&nbsp;
+                  適用範囲:&nbsp;{{ availableTweetFilters[moduleSetting.filterName]?.scope }}<br />
+                  (ID: {{ moduleSetting.id }})
                 </span>
 
                 <!-- ツイートフィルタ操作領域 -->
@@ -332,15 +333,15 @@
               </div>
               <!---->
               <!-- エラー (モジュールが存在しない場合) -->
-              <p style="margin: -1rem 0 1rem 0;" *ngIf="!availableTweetFilters[moduleSetting.name]">
+              <p style="margin: -1rem 0 1rem 0;" *ngIf="!availableTweetFilters[moduleSetting.filterName]">
                 <span style="font-size: 0.8rem;"
                   >このツイートフィルタは、インストールされていないか、致命的なエラーが発生しているため、無効化されています</span
                 >
               </p>
               <!-- 設定項目領域 -->
-              <div *ngIf="availableTweetFilters[moduleSetting.name]">
+              <div *ngIf="availableTweetFilters[moduleSetting.filterName]">
                 <!-- 各設定項目 -->
-                <p *ngFor="let settingItem of availableTweetFilters[moduleSetting.name]?.settings">
+                <p *ngFor="let settingItem of availableTweetFilters[moduleSetting.filterName]?.settings">
                   <!-- テキスト入力欄 -->
                   <mat-form-field
                     *ngIf="
@@ -395,7 +396,7 @@
                 <!---->
                 <!-- 設定項目 (一つも存在しない場合) -->
                 <p
-                  *ngIf="availableTweetFilters[moduleSetting.name]?.settings.length === 0"
+                  *ngIf="availableTweetFilters[moduleSetting.filterName]?.settings.length === 0"
                   style="margin: -1rem 0 1rem 0;"
                 >
                   <span style="font-size: 0.8rem;">設定項目はありません</span>
@@ -598,23 +599,26 @@
             </div>
             <!---->
             <!-- アクション名 -->
-            <h4>{{ moduleSetting.name }}</h4>
+            <h4>{{ moduleSetting.actionName }}</h4>
             <!---->
             <!-- アクション説明文 -->
-            <span class="description">{{ availableActions[moduleSetting.name]?.description }}</span>
+            <span class="description"
+              >{{ availableActions[moduleSetting.actionName]?.description }}<br />
+              (ID: {{ moduleSetting.id }})
+            </span>
             <!---->
           </div>
           <!---->
           <!-- エラー (モジュールが存在しない場合) -->
-          <p style="margin: -1rem 0 1rem 0;" *ngIf="!availableActions[moduleSetting.name]">
+          <p style="margin: -1rem 0 1rem 0;" *ngIf="!availableActions[moduleSetting.actionName]">
             <span style="font-size: 0.8rem;"
               >このアクションは、インストールされていないか、致命的なエラーが発生しているため、無効化されています</span
             >
           </p>
           <!-- 設定項目領域 -->
-          <div *ngIf="availableActions[moduleSetting.name]">
+          <div *ngIf="availableActions[moduleSetting.actionName]">
             <!-- 各設定項目 -->
-            <p *ngFor="let settingItem of availableActions[moduleSetting.name]?.settings">
+            <p *ngFor="let settingItem of availableActions[moduleSetting.actionName]?.settings">
               <!-- テキスト入力欄 -->
               <mat-form-field
                 *ngIf="
@@ -712,7 +716,10 @@
             </p>
             <!---->
             <!-- 設定項目 (一つも存在しない場合) -->
-            <p *ngIf="availableActions[moduleSetting.name]?.settings.length === 0" style="margin: -1rem 0 1rem 0;">
+            <p
+              *ngIf="availableActions[moduleSetting.actionName]?.settings.length === 0"
+              style="margin: -1rem 0 1rem 0;"
+            >
               <span style="font-size: 0.8rem;">設定項目はありません</span>
             </p>
             <!---->

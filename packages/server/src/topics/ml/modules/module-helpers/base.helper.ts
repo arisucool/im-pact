@@ -7,11 +7,19 @@ import { ModuleTweetStorage } from '../module-tweet-storage';
 export abstract class BaseHelper {
   constructor(
     protected moduleName: string,
+    protected id: string,
     protected moduleStorage: Readonly<ModuleStorage>,
     protected moduleTweetStorage: Readonly<ModuleTweetStorage>,
     protected moduleSetting: any,
     protected socialAccount: SocialAccount,
   ) {}
+
+  /**
+   * アクションまたはツイートフィルタのIDの取得
+   */
+  getId(): string {
+    return this.id;
+  }
 
   /**
    * モジュールストレージの取得

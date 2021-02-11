@@ -6,7 +6,15 @@ import * as ModuleStorageEntity from '../entities/module-storage.entity';
 import { ModuleTweetStorage } from './module-tweet-storage';
 import { CrawledTweet } from '../entities/crawled-tweet.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
+<<<<<<< HEAD
 import { TweetFilter } from './tweet-filters/interfaces/tweet-filter.interface';
+=======
+import {
+  TweetFilter,
+  TweetFilterResultWithMultiValues,
+  TweetFilterResult,
+} from './tweet-filters/interfaces/tweet-filter.interface';
+>>>>>>> 3be41aa... feat: 同一のアクションまたはツイートフィルタの複数使用対応
 import { TweetFilterBatch } from './tweet-filters/interfaces/tweet-filter-batch.interface';
 import { TweetFilterTrain } from './tweet-filters/interfaces/tweet-filter-train.interface';
 import { ManagerHelper } from './manager.helper';
@@ -29,7 +37,7 @@ export class TweetFilterManager {
     private moduleStorageRepository: Repository<ModuleStorageEntity.ModuleStorage>,
     private crawledTweetRepository: Repository<CrawledTweet>,
     private socialAccountRepository: Repository<SocialAccount>,
-    private filterSettings: { [key: string]: any }[],
+    private filterSettings: { id: string; filterName: string; settings: { [key: string]: any } }[],
     private topicKeywords: string[],
   ) {
     this.modules = [];
@@ -51,9 +59,9 @@ export class TweetFilterManager {
     // フィルタ設定を反復
     for (const filter of this.filterSettings) {
       // ツイートフィルタを初期化
-      const mod = (await this.getModule(filter.name)) as TweetFilterTrain;
+      const mod = (await this.getModule(filter.filterName, filter.id, filter.settings)) as TweetFilterTrain;
       if (mod === null) {
-        console.log(`[TweetFilters] - trainTweet - This filter was invalid... ${filter.name}`);
+        console.log(`[TweetFilters] - trainTweet - This filter was invalid... ${filter.filterName}`);
         continue;
       }
 
@@ -67,7 +75,7 @@ export class TweetFilterManager {
         await mod.train(tweet, isSelected);
       } catch (e) {
         console.warn(
-          `[TweetFilters] trainTweet - Error occurred during the training process on the tweet filter... ${filter.name}\n${e.stack}`,
+          `[TweetFilters] trainTweet - Error occurred during the training process on the tweet filter... ${filter.filterName}\n${e.stack}`,
         );
       }
     }
@@ -80,9 +88,9 @@ export class TweetFilterManager {
     // フィルタ設定を反復
     for (const filter of this.filterSettings) {
       // ツイートフィルタを初期化
-      const mod = (await this.getModule(filter.name)) as TweetFilterBatch;
+      const mod = (await this.getModule(filter.filterName, filter.id, filter.settings)) as TweetFilterBatch;
       if (mod === null) {
-        console.log(`[TweetFilters] - batchByFilterSettings - This filter was invalid... ${filter.name}`);
+        console.log(`[TweetFilters] - batchByFilterSettings - This filter was invalid... ${filter.filterName}`);
         continue;
       }
 
@@ -108,9 +116,9 @@ export class TweetFilterManager {
     // フィルタ設定を反復
     for (const filter of this.filterSettings) {
       // ツイートフィルタを初期化
-      const mod: TweetFilter = await this.getModule(filter.name);
-      if (mod === null) {
-        console.log(`[TweetFilters] - filterTweetByFilterSettings - This filter was invalid... ${filter.name}`);
+      const mod: TweetFilter = await this.getModule(filter.filterName, filter.id, filter.settings);
+      if (!mod) {
+        console.log(`[TweetFilters] - filterTweetByFilterSettings - This filter was invalid... ${filter.filterName}`);
         continue;
       }
       // 当該ツイートフィルタでフィルタを実行
@@ -128,16 +136,23 @@ export class TweetFilterManager {
   /**
    * 指定されたツイートフィルタモジュールの取得
    * @param filterName ツイートフィルタ名
+   * @param filterId   ツイートフィルタID (モジュールストレージを分離するための識別子)
+   * @param filterSetting ツイートフィルタの設定
    */
-  async getModule(filterName: string): Promise<TweetFilter | TweetFilterBatch | TweetFilterTrain> {
-    if (this.modules[filterName]) return this.modules[filterName];
+  async getModule(
+    filterName: string,
+    filterId: string,
+    filterSetting: { [key: string]: any },
+  ): Promise<TweetFilter | TweetFilterBatch | TweetFilterTrain> {
+    if (filterId && this.modules[filterId]) return this.modules[filterId];
 
     // ModuleStorage の初期化
-    const moduleStorage = await ModuleStorage.factory(`Filter${filterName}`, this.moduleStorageRepository);
+    const moduleStorage = await ModuleStorage.factory(`Filter${filterName}`, filterId, this.moduleStorageRepository);
 
     // ModuleTweetStorage の初期化
     const moduleTweetStorage = ModuleTweetStorage.factory(
       `Filter${filterName}`,
+      filterId,
       this.crawledTweetRepository,
       moduleStorage,
     );
@@ -147,15 +162,10 @@ export class TweetFilterManager {
     const socialAccounts = await this.socialAccountRepository.find();
     const socialAccount = socialAccounts[0];
 
-    // フィルタ設定の取得
-    let filterSetting = {};
-    this.filterSettings.find(item => {
-      if (item.name === filterName) return true;
-    });
-
     // ヘルパの初期化
     const moduleHelper = TweetFilterHelper.factory(
       `Filter${filterName}`,
+      filterId,
       moduleStorage,
       moduleTweetStorage,
       filterSetting,
@@ -173,8 +183,10 @@ export class TweetFilterManager {
     if (mod.default === undefined) {
       throw new Error(`There is no default export on tweet filter (path = ${moduleDirectoryPath}).`);
     }
-    this.modules[filterName] = new mod.default(moduleHelper);
 
-    return this.modules[filterName];
+    if (!filterId) return new mod.default(moduleHelper);
+
+    this.modules[filterId] = new mod.default(moduleHelper);
+    return this.modules[filterId];
   }
 }

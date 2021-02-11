@@ -6,13 +6,14 @@ import { ModuleTweetStorage } from '../module-tweet-storage';
 export class TweetFilterHelper extends BaseHelper {
   private constructor(
     protected moduleName: string,
+    protected filterId: string,
     protected moduleStorage: Readonly<ModuleStorage>,
     protected moduleTweetStorage: Readonly<ModuleTweetStorage>,
     protected moduleSetting: any,
     protected socialAccount: SocialAccount,
     protected topicKeywords: string[],
   ) {
-    super(moduleName, moduleStorage, moduleTweetStorage, moduleSetting, socialAccount);
+    super(moduleName, filterId, moduleStorage, moduleTweetStorage, moduleSetting, socialAccount);
   }
 
   /**
@@ -20,6 +21,7 @@ export class TweetFilterHelper extends BaseHelper {
    */
   static readonly factory = (
     moduleName: string,
+    filterId: string,
     moduleStorage: Readonly<ModuleStorage>,
     moduleTweetStorage: Readonly<ModuleTweetStorage>,
     moduleSetting: any,
@@ -28,6 +30,7 @@ export class TweetFilterHelper extends BaseHelper {
   ): Readonly<TweetFilterHelper> => {
     return new TweetFilterHelper(
       moduleName,
+      filterId,
       moduleStorage,
       moduleTweetStorage,
       moduleSetting,
@@ -42,6 +45,7 @@ export class TweetFilterHelper extends BaseHelper {
   static readonly factoryTest = (moduleName: string, moduleSetting: any): Readonly<TweetFilterHelper> => {
     return new TweetFilterHelper(
       moduleName,
+      'xxxxxxxxxxxxxxxx',
       null,
       null,
       moduleSetting,

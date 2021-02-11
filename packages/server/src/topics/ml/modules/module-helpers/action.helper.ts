@@ -8,6 +8,7 @@ import { Topic } from 'src/topics/entities/topic.entity';
 export class ActionHelper extends BaseHelper {
   private constructor(
     protected moduleName: string,
+    protected actionId: string,
     protected moduleStorage: Readonly<ModuleStorage>,
     protected moduleTweetStorage: Readonly<ModuleTweetStorage>,
     protected moduleSetting: any,
@@ -15,7 +16,7 @@ export class ActionHelper extends BaseHelper {
     protected topic: Topic,
     protected actionIndex: number,
   ) {
-    super(moduleName, moduleStorage, moduleTweetStorage, moduleSetting, socialAccount);
+    super(moduleName, actionId, moduleStorage, moduleTweetStorage, moduleSetting, socialAccount);
   }
 
   /**
@@ -23,6 +24,7 @@ export class ActionHelper extends BaseHelper {
    */
   static readonly factory = (
     moduleName: string,
+    actionId: string,
     moduleStorage: Readonly<ModuleStorage>,
     moduleTweetStorage: Readonly<ModuleTweetStorage>,
     moduleSetting: any,
@@ -32,6 +34,7 @@ export class ActionHelper extends BaseHelper {
   ): Readonly<ActionHelper> => {
     return new ActionHelper(
       moduleName,
+      actionId,
       moduleStorage,
       moduleTweetStorage,
       moduleSetting,
@@ -47,6 +50,7 @@ export class ActionHelper extends BaseHelper {
   static readonly factoryTest = (moduleName: string, moduleSetting: any): Readonly<ActionHelper> => {
     return new ActionHelper(
       moduleName,
+      'xxxxxxxxxxxxxxxx',
       null,
       null,
       moduleSetting,

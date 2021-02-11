@@ -8,20 +8,27 @@ export class ModuleStorage {
   /**
    * コンストラクタ
    * @param moduleName モジュール名 (例: 'FilterTweetTextBayesian')
+   * @param id         ツイートフィルタまたはアクションのID (ストレージを分離するための識別子)
    * @param repository モジュールストレージのリポジトリ
    */
-  private constructor(private moduleName: string, private repository: Repository<ModuleStorageEntity.ModuleStorage>) {}
+  private constructor(
+    private moduleName: string,
+    private id,
+    private repository: Repository<ModuleStorageEntity.ModuleStorage>,
+  ) {}
 
   /**
    * ファクトリメソッド
    * @param moduleName モジュール名 (例: 'FilterTweetTextBayesian')
+   * @param id         ツイートフィルタまたはアクションのID (ストレージを分離するための識別子)
    * @param repository モジュールストレージのリポジトリ
    */
   static readonly factory = async (
     moduleName: string,
+    id: string,
     repository: Repository<ModuleStorageEntity.ModuleStorage>,
   ): Promise<Readonly<ModuleStorage>> => {
-    const instance = new ModuleStorage(moduleName, repository);
+    const instance = new ModuleStorage(moduleName, id, repository);
     await instance.load();
     return instance;
   };
@@ -30,10 +37,10 @@ export class ModuleStorage {
    * 読み込み
    */
   protected async load(): Promise<void> {
-    this.repositoryItem = await this.repository.findOne(this.moduleName);
+    this.repositoryItem = await this.repository.findOne(this.moduleName + '::' + this.id);
     if (!this.repositoryItem) {
       this.repositoryItem = new ModuleStorageEntity.ModuleStorage();
-      this.repositoryItem.id = this.moduleName;
+      this.repositoryItem.id = this.moduleName + '::' + this.id;
       this.repositoryItem.value = '{}';
     }
     try {

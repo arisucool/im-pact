@@ -200,7 +200,7 @@ export class ActionConsumer {
       let mod: any = null,
         moduleError = null;
       try {
-        mod = await actionManager.getModule(action.name, actionIndex, topic);
+        mod = await actionManager.getModule(action.actionName, action.id, actionIndex, topic);
       } catch (e) {
         // アクションモジュールの初期化に失敗したときは、モジュールエラーとして保持しておく
         moduleError = e;
@@ -222,7 +222,7 @@ export class ActionConsumer {
         },
       });
       Logger.debug(
-        `Found action uncompleted tweets for action ${action.name} (actionIndex = ${actionIndex}) of Topic ${topic.id}... ${tweets.length} tweets`,
+        `Found action uncompleted tweets for action ${action.actionName} (actionIndex = ${actionIndex}) of Topic ${topic.id}... ${tweets.length} tweets`,
         'ActionConsumer/execBulkActions',
       );
       if (tweets.length <= 0) continue;
@@ -248,7 +248,7 @@ export class ActionConsumer {
         // 実行結果が空ならば、全ツイートともエラーとする
         results = {};
         for (const tweet of tweets) {
-          results[tweet.id] = new Error(`Action ${action.name} returns null or undefined`);
+          results[tweet.id] = new Error(`Action ${action.actionName} returns null or undefined`);
         }
       }
 
@@ -275,19 +275,19 @@ export class ActionConsumer {
           tweet.lastActionIndex = actionIndex;
           // エラーを出力
           Logger.error(
-            `Error occurred at tweet ${tweet.id} of action ${action.name} (actionIndex= ${actionIndex})... `,
+            `Error occurred at tweet ${tweet.id} of action ${action.actionName} (actionIndex= ${actionIndex})... `,
             result.stack,
             'ActionConsumer/execBulkActions',
           );
         } else if (!(typeof result == 'boolean') && !(result instanceof Boolean)) {
           // 戻り値が不正ならば、エラー情報をデータベースへ保存
-          tweet.lastActionError = `Action ${action.name} returns invalid value`;
+          tweet.lastActionError = `Action ${action.actionName} returns invalid value`;
           tweet.lastActionExecutedAt = new Date();
           tweet.lastActionIndex = actionIndex;
           // エラーを出力
           Logger.error(
-            `Error occurred at tweet ${tweet.id} of action ${action.name} (actionIndex= ${actionIndex})... `,
-            `Action ${action.name} returns invalid value... ${result}`,
+            `Error occurred at tweet ${tweet.id} of action ${action.actionName} (actionIndex= ${actionIndex})... `,
+            `Action ${action.actionName} returns invalid value... ${result}`,
             'ActionConsumer/execBulkActions',
           );
         } else if (result === false) {

@@ -7,11 +7,13 @@ export class ModuleTweetStorage {
   /**
    * コンストラクタ
    * @param moduleName モジュール名 (例: 'FilterTweetTextBayesian')
+   * @param id         ツイートフィルタまたはアクションのID (ストレージを分離するための識別子)
    * @param repository ツイートのリポジトリ
    * @param moduleStorage モジュールストレージ
    */
   private constructor(
     private moduleName: string,
+    private id: string,
     private repository: Repository<CrawledTweet | ExtractedTweet>,
     private moduleStorage: Readonly<ModuleStorage>,
   ) {}
@@ -19,15 +21,17 @@ export class ModuleTweetStorage {
   /**
    * ファクトリメソッド
    * @param moduleName モジュール名 (例: 'FilterTweetTextBayesian')
+   * @param id         ツイートフィルタまたはアクションのID (ストレージを分離するための識別子)
    * @param repository ツイートのリポジトリ
    * @param moduleStorage モジュールストレージ
    */
   static readonly factory = (
     moduleName: string,
+    id: string,
     repository: Repository<CrawledTweet | ExtractedTweet>,
     moduleStorage: Readonly<ModuleStorage>,
   ): Readonly<ModuleTweetStorage> => {
-    return new ModuleTweetStorage(moduleName, repository, moduleStorage);
+    return new ModuleTweetStorage(moduleName, id, repository, moduleStorage);
   };
 
   /**
@@ -89,6 +93,6 @@ export class ModuleTweetStorage {
    * @param key キー
    */
   private getIdByKey(key: string): string {
-    return `${this.moduleName}::${key.replace(/::/g, '').toLowerCase()}`;
+    return `${this.moduleName}::${this.id}::${key.replace(/::/g, '').toLowerCase()}`;
   }
 }

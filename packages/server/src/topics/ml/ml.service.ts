@@ -37,7 +37,7 @@ export class MlService {
     for (const actionName of actionNames) {
       let mod = null;
       try {
-        mod = await actionManager.getModule(actionName, null, null);
+        mod = await actionManager.getModule(actionName, null, null, null);
       } catch (e) {
         console.warn(`[MlService] getAvailableActions - Error = `, e);
         continue;
@@ -80,7 +80,7 @@ export class MlService {
     for (const filterName of filterNames) {
       let mod = null;
       try {
-        mod = await filterManager.getModule(filterName);
+        mod = await filterManager.getModule(filterName, null, {});
       } catch (e) {
         console.warn(`[MlService] getAvailableTweetFilters - Error = `, e);
         continue;

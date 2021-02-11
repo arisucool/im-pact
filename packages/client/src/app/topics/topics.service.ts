@@ -6,6 +6,7 @@ import {
   UpdateTopicDto,
   TrainAndValidateDto,
 } from 'src/.api-client';
+import * as CryptoJS from 'crypto-js';
 
 @Injectable({
   providedIn: 'root',
@@ -162,11 +163,11 @@ export class TopicsService {
 
   /**
    * 指定されたツイートフィルタの取得
-   * @param moduleName ツイートフィルタ名 (例: 'TweetTextRegExpFilter')
+   * @param filterName ツイートフィルタ名 (例: 'TweetTextBayesian')
    */
-  async getTweetFilter(moduleName: string) {
+  async getTweetFilter(filterName: string) {
     const filters = await this.getAvailableTweetFilters();
-    return filters[moduleName];
+    return filters[filterName];
   }
 
   /**
@@ -178,11 +179,27 @@ export class TopicsService {
 
   /**
    * 指定されたアクションの取得
-   * @param moduleName アクション名 (例: 'ApprovalOnDiscordAction')
+   * @param actionName アクション名 (例: 'ApproveOnDiscord')
    */
-  async getAction(moduleName: string) {
+  async getAction(actionName: string) {
     const actions = await this.getAvailableActions();
-    return actions[moduleName];
+    return actions[actionName];
+  }
+
+  /**
+   * ツイートフィルタのユニークIDの生成・取得
+   */
+  getTweetFilterUid(filterName: string): string {
+    const rand = Math.random() * Math.floor(999999999);
+    return CryptoJS.SHA1(`Filter-${filterName}-${new Date().getTime()}-${rand}`).toString(CryptoJS.enc.Hex);
+  }
+
+  /**
+   * アクションのユニークIDの生成・取得
+   */
+  getActionUid(actionName: string): string {
+    const rand = Math.random() * Math.floor(999999999);
+    return CryptoJS.SHA1(`Action-${actionName}-${new Date().getTime()}-${rand}`).toString(CryptoJS.enc.Hex);
   }
 
   /**

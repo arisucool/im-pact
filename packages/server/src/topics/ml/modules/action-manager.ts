@@ -48,7 +48,6 @@ export class ActionManager {
     // 当該ツイートに対して実行すべきアクションを取得
     const nextActionIndex = completeActionIndex + 1;
     const numOfActions = this.actionSettings.length;
-    console.log(numOfActions, nextActionIndex);
     if (numOfActions <= nextActionIndex) {
       // 次に実行すべきアクションがなければ
       return null;
@@ -57,9 +56,9 @@ export class ActionManager {
     const nextAction = this.actionSettings[nextActionIndex];
 
     // アクションを初期化
-    const mod: any = await this.getModule(nextAction.name, nextActionIndex, topic);
+    const mod: any = await this.getModule(nextAction.actionName, nextAction.id, nextActionIndex, topic);
     if (mod === null) {
-      throw new Error(`[ActionManager] - actionTweet - This action was invalid... ${nextAction.name}`);
+      throw new Error(`[ActionManager] - actionTweet - This action was invalid... ${nextAction.actionName}`);
     } else if (mod.execAction === undefined) {
       // 単体アクション実行に非対応ならば
       return false;
@@ -75,16 +74,18 @@ export class ActionManager {
   /**
    * 指定されたアクションモジュールの取得
    * @param actionName アクション名
+   * @param actionId   アクションID (モジュールストレージを分離するための識別子)
    * @param actionIndex アクションのインデックス番号
    * @param topic トピック
    */
-  async getModule(actionName: string, actionIndex = -1, topic: Topic) {
+  async getModule(actionName: string, actionId: string, actionIndex = -1, topic: Topic) {
     // ModuleStorage の初期化
-    const moduleStorage = await ModuleStorage.factory(`Action${actionName}`, this.moduleStorageRepository);
+    const moduleStorage = await ModuleStorage.factory(`Action${actionName}`, actionId, this.moduleStorageRepository);
 
     // ModuleTweetStorage の初期化
     const moduleTweetStorage = ModuleTweetStorage.factory(
       `Action${actionName}`,
+      actionId,
       this.extractedTweetRepository,
       moduleStorage,
     );
@@ -103,6 +104,7 @@ export class ActionManager {
     // ヘルパの初期化
     const moduleHelper = ActionHelper.factory(
       `Action${actionName}`,
+      actionId,
       moduleStorage,
       moduleTweetStorage,
       actionSetting,

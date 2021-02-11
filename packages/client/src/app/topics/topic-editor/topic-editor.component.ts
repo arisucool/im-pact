@@ -338,7 +338,8 @@ export class TopicEditorComponent implements OnInit {
 
         // 現在表示中のツイートフィルタパターンへ当該ツイートフィルタを追加
         this.topic.filterPatterns[this.currentShowingFilterPatternTabIndex].filters.push({
-          name: choosedFilterName,
+          id: this.topicsService.getTweetFilterUid(choosedFilterName),
+          filterName: choosedFilterName,
           settings: {},
         });
 
@@ -362,7 +363,8 @@ export class TopicEditorComponent implements OnInit {
         if (!choosedActionName) return;
         // トピックへ追加
         this.topic.actions.push({
-          name: choosedActionName,
+          id: this.topicsService.getActionUid(choosedActionName),
+          actionName: choosedActionName,
           settings: {},
         });
       });

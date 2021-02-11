@@ -6,15 +6,7 @@ import * as ModuleStorageEntity from '../entities/module-storage.entity';
 import { ModuleTweetStorage } from './module-tweet-storage';
 import { CrawledTweet } from '../entities/crawled-tweet.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
-<<<<<<< HEAD
 import { TweetFilter } from './tweet-filters/interfaces/tweet-filter.interface';
-=======
-import {
-  TweetFilter,
-  TweetFilterResultWithMultiValues,
-  TweetFilterResult,
-} from './tweet-filters/interfaces/tweet-filter.interface';
->>>>>>> 3be41aa... feat: 同一のアクションまたはツイートフィルタの複数使用対応
 import { TweetFilterBatch } from './tweet-filters/interfaces/tweet-filter-batch.interface';
 import { TweetFilterTrain } from './tweet-filters/interfaces/tweet-filter-train.interface';
 import { ManagerHelper } from './manager.helper';

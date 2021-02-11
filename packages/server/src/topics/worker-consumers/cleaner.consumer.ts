@@ -1,10 +1,8 @@
 import { Process, Processor } from '@nestjs/bull';
-import { Logger, BadRequestException } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
-import { MlService } from '../ml/ml.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
-import { Repository, MoreThanOrEqual } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CrawledTweet } from '../ml/entities/crawled-tweet.entity';
 import { ExtractedTweet } from '../ml/entities/extracted-tweet.entity';
 import { Topic } from '../entities/topic.entity';
@@ -89,6 +87,8 @@ export class CleanerConsumer {
   async shouldCleanupDatabase(maxDBRows: number): Promise<boolean> {
     if (!maxDBRows) return false;
 
+    return true;
+
     // しきい値を取得
     const thresholdNumOfRows = maxDBRows * this.AUTO_CLEANUP_THRESOLD_RATE_FOR_DB_ROWS;
     const thresholdNumOfRowsOfCrawledTweet =
@@ -122,74 +122,28 @@ export class CleanerConsumer {
     const cleanedUpNumOfRows = maxDBRows * this.AUTO_CLEANUP_DELETE_RATE_FOR_DB_ROWS;
     const cleanedUpNumOfRowsOfCrawledTweet =
       this.DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES.crawledTweet * cleanedUpNumOfRows;
-    const cleanedUpNumOfRowsOfExtractedTweetAccept =
-      this.DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES.extractedTweetAccept * cleanedUpNumOfRows;
-    const cleanedUpNumOfRowsOfExtractedTweetReject =
-      this.DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES.extractedTweetReject * cleanedUpNumOfRows;
 
     // CralwledTweet エンティティを検索して削除
-    let removeItems = await this.crawledTweetRepository.find({
-      order: {
-        crawledAt: 'ASC',
-      },
-      take: Math.max((await this.crawledTweetRepository.count()) - cleanedUpNumOfRowsOfCrawledTweet, 0),
-    });
-    let i = 0;
-    for (const item of removeItems) {
-      Logger.debug(`Delete CrawledTweet... (id = ${item.id})`, 'CleanerConsumer/execCleanupDatabase');
-      await item.remove();
-      i++;
+    const numOfExpectedRemoveItems = (await this.crawledTweetRepository.count()) - cleanedUpNumOfRowsOfCrawledTweet;
+    if (0 < numOfExpectedRemoveItems) {
+      const removeItems = await this.crawledTweetRepository.find({
+        order: {
+          crawledAt: 'ASC',
+        },
+        take: numOfExpectedRemoveItems,
+      });
+      let i = 0;
+      for (const item of removeItems) {
+        Logger.debug(`Delete CrawledTweet... (id = ${item.id})`, 'CleanerConsumer/execCleanupDatabase');
+        await item.remove();
+        i++;
+      }
+      Logger.log(`Deleted ${i} items from CrawledTweet.`, 'CleanerConsumer/execCleanupDatabase');
     }
-    Logger.log(`Deleted ${i} items from CrawledTweet.`, 'CleanerConsumer/execCleanupDatabase');
 
     // Extracted エンティティを検索して削除
-    removeItems = await this.extractedTweetRepository.find({
-      where: {
-        predictedClass: 'accept',
-      },
-      order: {
-        crawledAt: 'ASC',
-      },
-      take: Math.max(
-        (await this.extractedTweetRepository.count({
-          where: {
-            predictedClass: 'accept',
-          },
-        })) - cleanedUpNumOfRowsOfExtractedTweetAccept,
-        0,
-      ),
-    });
-    i = 0;
-    for (const item of removeItems) {
-      Logger.debug(`Delete ExtractedTweet (accept)... (id = ${item.id})`, 'CleanerConsumer/execCleanupDatabase');
-      await item.remove();
-      i++;
-    }
-    Logger.log(`Deleted ${i} items from ExtractedTweet (accpet).`, 'CleanerConsumer/execCleanupDatabase');
-
-    removeItems = await this.extractedTweetRepository.find({
-      where: {
-        predictedClass: 'reject',
-      },
-      order: {
-        crawledAt: 'ASC',
-      },
-      take: Math.max(
-        (await this.extractedTweetRepository.count({
-          where: {
-            predictedClass: 'reject',
-          },
-        })) - cleanedUpNumOfRowsOfExtractedTweetReject,
-        0,
-      ),
-    });
-    i = 0;
-    for (const item of removeItems) {
-      Logger.debug(`Delete ExtractedTweet (reject)... (id = ${item.id})`, 'CleanerConsumer/execCleanupDatabase');
-      await item.remove();
-      i++;
-    }
-    Logger.log(`Deleted ${i} items from ExtractedTweet (reject).`, 'CleanerConsumer/execCleanupDatabase');
+    await this.execCleanupExtractedTweets(maxDBRows, 'accept');
+    await this.execCleanupExtractedTweets(maxDBRows, 'reject');
 
     // MlModel エンティティを検索して削除
     await this.execCleanupMlModel(maxDBRows);
@@ -251,5 +205,63 @@ export class CleanerConsumer {
       i++;
     }
     Logger.log(`Deleted ${i} items from MlModel.`, 'CleanerConsumer/execCleanupMlModel');
+  }
+
+  /**
+   * 抽出済みツイートのクリーンアップ
+   * @param maxDBRows データベース行数の上限
+   * @param predictedClass 分類クラス
+   */
+  protected async execCleanupExtractedTweets(maxDBRows: number, predictedClass: string) {
+    // エンティティのクリーンアップ後の行数を取得
+    const cleanedUpNumOfRows = maxDBRows * this.AUTO_CLEANUP_DELETE_RATE_FOR_DB_ROWS;
+    let cleanedUpNumOfRowsOfExtractedTweetAtClass = 0;
+    if (predictedClass === 'accept') {
+      cleanedUpNumOfRowsOfExtractedTweetAtClass =
+        this.DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES.extractedTweetAccept * cleanedUpNumOfRows;
+    } else {
+      cleanedUpNumOfRowsOfExtractedTweetAtClass =
+        this.DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES.extractedTweetReject * cleanedUpNumOfRows;
+    }
+
+    const numOfExpectedRemoveItems =
+      (await this.extractedTweetRepository.count({
+        where: {
+          predictedClass: predictedClass,
+        },
+      })) - cleanedUpNumOfRowsOfExtractedTweetAtClass;
+
+    if (numOfExpectedRemoveItems <= 0) {
+      return;
+    }
+
+    Logger.debug(
+      `Counting items for ${predictedClass}... numOfExpectedRemoveItems = ${numOfExpectedRemoveItems}, cleanedUpNumOfRowsOfExtractedTweetAtClass = ${cleanedUpNumOfRowsOfExtractedTweetAtClass}`,
+      'CleanerConsumer/execCleanupExtractedTweets',
+    );
+
+    const removeItems = await this.extractedTweetRepository.find({
+      where: {
+        predictedClass: 'accept',
+      },
+      order: {
+        crawledAt: 'ASC',
+      },
+      take: numOfExpectedRemoveItems,
+    });
+
+    let i = 0;
+    for (const item of removeItems) {
+      Logger.debug(
+        `Delete ExtractedTweet (${predictedClass})... (id = ${item.id})`,
+        'CleanerConsumer/execCleanupExtractedTweets',
+      );
+      await item.remove();
+      i++;
+    }
+    Logger.log(
+      `Deleted ${i} items from ExtractedTweet (${predictedClass}).`,
+      'CleanerConsumer/execCleanupExtractedTweets',
+    );
   }
 }

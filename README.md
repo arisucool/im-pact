@@ -3,9 +3,11 @@
 im pact by arisu.cool 🍓
 -- An Extensible Twitter Crawler and Bot for Producers and Everyone.
 
-[![CI](https://github.com/arisucool/im-pact/workflows/CI/badge.svg?branch=master)](https://github.com/arisucool/im-pact/actions?query=branch%3Amaster+workflow%3ACI)
-[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
-[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
+[![CI](https://img.shields.io/github/workflow/status/arisucool/im-pact/CI?style=flat-square)](https://github.com/arisucool/im-pact/actions?query=branch%3Amaster+workflow%3ACI)
+[![Codecov](https://img.shields.io/codecov/c/gh/arisucool/im-pact?style=flat-square)](https://codecov.io/gh/arisucool/im-pact)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg?style=flat-square)](https://conventionalcommits.org)
+[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg?style=flat-square)](http://commitizen.github.io/cz-cli/)
+[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
 ## NOTICE
 

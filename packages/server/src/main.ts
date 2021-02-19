@@ -8,6 +8,9 @@ import { AppModule } from './app.module';
 import * as bodyParser from 'body-parser';
 import { Helper } from './helper';
 
+// ソースマップの対応 (コンソールのスタックトレースへ .ts ファイルの行数を表示)
+import 'source-map-support/register';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 

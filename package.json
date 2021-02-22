@@ -10,7 +10,7 @@
     "start": "lerna run start:prod --scope=@arisucool/im-pact-core --stream",
     "start:dev": "lerna run start:dev --concurrency=100  --no-sort --stream",
     "test": "npm run test:server && npm run test:client && npm run test:actions && npm run test:filters",
-    "test-ci": "lerna run build --scope=@arisucool/im-pact-core --stream && npm run test:server -- -- -- --coverage && npm run test:client -- -- -- --no-watch --code-coverage && npm run test:actions -- -- -- --coverage && npm run test:filters -- -- -- --coverage",
+    "test-ci": "lerna run build --scope=@arisucool/im-pact-core --stream && lerna run build --scope={@arisucool/,}im-pact-{action,filter}-* --stream && (npm run test:server -- -- -- --coverage || exit 0) && (npm run test:client -- -- -- --no-watch --code-coverage || exit 0) && npm run test:actions -- -- -- --coverage && npm run test:filters -- -- -- --coverage",
     "test:actions": "lerna run test --scope={@arisucool/,}im-pact-action-* --stream",
     "test:client": "lerna run test --scope=client --stream",
     "test:filters": "lerna run test --scope={@arisucool/,}im-pact-filter-* --stream",

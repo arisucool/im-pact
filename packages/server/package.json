@@ -90,11 +90,7 @@
       "**/*.ts",
       "!**/*.spec.ts"
     ],
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
+    "preset": "ts-jest",
     "reporters": [
       "default",
       [
@@ -109,12 +105,14 @@
         }
       ]
     ],
-    "rootDir": "src",
-    "testRegex": ".spec.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "coverageDirectory": "../test-report/coverage/",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/*.spec.ts"
+    ],
+    "moduleDirectories": [
+      "node_modules",
+      "<rootDir>"
+    ],
+    "coverageDirectory": "./test-report/coverage/"
   }
 }

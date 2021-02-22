@@ -43,7 +43,27 @@ export class ActionTestHelper {
       socialAccount: null,
       topic: null,
       predictedClass: 'accept',
-      filtersResult: ['1', '2', '3'],
+      filtersResult: [
+        {
+          filterName: 'Test',
+          result: {
+            summary: {
+              summaryText: 'This tweet text should be accepted',
+              evidenceText: 'テスト #arisucool',
+            },
+            values: {
+              probabilityOfAccept: {
+                title: 'Probability that the tweet text will be approved',
+                value: 0.5,
+              },
+              probabilityOfReject: {
+                title: 'Probability that the tweet text will be rejected',
+                value: 0.2,
+              },
+            },
+          },
+        },
+      ],
       completeActionIndex: -1,
       lastActionIndex: -1,
       lastActionExecutedAt: null,

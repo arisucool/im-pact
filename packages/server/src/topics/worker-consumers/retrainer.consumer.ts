@@ -9,7 +9,8 @@ import { CrawledTweet } from '../ml/entities/crawled-tweet.entity';
 import { ExtractedTweet } from '../ml/entities/extracted-tweet.entity';
 import { Topic } from '../entities/topic.entity';
 import { TrainAndValidateDto } from '../ml/dto/train-and-validate.dto';
-import { ReTrainDto } from '../ml/dto/retrain.dto';
+import { ReTrainDto, TweetFilterRetrainingRequest } from '../ml/dto/retrain.dto';
+import { TweetFilterService } from '../ml/tweet-filter.service';
 
 /**
  * 再トレーニングに関するキューを処理するためのコンシューマ
@@ -24,6 +25,7 @@ export class RetrainerConsumer {
     @InjectRepository(ExtractedTweet)
     private extractedTweetRepository: Repository<ExtractedTweet>,
     private mlService: MlService,
+    private tweetFilterService: TweetFilterService,
   ) {}
 
   /**
@@ -32,7 +34,7 @@ export class RetrainerConsumer {
    * @param job ジョブ
    */
   @Process()
-  async execJob(job: Job<any>) {
+  async execJob(job: Job<any>): Promise<any> {
     Logger.debug(`Job starting... (ID: ${job.id})`, 'RetrainerConsumer/execJob');
     const dto: ReTrainDto = job.data.dto;
 
@@ -51,9 +53,9 @@ export class RetrainerConsumer {
    * @param dto 再トレーニングを行うための情報
    * @param job ジョブ
    */
-  async retrain(dto: ReTrainDto, job: Job<any>) {
+  protected async retrain(dto: ReTrainDto, job: Job<any>): Promise<any> {
     // トピックを取得
-    let topic: Topic = await this.topicsRepository.findOne(dto.topicId);
+    const topic: Topic = await this.topicsRepository.findOne(dto.topicId);
     if (!topic) throw new Error('topic not found');
 
     // ツイートを取得
@@ -62,6 +64,42 @@ export class RetrainerConsumer {
       throw new Error('tweet not found');
     }
 
+    // ツイートフィルタの再トレーニングを実行
+    if (dto.tweetFilterRetrainingRequests) {
+      await this.retrainTweetFilter(tweet, topic, dto.tweetFilterRetrainingRequests);
+    }
+
+    return {};
+
+    // ジョブのステータスを更新
+    job.progress(20);
+
+    // ディープラーニング分類器の再トレーニング＆検証を実行
+    return await this.retrainClassifier(job, tweet, topic, dto);
+  }
+
+  /**
+   * ツイートフィルタの再トレーニング
+   * @param tweet         ツイート
+   * @param topic         トピック
+   * @param retrainingReq 再トレーニングするための情報
+   */
+  protected async retrainTweetFilter(
+    tweet: ExtractedTweet,
+    topic: Topic,
+    retrainingReq: TweetFilterRetrainingRequest[],
+  ): Promise<void> {
+    await this.tweetFilterService.retrain(tweet, topic, retrainingReq);
+  }
+
+  /**
+   * ディープラーニング分類器の再トレーニング＆検証
+   * @param job        ジョブ
+   * @param tweet      ツイート
+   * @param topic      トピック
+   * @param dto        再トレーニングするための情報
+   */
+  protected async retrainClassifier(job: Job<any>, tweet: ExtractedTweet, topic: Topic, dto: ReTrainDto): Promise<any> {
     // 当該ツイートが選択されたか否か
     const isSelected = tweet.predictedClass == 'accept';
 
@@ -105,12 +143,9 @@ export class RetrainerConsumer {
     let filterPattern = JSON.parse(topic.filterPatterns[topic.enabledFilterPatternIndex]);
 
     // ジョブのステータスを更新
-    job.progress(10);
+    job.progress(30);
 
-    // ツイートフィルタの再トレーニング
-    // TODO:
-
-    // トレーニング＆検証を再実行
+    // ディープラーニング分類器のトレーニング＆検証を実行
     const trainAndValidateDto: TrainAndValidateDto = {
       topicId: dto.topicId,
       trainingTweets: topic.trainingTweets.map(trainingTweetJSON => {

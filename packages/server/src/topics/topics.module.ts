@@ -13,6 +13,7 @@ import { ExtractedTweet } from './ml/entities/extracted-tweet.entity';
 import { ModuleStorage } from './ml/entities/module-storage.entity';
 import { TwitterCrawlerService } from './ml/twitter-crawler.service';
 import { MlModel } from './ml/entities/ml-model.entity';
+import { TweetFilterService } from './ml/tweet-filter.service';
 
 // 自動クリーンアップ - 完了またはエラーにより終了したジョブを残す数
 // (この数を超えた古いジョブは削除される)
@@ -66,6 +67,6 @@ const AUTO_CLEANUP_NUM_OF_FINISHED_TRAINER_QUEUE_JOBS_LEFT = 2;
     }),
   ],
   controllers: [TopicsController, MlController],
-  providers: [MlService, TopicsService, TwitterCrawlerService],
+  providers: [MlService, TopicsService, TwitterCrawlerService, TweetFilterService],
 })
 export class TopicsModule {}

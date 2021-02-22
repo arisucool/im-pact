@@ -14,8 +14,9 @@ import {
 import { IsNotEmpty, IsEmpty, IsArray } from 'class-validator';
 import { SocialAccount } from '../../../social-accounts/entities/social-account.entity';
 import { Topic } from 'src/topics/entities/topic.entity';
-import { CrawledTweet } from './crawled-tweet.entity';
 import { Tweet } from './tweet.entity';
+import { TweetFilterResultWithMultiValues } from '../modules/tweet-filters/interfaces/tweet-filter.interface';
+import { ApiResponseProperty } from '@nestjs/swagger';
 
 /**
  * 抽出済みツイートのエンティティ
@@ -30,6 +31,7 @@ export class ExtractedTweet extends Tweet {
   // 抽出日時
   @CreateDateColumn()
   @IsNotEmpty()
+  @ApiResponseProperty()
   extractedAt: Date;
 
   // 収集時に使用されたソーシャルアカウント
@@ -49,31 +51,39 @@ export class ExtractedTweet extends Tweet {
   // ツイートの分類クラス ('accept' or 'reject')
   @Column()
   @IsNotEmpty()
+  @ApiResponseProperty()
   predictedClass: string;
 
   // ツイートフィルタの結果
   @Column({
-    type: 'text',
-    array: true,
+    type: 'json',
+    default: '{}',
   })
-  filtersResult: string[];
+  @ApiResponseProperty()
+  filtersResult: {
+    filterName: string;
+    result: TweetFilterResultWithMultiValues;
+  }[];
 
   // 完了したアクションのインデックス番号
   @Column({
     default: -1,
   })
+  @ApiResponseProperty()
   completeActionIndex: number;
 
   // 最後に実行されたアクションのインデックス番号 (保留またはエラーであっても更新される)
   @Column({
     default: -1,
   })
+  @ApiResponseProperty()
   lastActionIndex: number;
 
   // 最後に実行されたアクションの実行日時 (保留またはエラーであっても更新される)
   @Column({
     nullable: true,
   })
+  @ApiResponseProperty()
   lastActionExecutedAt: Date;
 
   // 最後に実行されたアクションのエラー (エラーであれば更新される)
@@ -81,5 +91,6 @@ export class ExtractedTweet extends Tweet {
     type: 'text',
     nullable: true,
   })
+  @ApiResponseProperty()
   lastActionError: string;
 }

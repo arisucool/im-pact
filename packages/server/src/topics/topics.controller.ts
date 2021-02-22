@@ -19,6 +19,8 @@ import { CreateTopicDto } from './dto/create-topic.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdateTopicDto } from './dto/update-topic.dto';
 import { ExtractedTweet } from './ml/entities/extracted-tweet.entity';
+import { RejectTweetDto } from './dto/reject-tweet.dto';
+import { AcceptTweetDto } from './dto/accept-tweet.dto';
 
 @Controller('topics')
 @ApiBearerAuth()
@@ -214,18 +216,14 @@ export class TopicsController {
   @ApiUnauthorizedResponse({
     description: '権限のエラー',
   })
-  @ApiQuery({
-    name: 'actionIndex',
-    description:
-      'アクション番号 (-1ならば最初のアクションから実行される。未指定ならば現在の次のアクションから実行される。)',
-    required: false,
-  })
   acceptTweet(
     @Param('id') id: number,
     @Param('extractedTweetId') extractedTweetId: number,
-    @Query('actionIndex') actionIndex?: number,
+    @Body(ValidationPipe) dto: AcceptTweetDto,
   ) {
-    return this.topicsService.acceptTweet(id, extractedTweetId, null, actionIndex);
+    dto.topicId = id;
+    dto.extractedTweetId = extractedTweetId;
+    return this.topicsService.acceptTweetByDto(dto);
   }
 
   /**
@@ -245,8 +243,14 @@ export class TopicsController {
   @ApiUnauthorizedResponse({
     description: '権限のエラー',
   })
-  rejectTweet(@Param('id') id: number, @Param('extractedTweetId') extractedTweetId: number) {
-    return this.topicsService.rejectTweet(id, extractedTweetId, null);
+  rejectTweet(
+    @Param('id') id: number,
+    @Param('extractedTweetId') extractedTweetId: number,
+    @Body(ValidationPipe) dto: RejectTweetDto,
+  ) {
+    dto.topicId = id;
+    dto.extractedTweetId = extractedTweetId;
+    return this.topicsService.rejectTweetByDto(dto);
   }
 
   /**

@@ -78,7 +78,9 @@
       <app-dashboard-tweet
         [tweet]="tweet"
         [actions]="topic.actions"
-        (itemButtonClickedEvent)="onItemButtonClicked(tweet.idStr, $event)"
+        [filters]="topic.filterPatterns[topic.enabledFilterPatternIndex]?.filters"
+        [availableFilters]="availableFilters"
+        (tweetReclassificationRequest)="onTweetReclassificationRequested(tweet.idStr, $event)"
       >
       </app-dashboard-tweet>
     </div>
@@ -158,7 +160,9 @@
               <app-dashboard-tweet
                 [tweet]="tweet"
                 [actions]="topic.actions"
-                (itemButtonClickedEvent)="onItemButtonClicked(tweet.idStr, $event)"
+                [filters]="topic.filterPatterns[topic.enabledFilterPatternIndex]?.filters"
+                [availableFilters]="availableFilters"
+                (tweetReclassificationRequest)="onTweetReclassificationRequested(tweet.idStr, $event)"
               ></app-dashboard-tweet>
             </div>
             <!---->

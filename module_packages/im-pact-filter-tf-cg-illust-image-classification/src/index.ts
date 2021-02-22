@@ -1,4 +1,10 @@
-import { Tweet, TweetFilter, TweetFilterHelper, TweetFilterSettingsDefinition } from '@arisucool/im-pact-core';
+import {
+  Tweet,
+  TweetFilter,
+  TweetFilterHelper,
+  TweetFilterSettingsDefinition,
+  TweetFilterResult,
+} from '@arisucool/im-pact-core';
 import * as tf from '@tensorflow/tfjs-node';
 import * as Jimp from 'jimp';
 import * as fs from 'fs';
@@ -28,6 +34,10 @@ export default class FilterTfCgIllustImageClassification implements TweetFilter 
 
   getSettingsDefinition(): TweetFilterSettingsDefinition[] {
     return [];
+  }
+
+  async shouldInitialize(): Promise<boolean> {
+    return false;
   }
 
   /**
@@ -66,20 +76,9 @@ export default class FilterTfCgIllustImageClassification implements TweetFilter 
     this.labels = require(labelsFilePath).labels;
   }
 
-  async filter(tweet: Tweet): Promise<number> {
+  async filter(tweet: Tweet): Promise<TweetFilterResult> {
     // 機械学習モデルを読み込む
     await this.initialize();
-
-    // 当該ツイートの判定結果のキャッシュを検索
-    const cachedClassifiedNumber = await this.helper.getTweetStorage().get(tweet.id, 'classfiedCache');
-    if (cachedClassifiedNumber) {
-      // キャッシュがあれば、キャッシュから返す
-      console.log(
-        `[TfIllustImageClassificationFilter] filter - return from cache... ${cachedClassifiedNumber} for ID: ${tweet.idStr} (extractedTweetId = ${tweet.id})`,
-      );
-      return +cachedClassifiedNumber;
-    }
-
     // ツイートから画像URLを取得
     let tweetImageUrls = null;
     if (tweet.imageUrls && 1 <= tweet.imageUrls.length) {
@@ -90,7 +89,17 @@ export default class FilterTfCgIllustImageClassification implements TweetFilter 
     }
     if (tweetImageUrls.length === 0) {
       // 画像がなければ、0を返す
-      return 0;
+      return this.getFilterResultByClassifiedNumber(0, null);
+    }
+
+    // 当該ツイートの判定結果のキャッシュを検索
+    const cachedClassifiedNumber = await this.helper.getTweetStorage().get(tweet.id, 'classfiedCache');
+    if (cachedClassifiedNumber) {
+      // キャッシュがあれば、キャッシュから返す
+      console.log(
+        `[TfIllustImageClassificationFilter] filter - return from cache... ${cachedClassifiedNumber} for ID: ${tweet.idStr} (extractedTweetId = ${tweet.id})`,
+      );
+      return this.getFilterResultByClassifiedNumber(cachedClassifiedNumber, tweetImageUrls);
     }
 
     // 各画像に対してクラス分類を実行
@@ -103,7 +112,7 @@ export default class FilterTfCgIllustImageClassification implements TweetFilter 
 
     if (classNames.length === 0) {
       // 分類不可能ならば、0を返す
-      return 0;
+      return this.getFilterResultByClassifiedNumber(0, tweetImageUrls);
     }
 
     // クラス分類の結果に応じて値を選択
@@ -123,7 +132,41 @@ export default class FilterTfCgIllustImageClassification implements TweetFilter 
     await this.helper.getTweetStorage().set(tweet.id, 'classfiedCache', classifiedNumber);
 
     // 値を返す
-    return classifiedNumber;
+    return this.getFilterResultByClassifiedNumber(classifiedNumber, tweetImageUrls);
+  }
+
+  /**
+   * 実行結果の生成
+   * @param classifiedNumber クラス分類された値
+   * @param imageUrl 画像のURL
+   * @retrun ツイートフィルタの実行結果
+   */
+  private getFilterResultByClassifiedNumber(classifiedNumber: number, tweetImageUrls: string[]): TweetFilterResult {
+    let summaryText = null;
+    switch (classifiedNumber) {
+      case 1:
+        summaryText = 'この画像はその他である';
+        break;
+      case 2:
+        summaryText = 'この画像は公式イラストである';
+        break;
+      case 3:
+        summaryText = 'この画像はファンイラストである';
+        break;
+      default:
+        summaryText = '画像の分類エラー';
+    }
+
+    return {
+      summary: {
+        summaryText: summaryText,
+        evidenceImageUrls: tweetImageUrls,
+      },
+      value: {
+        title: '添付画像の分類クラス',
+        value: classifiedNumber,
+      },
+    };
   }
 
   /**

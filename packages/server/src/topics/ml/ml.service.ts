@@ -12,6 +12,10 @@ import { Topic } from '../entities/topic.entity';
 import { ActionManager } from './modules/action-manager';
 import { ExtractedTweet } from './entities/extracted-tweet.entity';
 import { CrawledTweet } from './entities/crawled-tweet.entity';
+import {
+  TweetFilterResultWithMultiValues,
+  TweetFilterResult,
+} from './modules/tweet-filters/interfaces/tweet-filter.interface';
 
 @Injectable()
 export class MlService {
@@ -64,56 +68,6 @@ export class MlService {
   }
 
   /**
-   * 利用可能なツイートフィルタの取得
-   */
-  async getAvailableTweetFilters() {
-    const filterManager = new TweetFilterManager(
-      this.moduleStorageRepository,
-      null,
-      this.socialAccountRepository,
-      [],
-      [],
-    );
-    const filterNames = await filterManager.getAvailableTweetFilterNames();
-
-    let filters = {};
-    for (const filterName of filterNames) {
-      let mod = null;
-      try {
-        mod = await filterManager.getModule(filterName, null, {});
-      } catch (e) {
-        console.warn(`[MlService] getAvailableTweetFilters - Error = `, e);
-        continue;
-      }
-
-      if (mod === null) {
-        console.warn(`[MlService] getAvailableTweetFilters - This module is null... `, filterName);
-        continue;
-      }
-
-      filters[filterName] = {
-        // フィルタのバージョン
-        version: '1.0.0', // TODO:
-        // フィルタの説明
-        description: mod.getDescription(),
-        // フィルタの適用範囲
-        scope: mod.getScope(),
-        // フィルタ設定の定義
-        settings: mod.getSettingsDefinition(),
-        // フィルタで提供される機能
-        features: {
-          // 学習を行うか否か
-          train: typeof mod.train === 'function',
-          // バッチ処理を行うか否か
-          batch: typeof mod.batch === 'function',
-        },
-      };
-    }
-
-    return filters;
-  }
-
-  /**
    * トレーニングおよび検証
    * (お手本分類の結果と、ツイートフィルタ設定をもとにデータセットを生成し、分類器の学習モデルを生成・保存し、検証を行う)
    * @return トレーニングおよび検証の結果
@@ -130,6 +84,10 @@ export class MlService {
         trainingTweets.push(tweet);
       }
     }
+
+    // ツイートフィルタの初回処理を実行
+    Logger.log('Executing initial process for tweet filters...', 'MlService/trainAndValidate');
+    await this.execInitialProcessOfTweetFilters(trainingTweets, dto.filters, dto.topicKeywords);
 
     // データセットを生成
     Logger.log('getTrainingDatasets...', 'MlService/trainAndValidate');
@@ -244,6 +202,30 @@ export class MlService {
   }
 
   /**
+   * ツイートフィルタの初回処理
+   * @param trainingTweets お手本分類の結果 (初回学習が行われる)
+   * @param filterSettings ツイートフィルタ設定
+   * @param topicKeywords トピックのキーワード (実際に検索が行われるわけではない。ベイジアンフィルタ等で学習からキーワードを除いて精度を上げる場合などに使用される。)
+   */
+  protected async execInitialProcessOfTweetFilters(
+    trainingTweets: any[],
+    filterSettings: any[],
+    topicKeywords: string[],
+  ): Promise<void> {
+    // ツイートフィルタを管理するモジュールを初期化
+    const filterManager = new TweetFilterManager(
+      this.moduleStorageRepository,
+      this.crawledTweetRepository,
+      this.socialAccountRepository,
+      filterSettings,
+      topicKeywords,
+    );
+
+    // ツイートフィルタによる初回処理を実行
+    await filterManager.execInitialProcess(trainingTweets);
+  }
+
+  /**
    * トレーニングのためのデータセットの生成
    * @param trainingTweets お手本分類の結果
    * @param filterSettings ツイートフィルタ設定
@@ -267,38 +249,29 @@ export class MlService {
     );
 
     // 各ツイートフィルタによるバッチ処理を実行
-    // (バッチ処理が必要なツイートフィルタがあるため、先にバッチ処理を行っておく)
+    // (バッチ処理が必要なツイートフィルタがあるため、バッチ処理を行っておく)
     Logger.log('Executing batches on tweet filters...', 'MlService/getTrainingDatasets');
     await filterManager.batch();
-
-    // 各ツイートフィルタによる学習処理を実行
-    // (学習が必要なツイートフィルタがあるため、先に全ツイートに対する学習を行っておく)
-    Logger.log('Training tweets on tweet filters...', 'MlService/getTrainingDatasets');
-    for (const tweet of trainingTweets) {
-      await filterManager.trainTweet(tweet, tweet.selected);
-      if (tweet.selected) {
-        await filterManager.trainTweet(tweet, tweet.selected);
-      }
-    }
 
     // 各ツイートを反復
     Logger.log('Filtering tweets on tweet filters...', 'MlService/getTrainingDatasets');
     let rawDataset = [];
     for (let tweet of trainingTweets) {
-      //console.log(`[MlService] getTrainingDatasets - Tweet: ${tweet.idStr}, ${tweet.selected}`);
-      // 当該ツイートに対してツイートフィルタを実行し、分類のための変数を取得
-      let allFiltersResult = [];
+      // 当該ツイートに対して全ツイートフィルタを実行
+      let filterResults: { filterName: string; result: TweetFilterResultWithMultiValues }[] = [];
       try {
-        allFiltersResult = await filterManager.filterTweet(tweet);
+        filterResults = await filterManager.filterTweet(tweet);
       } catch (e) {
         Logger.error('Error occurred on tweet filters...', e.stack, 'MlService/getTrainingDatasets');
         continue;
       }
-      const allFiltersResultFlat = [].concat(...allFiltersResult);
-      numOfFeatures = allFiltersResultFlat.length;
+
+      // 全ツイートフィルタの結果から分類のための変数を抽出
+      const filterValues = this.getFilterValuesByFilterResults(filterResults);
+      numOfFeatures = filterValues.length;
       // 生データセットの行を生成
       let rawDataRow = [];
-      rawDataRow = rawDataRow.concat(allFiltersResultFlat);
+      rawDataRow = rawDataRow.concat(filterValues);
       rawDataRow.push(tweet.selected ? 1 : 0);
       // 生データセットへ追加
       rawDataset.push(rawDataRow);
@@ -352,6 +325,23 @@ export class MlService {
 
   protected flatOneHot(index: any) {
     return Array.from(tf.oneHot([index], 3).dataSync());
+  }
+
+  /**
+   * 指定されたツイートフィルタの実行結果の配列から値の配列を返すメソッド
+   * @param filterResults ツイートフィルタの実行結果の配列
+   * @return 値 (ツイートを分類するための変数) の配列
+   */
+  protected getFilterValuesByFilterResults(
+    filterResults: { filterName: string; result: TweetFilterResultWithMultiValues }[],
+  ): number[] {
+    const values = [];
+    for (const filterResult of filterResults) {
+      for (const fiterValueKey of Object.keys(filterResult.result.values)) {
+        values.push(filterResult.result.values[fiterValueKey].value);
+      }
+    }
+    return values;
   }
 
   /**
@@ -493,18 +483,28 @@ export class MlService {
     // 検証するツイートを反復
     let i = 0;
     for (let tweet of validationTweets) {
-      // 当該ツイートに対してツイートフィルタを実行し、分類のための変数を取得
-      let allFiltersResult = await filterManager.filterTweet(tweet);
-      const allFiltersResultFlat = [].concat(...allFiltersResult);
+      // 当該ツイートに対して全ツイートフィルタを実行
+      let filterResults: { filterName: string; result: TweetFilterResultWithMultiValues }[] = [];
+      try {
+        filterResults = await filterManager.filterTweet(tweet);
+      } catch (e) {
+        Logger.error('Error occurred on tweet filters...', e.stack, 'MlService/getTrainingDatasets');
+        continue;
+      }
+
+      // 全ツイートフィルタの結果から分類のための変数を抽出
+      const filterValues = this.getFilterValuesByFilterResults(filterResults);
+      const numOfFeatures = filterValues.length;
+
       // 指定された学習モデルにより予測を実行
-      const predictedClass = (trainedModel.predict(tf.tensor2d(allFiltersResultFlat, [1, numOfFeatures])) as tf.Tensor)
+      const predictedClass = (trainedModel.predict(tf.tensor2d(filterValues, [1, numOfFeatures])) as tf.Tensor)
         .argMax(-1)
         .dataSync()[0];
 
       // 予測した答えを追加
       validationTweets[i].predictedSelect = predictedClass == 1;
       // ツイートフィルタの実行結果を追加
-      validationTweets[i].filtersResult = allFiltersResultFlat;
+      validationTweets[i].filtersResult = filterResults;
       i++;
 
       // 予測した答えが正しいか判定
@@ -568,20 +568,28 @@ export class MlService {
     // 分類するツイートを反復
     let i = 0;
     for (let tweet of tweets) {
-      // 当該ツイートに対してツイートフィルタを実行し、分類のための変数を取得
-      let allFiltersResult = await filterManager.filterTweet(tweet);
-      const allFiltersResultFlat = [].concat(...allFiltersResult);
+      // 当該ツイートに対して全ツイートフィルタを実行
+      let filterResults: { filterName: string; result: TweetFilterResultWithMultiValues }[] = [];
+      try {
+        filterResults = await filterManager.filterTweet(tweet);
+      } catch (e) {
+        Logger.error('Error occurred on tweet filters...', e.stack, 'MlService/getTrainingDatasets');
+        continue;
+      }
+
+      // 全ツイートフィルタの結果から分類のための変数を抽出
+      const filterValues = this.getFilterValuesByFilterResults(filterResults);
+      const numOfFeatures = filterValues.length;
+
       // 指定された学習モデルにより予測を実行
-      const predictedClass = (trainedModel.predict(
-        tf.tensor2d(allFiltersResultFlat, [1, allFiltersResultFlat.length]),
-      ) as tf.Tensor)
+      const predictedClass = (trainedModel.predict(tf.tensor2d(filterValues, [1, numOfFeatures])) as tf.Tensor)
         .argMax(-1)
         .dataSync()[0];
 
       // 予測した答えを追加
       tweets[i].predictedSelect = predictedClass == 1;
       // ツイートフィルタの実行結果を追加
-      tweets[i].filtersResult = allFiltersResultFlat;
+      tweets[i].filtersResult = filterResults;
       i++;
 
       console.log(`[MlService] predictTweets - tweet = ${tweet.idStr}, predictedClass = ${predictedClass}`);

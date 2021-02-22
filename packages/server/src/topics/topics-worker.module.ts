@@ -14,6 +14,7 @@ import { CrawlerConsumer } from './worker-consumers/crawler.consumer';
 import { TrainerConsumer } from './worker-consumers/trainer.consumer';
 import { RetrainerConsumer } from './worker-consumers/retrainer.consumer';
 import { CleanerConsumer } from './worker-consumers/cleaner.consumer';
+import { TweetFilterService } from './ml/tweet-filter.service';
 
 /**
  * トピックに関するキュー処理のためのモジュール
@@ -44,6 +45,7 @@ import { CleanerConsumer } from './worker-consumers/cleaner.consumer';
     // 各 Consumer から使用されるサービス
     MlService,
     TwitterCrawlerService,
+    TweetFilterService,
     // キューを処理するための Consumer
     ActionConsumer,
     CleanerConsumer,

@@ -91,13 +91,9 @@
 
   <!-- アイテムメニュー領域 -->
   <mat-card-content class="item-menu-container" *ngIf="isShowingItemMenu">
-    <!-- アイテムメニュークローズボタン -->
+    <!-- クローズボタン -->
     <div class="classification-btn-container">
-      <div
-        (click)="isShowingItemMenu = false"
-        class="classification-btn"
-        matTooltip="クリックすると、このアイテムのメニューを閉じます"
-      >
+      <div (click)="isShowingItemMenu = false" class="classification-btn" matTooltip="クリックすると、キャンセルします">
         <mat-icon>close</mat-icon>
       </div>
     </div>
@@ -126,7 +122,7 @@
         <!---->
 
         <!-- 承認＆再トレーニングボタン / アクション遷移ボタン -->
-        <li *ngFor="let action of detinationActions">
+        <li *ngFor="let action of destinationActions">
           <button
             *ngIf="!isSelected"
             (click)="onItemAccepted(action.index)"
@@ -137,7 +133,7 @@
               action.index + 1
             }} 番のアクションを実行させます"
           >
-            承認 ＆ {{ action.index + 1 }}. {{ action.name }} へ
+            承認 ＆ {{ action.index + 1 }}. {{ action.actionName }} へ
           </button>
           <button
             *ngIf="isSelected"
@@ -147,14 +143,104 @@
             color="primary"
             matTooltip="このツイートを承認のまま、{{ action.index + 1 }} 番のアクションを実行させます"
           >
-            {{ action.index + 1 }}. {{ action.name }} へ
+            {{ action.index + 1 }}. {{ action.actionName }} へ
           </button>
         </li>
         <!---->
       </ul>
     </div>
     <!-- フィルタの実行結果 (トレーニング＆検証用) -->
-    <div class="filters-result" *ngIf="tweet.filtersResult">Filter: {{ filtersResult?.join(' / ') }}</div>
+    <div class="filters-result" *ngIf="tweet.filtersResult">
+      Filter:
+      <!-- 各フィルタ -->
+      <div class="filter" *ngFor="let filterResult of tweet.filtersResult" style="display: inline;">
+        <!-- 各値 -->
+        <span
+          class="filter-value"
+          *ngFor="let item of filterResult.result.values | keyvalue"
+          matTooltip="{{ item.value.title }} (by {{ filterResult.filterName }})"
+          >{{ convertFilterResultValueToString(item.value.value) }}</span
+        >
+        <!---->
+      </div>
+      <!---->
+    </div>
+    <!---->
+  </mat-card-content>
+  <!---->
+
+  <!-- ツイートフィルタ 再トレーニング領域 -->
+  <mat-card-content class="filter-retraining-container" *ngIf="currentFilterTraining !== null">
+    <!-- クローズボタン -->
+    <div class="classification-btn-container">
+      <div
+        (click)="onTweetFilterRetrainingCanceled()"
+        class="classification-btn"
+        matTooltip="クリックすると、キャンセルします"
+      >
+        <mat-icon>close</mat-icon>
+      </div>
+    </div>
+    <!---->
+    <p class="caption">
+      ツイートフィルタの<br />&nbsp;再トレーニング &nbsp;
+      <span style="font-size: 0.8rem;">({{ currentFilterTrainingIndex + 1 }}/{{ filterTrainings.length }})</span>
+    </p>
+    <p
+      class="summary-text"
+      [ngClass]="{
+        accept: currentFilterTraining.filterResult.result.summary.summaryValue == 'accept',
+        reject: currentFilterTraining.filterResult.result.summary.summaryValue == 'reject'
+      }"
+    >
+      " {{ currentFilterTraining.filterResult.result.summary.summaryText }} "<br />
+    </p>
+    <p
+      class="evidence"
+      *ngIf="currentFilterTraining.filterResult.result.summary.evidenceText"
+      matTooltip="{{ currentFilterTraining.filterResult.result.summary.evidenceText }}"
+    >
+      {{ currentFilterTraining.filterResult.result.summary.evidenceText }}
+    </p>
+    <p class="filter-name" matTooltip="{{ currentFilterTraining.filter.description }}">
+      {{ currentFilterTraining.filterName }}
+    </p>
+    <div class="retraining-menu">
+      <ul>
+        <!-- ツイートフィルタの不正解ボタン -->
+        <li style="margin-bottom: 1rem;">
+          <button
+            (click)="onTweetFilterRetrainingAnswered(false)"
+            type="button"
+            mat-stroked-button
+            color="warn"
+            matTooltip="この判断は間違いだったとして、ツイートフィルタ {{
+              currentFilterTraining.filter.filterName
+            }} に再トレーニングさせます"
+          >
+            <mat-icon style="font-size: 1.2rem; margin-top: 4px;">thumb_down</mat-icon>
+            &nbsp;間違い
+          </button>
+        </li>
+        <!---->
+        <!-- ツイートフィルタの正解ボタン -->
+        <li style="margin-bottom: 1rem;">
+          <button
+            (click)="onTweetFilterRetrainingAnswered(true)"
+            type="button"
+            mat-stroked-button
+            color="primary"
+            matTooltip="この判断は正しかったとして、ツイートフィルタ {{
+              currentFilterTraining.filter.filterName
+            }} に再トレーニングさせます"
+          >
+            <mat-icon style="font-size: 1.2rem; margin-top: 3px;">thumb_up</mat-icon>
+            &nbsp;正しい
+          </button>
+        </li>
+        <!---->
+      </ul>
+    </div>
     <!---->
   </mat-card-content>
   <!---->

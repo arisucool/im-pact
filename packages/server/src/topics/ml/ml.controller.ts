@@ -20,6 +20,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { TrainAndValidateDto } from './dto/train-and-validate.dto';
 import { TwitterCrawlerService } from './twitter-crawler.service';
 import { JobStatus } from './job-status.interface';
+import { TweetFilterService } from './tweet-filter.service';
 
 @Controller('ml')
 @UseGuards(JwtAuthGuard)
@@ -28,6 +29,7 @@ export class MlController {
   constructor(
     private mlService: MlService,
     private twitterCrawlerService: TwitterCrawlerService,
+    private tweetFilterService: TweetFilterService,
     // 学習に関する処理を行うためのキュー
     @InjectQueue('trainer')
     private readonly trainerQueue: Queue,
@@ -120,7 +122,7 @@ export class MlController {
     description: '権限のエラー',
   })
   getAvailableTweetFilters() {
-    return this.mlService.getAvailableTweetFilters();
+    return this.tweetFilterService.getAvailableTweetFilters();
   }
 
   /**

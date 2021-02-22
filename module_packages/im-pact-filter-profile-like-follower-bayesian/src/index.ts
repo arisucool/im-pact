@@ -5,6 +5,7 @@ import {
   TweetFilterSettingsDefinition,
   TweetFilterBatch,
   TweetFilterTrain,
+  TweetFilterResultWithMultiValues,
 } from '@arisucool/im-pact-core';
 import * as TinySegmenter from 'tiny-segmenter';
 import * as Bayes from 'bayes-multiple-categories';
@@ -34,14 +35,53 @@ export default class FilterTweetAuthorProfileLikeFollowerBayesian
     return [];
   }
 
-  async filter(tweet: Tweet): Promise<number> {
+  async shouldInitialize(): Promise<boolean> {
+    return (await this.helper.getStorage().get('storedClassifier')) === null;
+  }
+
+  async filter(tweet: Tweet): Promise<TweetFilterResultWithMultiValues> {
     // ベイジアンフィルタを初期化
     await this.initBayes();
-    // ツイートした人のプロフィールからベイジアンフィルタでカテゴリを予測
+
+    // ツイートした人のプロフィールからベイジアンフィルタで各カテゴリの確率を予測
+    const numOfCategories = 2;
     const userProfile = JSON.parse(tweet.rawJSONData).user.description;
-    const category = await this.bayes.categorize(userProfile);
-    // カテゴリに応じた数値を返す
-    return category === 'accept' ? 1 : 0;
+    const results = await this.bayes.categorizeMultiple(userProfile, numOfCategories);
+
+    // accept カテゴリの確率を取得
+    const resultOfAccept = results.find((item: any) => {
+      return item.category === 'accept';
+    });
+    const probabilityOfAccept = resultOfAccept ? resultOfAccept.propability : 0.0;
+
+    // reject カテゴリの確率を取得
+    const resultOfReject = results.find((item: any) => {
+      return item.category === 'reject';
+    });
+    const probabilityOfReject = resultOfReject ? resultOfReject.propability : 0.0;
+
+    // フィルタ結果のサマリを生成
+    const summaryValue = probabilityOfReject < probabilityOfAccept ? 'accept' : 'reject';
+    const summaryText = summaryValue ? 'このプロフィールは承認である' : 'このプロフィールは拒否である';
+
+    // フィルタ結果を返す
+    return {
+      summary: {
+        summaryText: summaryText,
+        summaryValue: summaryValue,
+        evidenceText: userProfile,
+      },
+      values: {
+        probabilityOfAccept: {
+          title: 'プロフィールが承認である確率',
+          value: probabilityOfAccept,
+        },
+        probabilityOfReject: {
+          title: 'プロフィールが拒否である確率',
+          value: probabilityOfReject,
+        },
+      },
+    };
   }
 
   async train(tweet: Tweet, isSelected: boolean) {
@@ -53,6 +93,14 @@ export default class FilterTweetAuthorProfileLikeFollowerBayesian
     await this.bayes.learn(userProfile, label);
     // ベイジアンフィルタを保存
     await this.helper.getStorage().set('storedClassifier', this.bayes.toJson());
+  }
+
+  async retrain(tweet: Tweet, previousSummaryValue: string, isCorrect: boolean): Promise<void> {
+    if (previousSummaryValue === 'accept') {
+      this.train(tweet, isCorrect);
+    } else if (previousSummaryValue === 'reject') {
+      this.train(tweet, !isCorrect);
+    }
   }
 
   async batch() {
@@ -73,14 +121,22 @@ export default class FilterTweetAuthorProfileLikeFollowerBayesian
         .replace(/https?:\/\/[\w!?/\+\-_~=;\.,*&@#$%\(\)\'\[\]]+/g, '')
         // メンションを消去
         .replace(/@[a-zA-Z0-9_\-]+/g, '')
-        // ハッシュタグを消去
-        .replace(/[#＃]([Ａ-Ｚａ-ｚA-Za-z一-鿆0-9０-９ぁ-ヶｦ-ﾟー])+/g, '$1')
+        // ハッシュタグからハッシュ記号を消去
+        .replace(/[#＃]([Ａ-Ｚａ-ｚA-Za-z一-鿆0-9０-９ぁ-ヶｦ-ﾟー]+)/g, '$1')
         // 参照文字を消去
         .replace(/&amp;/g, '&')
         // その他のうまく処理できないワードを消去
+        .replace(/IDOLM@STER/g, 'IDOLMASTER')
         .replace(/(Master|MASTER)[\+＋]* (Lv|LV)[ \.][\d]{2,2}/g, '')
         .replace(/\d{1,2}:\d{1,2}/g, '')
-        .replace(/\d{1,2}時\d{1,2}分/g, '');
+        .replace(/\d{1,2}時\d{1,2}分/g, '')
+        // 記号を空白へ
+        .replace(
+          /["#$%&\'\\\\()*+,-./:;<=>?@\\^_`{|}~「」｢｣〔〕“”〈〉『』【】＆＊・（）()＄$＃#＠@。.、,？?！!｀＋￥％↑↓←→]/g,
+          ' ',
+        )
+        // 連続の空白を除去
+        .replace(/\s{2,}/g, ' ');
 
       return this.segmenter.segment(cleanText);
     };

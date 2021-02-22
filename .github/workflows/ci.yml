@@ -136,6 +136,7 @@ jobs:
         with:
           check_name: Client - Unit Test
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_failure: true
           require_tests: true
           report_paths: '/tmp/results/client/*.xml'
 
@@ -145,6 +146,7 @@ jobs:
         with:
           check_name: Server - Unit Test
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_failure: true
           require_tests: true
           report_paths: '/tmp/results/server/*.xml'
 
@@ -154,6 +156,7 @@ jobs:
         with:
           check_name: Actions - Unit Test
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_failure: true
           require_tests: true
           report_paths: |
             /tmp/results/action-*/*.xml
@@ -165,6 +168,7 @@ jobs:
         with:
           check_name: Tweet Filters - Unit Test
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_failure: true
           require_tests: true
           report_paths: |
             /tmp/results/filter-*/*.xml

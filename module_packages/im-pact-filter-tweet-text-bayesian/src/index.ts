@@ -1,4 +1,11 @@
-import { Tweet, TweetFilter, TweetFilterHelper, TweetFilterSettingsDefinition, TweetFilterTrain } from '@arisucool/im-pact-core';
+import {
+  Tweet,
+  TweetFilter,
+  TweetFilterHelper,
+  TweetFilterSettingsDefinition,
+  TweetFilterTrain,
+  TweetFilterResultWithMultiValues,
+} from '@arisucool/im-pact-core';
 import * as TinySegmenter from 'tiny-segmenter';
 import * as Bayes from 'bayes-multiple-categories';
 
@@ -26,6 +33,10 @@ export default class FilterTweetTextBayesian implements TweetFilter, TweetFilter
     return [];
   }
 
+  async shouldInitialize(): Promise<boolean> {
+    return (await this.helper.getStorage().get('storedClassifier')) === null;
+  }
+
   protected async initBayes() {
     if (this.bayes !== null) {
       return;
@@ -37,26 +48,29 @@ export default class FilterTweetTextBayesian implements TweetFilter, TweetFilter
 
     // ベイジアンフィルタの初期化
     const tokenizer = (text: string) => {
-      let cleanText = text
+      const cleanText = text
         // 先頭のRTを消去
         .replace(/^RT /g, '')
         // URLを消去
         .replace(/https?:\/\/[\w!?/\+\-_~=;\.,*&@#$%\(\)\'\[\]]+/g, '')
         // メンションを消去
         .replace(/@[a-zA-Z0-9_\-]+/g, '')
-        // ハッシュタグを消去
-        .replace(/[#＃]([Ａ-Ｚａ-ｚA-Za-z一-鿆0-9０-９ぁ-ヶｦ-ﾟー])+/g, '$1')
+        // ハッシュタグからハッシュ記号を消去
+        .replace(/[#＃]([Ａ-Ｚａ-ｚA-Za-z一-鿆0-9０-９ぁ-ヶｦ-ﾟー]+)/g, '$1')
         // 参照文字を消去
         .replace(/&amp;/g, '&')
         // その他のうまく処理できないワードを消去
+        .replace(/IDOLM@STER/g, 'IDOLMASTER')
         .replace(/(Master|MASTER)[\+＋]* (Lv|LV)[ \.][\d]{2,2}/g, '')
         .replace(/\d{1,2}:\d{1,2}/g, '')
-        .replace(/\d{1,2}時\d{1,2}分/g, '');
-
-      for (const keyword of topicKeywords) {
-        // トピックで指定されたキーワードを本文から取り除く
-        cleanText = cleanText.replace(new RegExp(keyword, 'g'), '');
-      }
+        .replace(/\d{1,2}時\d{1,2}分/g, '')
+        // 記号を空白へ
+        .replace(
+          /["#$%&\'\\\\()*+,-./:;<=>?@\\^_`{|}~「」｢｣〔〕“”〈〉『』【】＆＊・（）()＄$＃#＠@。.、,？?！!｀＋￥％↑↓←→]/g,
+          ' ',
+        )
+        // 連続の空白を除去
+        .replace(/\s{2,}/g, ' ');
 
       // 抽出されたトークン (分かち書き) を返す
       return this.segmenter.segment(cleanText);
@@ -76,7 +90,7 @@ export default class FilterTweetTextBayesian implements TweetFilter, TweetFilter
     }
   }
 
-  async filter(tweet: Tweet): Promise<number[]> {
+  async filter(tweet: Tweet): Promise<TweetFilterResultWithMultiValues> {
     // ベイジアンフィルタを初期化
     await this.initBayes();
 
@@ -97,11 +111,31 @@ export default class FilterTweetTextBayesian implements TweetFilter, TweetFilter
     });
     const probabilityOfReject = resultOfReject ? resultOfReject.propability : 0.0;
 
-    // 各カテゴリの確率を返す
-    return [probabilityOfAccept, probabilityOfReject];
+    // フィルタ結果のサマリを生成
+    const summaryValue = probabilityOfReject < probabilityOfAccept ? 'accept' : 'reject';
+    const summaryText = summaryValue ? 'このツイート本文は承認である' : 'このツイート本文は拒否である';
+
+    // フィルタ結果を返す
+    return {
+      summary: {
+        summaryText: summaryText,
+        summaryValue: summaryValue,
+        evidenceText: tweet.text,
+      },
+      values: {
+        probabilityOfAccept: {
+          title: 'ツイート本文が承認である確率',
+          value: probabilityOfAccept,
+        },
+        probabilityOfReject: {
+          title: 'ツイート本文が拒否である確率',
+          value: probabilityOfReject,
+        },
+      },
+    };
   }
 
-  async train(tweet: Tweet, isSelected: boolean) {
+  async train(tweet: Tweet, isSelected: boolean): Promise<void> {
     // ベイジアンフィルタを初期化
     await this.initBayes();
     // ベイジアンフィルタでツイートの本文を学習
@@ -118,5 +152,14 @@ export default class FilterTweetTextBayesian implements TweetFilter, TweetFilter
     }
     // ベイジアンフィルタを保存
     await this.helper.getStorage().set('storedClassifier', this.bayes.toJson());
+  }
+
+  async retrain(tweet: Tweet, previousSummaryValue: string, isCorrect: boolean): Promise<void> {
+    console.log('retrain', previousSummaryValue, isCorrect);
+    if (previousSummaryValue === 'accept') {
+      this.train(tweet, isCorrect);
+    } else if (previousSummaryValue === 'reject') {
+      this.train(tweet, !isCorrect);
+    }
   }
 }

@@ -5,6 +5,7 @@ import {
   CreateTopicDto,
   UpdateTopicDto,
   TrainAndValidateDto,
+  TweetFilterRetrainingRequest,
 } from 'src/.api-client';
 import * as CryptoJS from 'crypto-js';
 
@@ -114,8 +115,18 @@ export class TopicsService {
    * @param tweet ツイート
    * @param actionIndex アクション番号 (-1ならば最初のアクションから実行される。未指定ならば現在の次のアクションから実行される。)
    */
-  async acceptTweet(topicId: number, tweet: any, actionIndex?: number) {
-    return await this.api.topicsControllerAcceptTweet(topicId, tweet.id, actionIndex).toPromise();
+  async acceptTweet(
+    topicId: number,
+    tweet: any,
+    tweetFilterRetrainingRequests: TweetFilterRetrainingRequest[],
+    actionIndex?: number,
+  ) {
+    return await this.api
+      .topicsControllerAcceptTweet(topicId, tweet.id, {
+        destinationActionIndex: actionIndex,
+        tweetFilterRetrainingRequests: tweetFilterRetrainingRequests,
+      })
+      .toPromise();
   }
 
   /**
@@ -123,8 +134,12 @@ export class TopicsService {
    * @param topicId トピックID
    * @param tweet ツイート
    */
-  async rejectTweet(topicId: number, tweet: any) {
-    return await this.api.topicsControllerRejectTweet(topicId, tweet.id).toPromise();
+  async rejectTweet(topicId: number, tweet: any, tweetFilterRetrainingRequests: TweetFilterRetrainingRequest[]) {
+    return await this.api
+      .topicsControllerRejectTweet(topicId, tweet.id, {
+        tweetFilterRetrainingRequests: tweetFilterRetrainingRequests,
+      })
+      .toPromise();
   }
 
   /**
@@ -266,7 +281,7 @@ export class TopicsService {
             }
             resolve(jobStatus.result);
           });
-      }, 1000);
+      }, 5000);
     });
   }
 }

@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TopicsService } from '../topics.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { TweetReclassificationEvent } from '../shared/tweet-reclassification-event.interface';
+import { TweetFilterRetrainingRequest } from 'src/.api-client';
 
 @Component({
   selector: 'app-topic-dashboard',
@@ -57,6 +59,9 @@ export class TopicDashboardComponent implements OnInit {
   // 拒否ツイート
   rejectedTweets = null;
 
+  // 利用可能なツイートフィルタ
+  availableFilters = {};
+
   // ドロワが展開されているか否か
   isOpenedDrawer = true;
 
@@ -90,6 +95,9 @@ export class TopicDashboardComponent implements OnInit {
 
     // トピックの読み込み
     await this.loadTopic(topicId);
+
+    // 使用可能なツイートフィルタの読み込み
+    this.availableFilters = await this.topicsService.getAvailableTweetFilters();
 
     // 承認ツイートの読み込み (アクション別)
     for (const [actionIndex] of this.topic.actions.entries()) {
@@ -240,17 +248,17 @@ export class TopicDashboardComponent implements OnInit {
   }
 
   /**
-   * ツイートのボタンがクリックされたときに呼び出されるリスナ
+   * ツイートの再分類が要求されたときに呼び出されるリスナ
    * @param tweetIdStr ツイートのID文字列
    * @param event イベントのデータ
    */
-  async onItemButtonClicked(tweetIdStr: string, event: any) {
-    if (event.selected) {
+  async onTweetReclassificationRequested(tweetIdStr: string, event: TweetReclassificationEvent): Promise<void> {
+    if (event.classifierRetrainingRequest.selected) {
       // ユーザによって承認されたならば
-      await this.moveTweetToAccepted(tweetIdStr, event.actionIndex);
+      await this.moveTweetToAccepted(tweetIdStr, event.filterRetrainingRequests, event.destinationActionIndex);
     } else {
       // ユーザによって拒否されたならば
-      await this.moveTweetToRejected(tweetIdStr);
+      await this.moveTweetToRejected(tweetIdStr, event.filterRetrainingRequests);
     }
 
     // ツイートグリッドを更新
@@ -261,9 +269,14 @@ export class TopicDashboardComponent implements OnInit {
    * 指定されたツイートを承認へ移動
    * (あるアクションに所属する承認ツイートを別のアクションへ移動することも可能)
    * @param tweetIdStr ツイートのID文字列
+   * @param tweetFilterRetrainingRequests ツイートフィルタを再トレーニングするための情報
    * @param actionIndex アクション番号 (指定されたアクション番号の待ち行列へ入る)
    */
-  async moveTweetToAccepted(tweetIdStr: string, actionIndex: number = null) {
+  async moveTweetToAccepted(
+    tweetIdStr: string,
+    tweetFilterRetrainingRequests: TweetFilterRetrainingRequest[],
+    actionIndex: number = null,
+  ) {
     // 当該ツイートを取得
     let tweet = null;
     let tweetIndex = this.rejectedTweets.findIndex((item: any) => item.idStr === tweetIdStr);
@@ -295,16 +308,17 @@ export class TopicDashboardComponent implements OnInit {
       this.acceptedTweetsByActions[actionIndex].unshift(tweet);
     }
 
-    // データベース上でも承認へ変更して再学習
+    // データベース上でも承認へ変更して、ディープラーニング分類器およびツイートフィルタを再トレーニング
     this.snackBar.open('当該ツイートを承認にして再学習します...', null, { duration: 1500 });
-    await this.topicsService.acceptTweet(this.topic.id, tweet, actionIndex - 1);
+    await this.topicsService.acceptTweet(this.topic.id, tweet, tweetFilterRetrainingRequests, actionIndex - 1);
   }
 
   /**
    * 指定されたツイートを拒否へ移動
    * @param tweetIdStr ツイートのID文字列
+   * @param tweetFilterRetrainingRequests ツイートフィルタを再トレーニングするための情報
    */
-  async moveTweetToRejected(tweetIdStr: string) {
+  async moveTweetToRejected(tweetIdStr: string, tweetFilterRetrainingRequests: TweetFilterRetrainingRequest[]) {
     // アクションを反復
     let tweet = null;
     for (const [actionIndex] of this.topic.actions.entries()) {
@@ -324,9 +338,9 @@ export class TopicDashboardComponent implements OnInit {
     tweet.predictedClass = 'reject';
     this.rejectedTweets.unshift(tweet);
 
-    // データベース上でも拒否へ変更して再学習
+    // データベース上でも拒否へ変更して、ディープラーニング分類器およびツイートフィルタを再トレーニング
     this.snackBar.open('当該ツイートを拒否にして再学習します...', null, { duration: 1500 });
-    await this.topicsService.rejectTweet(this.topic.id, tweet);
+    await this.topicsService.rejectTweet(this.topic.id, tweet, tweetFilterRetrainingRequests);
   }
 
   /**

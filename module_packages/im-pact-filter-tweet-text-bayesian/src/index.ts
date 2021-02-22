@@ -34,7 +34,7 @@ export default class FilterTweetTextBayesian implements TweetFilter, TweetFilter
   }
 
   async shouldInitialize(): Promise<boolean> {
-    return (await this.helper.getStorage().get('storedClassifier')) === null;
+    return (await this.helper.getStorage().get('storedClassifier')) === undefined;
   }
 
   protected async initBayes() {
@@ -113,7 +113,7 @@ export default class FilterTweetTextBayesian implements TweetFilter, TweetFilter
 
     // フィルタ結果のサマリを生成
     const summaryValue = probabilityOfReject < probabilityOfAccept ? 'accept' : 'reject';
-    const summaryText = summaryValue ? 'このツイート本文は承認である' : 'このツイート本文は拒否である';
+    const summaryText = summaryValue === 'accept' ? 'このツイート本文は承認である' : 'このツイート本文は拒否である';
 
     // フィルタ結果を返す
     return {

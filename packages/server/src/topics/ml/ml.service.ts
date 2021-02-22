@@ -305,7 +305,7 @@ export class MlService {
     });*/
 
     // データセットに対してバッチを実行
-    const BATCH_SIZE = 16;
+    const BATCH_SIZE = 8;
     Logger.log('Applying batch to dataset...', 'MlService/getTrainingDatasets');
     trainingDataset = trainingDataset.batch(BATCH_SIZE);
     validationDataset = validationDataset.batch(BATCH_SIZE);

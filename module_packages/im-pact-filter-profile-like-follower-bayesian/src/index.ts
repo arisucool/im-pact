@@ -36,7 +36,7 @@ export default class FilterTweetAuthorProfileLikeFollowerBayesian
   }
 
   async shouldInitialize(): Promise<boolean> {
-    return (await this.helper.getStorage().get('storedClassifier')) === null;
+    return (await this.helper.getStorage().get('storedClassifier')) === undefined;
   }
 
   async filter(tweet: Tweet): Promise<TweetFilterResultWithMultiValues> {
@@ -62,7 +62,7 @@ export default class FilterTweetAuthorProfileLikeFollowerBayesian
 
     // フィルタ結果のサマリを生成
     const summaryValue = probabilityOfReject < probabilityOfAccept ? 'accept' : 'reject';
-    const summaryText = summaryValue ? 'このプロフィールは承認である' : 'このプロフィールは拒否である';
+    const summaryText = summaryValue === 'accept' ? 'このプロフィールは承認である' : 'このプロフィールは拒否である';
 
     // フィルタ結果を返す
     return {

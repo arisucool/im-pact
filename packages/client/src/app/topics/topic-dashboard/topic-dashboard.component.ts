@@ -158,18 +158,18 @@ export class TopicDashboardComponent implements OnInit {
   /**
    * 承認ツイートの読み込み
    * @param pendngActionIndex アクションの番号 (承認ツイートはアクションに基づいて取得・表示するため)
-   * @param lastExtractedAt 抽出日時 (ページング用。この値よりも収集日時の古い項目が取得される。)
+   * @param lastClassifiedAt 分類日時 (ページング用。この値よりも収集日時の古い項目が取得される。)
    */
-  async loadAcceptedTweets(pendngActionIndex: number, lastExtractedAt?: Date) {
+  async loadAcceptedTweets(pendngActionIndex: number, lastClassifiedAt?: Date) {
     this.isLoadingAcceptedTweetsByActions[pendngActionIndex] = true;
 
     try {
-      // 抽出済みツイートを読み込み
+      // 分類済みツイートを読み込み
       let acceptedTweets = await this.topicsService.getClassifiedTweets(
         this.topic.id,
         'accept',
         pendngActionIndex,
-        lastExtractedAt,
+        lastClassifiedAt,
       );
 
       // 既存のツイートとの重複を除去
@@ -206,14 +206,19 @@ export class TopicDashboardComponent implements OnInit {
 
   /**
    * 拒否ツイートの読み込み
-   * @param lastExtractedAt 抽出日時 (ページング用。この値よりも収集日時の古い項目が取得される。)
+   * @param lastClassifiedAt 分類日時 (ページング用。この値よりも収集日時の古い項目が取得される。)
    */
-  async loadRejectedTweets(lastExtractedAt?: Date) {
+  async loadRejectedTweets(lastClassifiedAt?: Date) {
     this.isLoadingRejectedTweets = true;
 
     try {
-      // 抽出済みツイートを読み込み
-      let rejectedTweets = await this.topicsService.getClassifiedTweets(this.topic.id, 'reject', null, lastExtractedAt);
+      // 分類済みツイートを読み込み
+      let rejectedTweets = await this.topicsService.getClassifiedTweets(
+        this.topic.id,
+        'reject',
+        null,
+        lastClassifiedAt,
+      );
 
       // 既存のツイートとの重複を除去
       if (this.rejectedTweets) {
@@ -351,10 +356,10 @@ export class TopicDashboardComponent implements OnInit {
     if (this.acceptedTweetsByActions[actionIndex].length <= 0) return;
 
     // 最後の承認ツイートの収集日時を取得
-    const lastItem = this.acceptedTweetsByActions[actionIndex][this.acceptedTweetsByActions[actionIndex].length - 1];
+    const lastTweet = this.acceptedTweetsByActions[actionIndex][this.acceptedTweetsByActions[actionIndex].length - 1];
 
     // ツイートを追加で読み込み
-    await this.loadAcceptedTweets(actionIndex, new Date(lastItem.extractedAt));
+    await this.loadAcceptedTweets(actionIndex, new Date(lastTweet.classifiedAt));
   }
 
   /**
@@ -364,10 +369,10 @@ export class TopicDashboardComponent implements OnInit {
     if (this.rejectedTweets.length <= 0) return;
 
     // 最後の承認ツイートの収集日時を取得
-    const lastItem = this.rejectedTweets[this.rejectedTweets.length - 1];
+    const lastTweet = this.rejectedTweets[this.rejectedTweets.length - 1];
 
     // ツイートを追加で読み込み
-    await this.loadRejectedTweets(new Date(lastItem.extractedAt));
+    await this.loadRejectedTweets(new Date(lastTweet.classifiedAt));
   }
 
   /**

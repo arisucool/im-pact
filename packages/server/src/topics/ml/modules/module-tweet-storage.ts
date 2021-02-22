@@ -1,6 +1,6 @@
 import { Repository } from 'typeorm';
 import { CrawledTweet } from '../entities/crawled-tweet.entity';
-import { ExtractedTweet } from '../entities/extracted-tweet.entity';
+import { ClassifiedTweet } from '../entities/classified-tweet.entity';
 import { ModuleStorage } from './module-storage';
 
 export class ModuleTweetStorage {
@@ -14,7 +14,7 @@ export class ModuleTweetStorage {
   private constructor(
     private moduleName: string,
     private id: string,
-    private repository: Repository<CrawledTweet | ExtractedTweet>,
+    private repository: Repository<CrawledTweet | ClassifiedTweet>,
     private moduleStorage: Readonly<ModuleStorage>,
   ) {}
 
@@ -28,7 +28,7 @@ export class ModuleTweetStorage {
   static readonly factory = (
     moduleName: string,
     id: string,
-    repository: Repository<CrawledTweet | ExtractedTweet>,
+    repository: Repository<CrawledTweet | ClassifiedTweet>,
     moduleStorage: Readonly<ModuleStorage>,
   ): Readonly<ModuleTweetStorage> => {
     return new ModuleTweetStorage(moduleName, id, repository, moduleStorage);
@@ -40,7 +40,7 @@ export class ModuleTweetStorage {
    * @param key キー
    */
   async get(tweetId: number, key: string): Promise<any> {
-    const tweet: CrawledTweet | ExtractedTweet = await this.repository.findOne(tweetId);
+    const tweet: CrawledTweet | ClassifiedTweet = await this.repository.findOne(tweetId);
     let moduleData = {};
     if (tweet) {
       // データベースにツイートが存在する場合は、当該ツイートのモジュールデータから取得
@@ -65,7 +65,7 @@ export class ModuleTweetStorage {
    * @param value 値
    */
   async set(tweetId: number, key: string, value: any) {
-    const tweet: CrawledTweet | ExtractedTweet = await this.repository.findOne(tweetId);
+    const tweet: CrawledTweet | ClassifiedTweet = await this.repository.findOne(tweetId);
     let moduleData = {};
     if (tweet) {
       // データベースにツイートが存在する場合は、当該ツイートのモジュールデータへ保存

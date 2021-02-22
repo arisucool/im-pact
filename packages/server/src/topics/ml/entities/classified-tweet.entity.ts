@@ -19,20 +19,20 @@ import { TweetFilterResultWithMultiValues } from '../modules/tweet-filters/inter
 import { ApiResponseProperty } from '@nestjs/swagger';
 
 /**
- * 抽出済みツイートのエンティティ
+ * 分類済みツイートのエンティティ
  */
 @Entity()
 @Index(['topic', 'idStr'], { unique: true })
 @Index(['topic', 'predictedClass', 'completeActionIndex'], { unique: false })
-export class ExtractedTweet extends Tweet {
+export class ClassifiedTweet extends Tweet {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // 抽出日時
+  // 分類日時
   @CreateDateColumn()
   @IsNotEmpty()
   @ApiResponseProperty()
-  extractedAt: Date;
+  classifiedAt: Date;
 
   // 収集時に使用されたソーシャルアカウント
   @ManyToOne(
@@ -44,7 +44,7 @@ export class ExtractedTweet extends Tweet {
   // トピック
   @ManyToOne(
     () => Topic,
-    topic => topic.extractedTweets,
+    topic => topic.classifiedTweets,
   )
   topic: Topic;
 

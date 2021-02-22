@@ -3,7 +3,7 @@ import {
   ActionSettingsDefinitionSelectItem,
   ActionSettingsDefinitionInputItem,
 } from './action-settings-definition-item.interface';
-import { ExtractedTweet } from 'src/topics/ml/entities/extracted-tweet.entity';
+import { ClassifiedTweet } from 'src/topics/ml/entities/classified-tweet.entity';
 
 /**
  * アクションモジュールの設定項目
@@ -19,12 +19,12 @@ export type ActionSettingsDefinition =
 export interface Action {
   getDescription(): string;
   getSettingsDefinition(): Promise<ActionSettingsDefinition[]> | ActionSettingsDefinition[];
-  execAction(tweet: ExtractedTweet): Promise<boolean> | boolean;
+  execAction(tweet: ClassifiedTweet): Promise<boolean> | boolean;
 }
 
 /**
  * 一括アクションが可能なアクションモジュールを実装するためのインタフェース
  */
 export interface ActionBulk extends Omit<Action, 'execAction'> {
-  execActionBulk(tweets: ExtractedTweet[]): Promise<{ [key: string]: boolean }> | { [key: string]: boolean };
+  execActionBulk(tweets: ClassifiedTweet[]): Promise<{ [key: string]: boolean }> | { [key: string]: boolean };
 }

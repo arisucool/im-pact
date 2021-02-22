@@ -1,4 +1,4 @@
-import { Action, ActionHelper, ActionSettingsDefinition, ExtractedTweet } from '@arisucool/im-pact-core';
+import { Action, ActionHelper, ActionSettingsDefinition, ClassifiedTweet } from '@arisucool/im-pact-core';
 import axios from 'axios';
 
 export default class ActionShareOnDiscord implements Action {
@@ -33,7 +33,7 @@ export default class ActionShareOnDiscord implements Action {
     ];
   }
 
-  async execAction(tweet: ExtractedTweet): Promise<boolean> {
+  async execAction(tweet: ClassifiedTweet): Promise<boolean> {
     // 設定を取得
     const webhookUrl = this.helper.getSetting().webhookUrl;
     if (!webhookUrl) throw new Error('Discord Webhook URL が未指定です');

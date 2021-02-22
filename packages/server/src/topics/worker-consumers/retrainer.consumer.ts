@@ -6,7 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
 import { Repository, MoreThanOrEqual } from 'typeorm';
 import { CrawledTweet } from '../ml/entities/crawled-tweet.entity';
-import { ExtractedTweet } from '../ml/entities/extracted-tweet.entity';
+import { ClassifiedTweet } from '../ml/entities/classified-tweet.entity';
 import { Topic } from '../entities/topic.entity';
 import { TrainAndValidateDto } from '../ml/dto/train-and-validate.dto';
 import { ReTrainDto, TweetFilterRetrainingRequest } from '../ml/dto/retrain.dto';
@@ -22,8 +22,8 @@ export class RetrainerConsumer {
     private topicsRepository: Repository<Topic>,
     @InjectRepository(CrawledTweet)
     private crawledTweetRepository: Repository<CrawledTweet>,
-    @InjectRepository(ExtractedTweet)
-    private extractedTweetRepository: Repository<ExtractedTweet>,
+    @InjectRepository(ClassifiedTweet)
+    private classifiedTweetRepository: Repository<ClassifiedTweet>,
     private mlService: MlService,
     private tweetFilterService: TweetFilterService,
   ) {}
@@ -59,7 +59,7 @@ export class RetrainerConsumer {
     if (!topic) throw new Error('topic not found');
 
     // ツイートを取得
-    const tweet: ExtractedTweet = await this.extractedTweetRepository.findOne(dto.tweet.id);
+    const tweet: ClassifiedTweet = await this.classifiedTweetRepository.findOne(dto.tweet.id);
     if (!tweet) {
       throw new Error('tweet not found');
     }
@@ -85,7 +85,7 @@ export class RetrainerConsumer {
    * @param retrainingReq 再トレーニングするための情報
    */
   protected async retrainTweetFilter(
-    tweet: ExtractedTweet,
+    tweet: ClassifiedTweet,
     topic: Topic,
     retrainingReq: TweetFilterRetrainingRequest[],
   ): Promise<void> {
@@ -99,7 +99,12 @@ export class RetrainerConsumer {
    * @param topic      トピック
    * @param dto        再トレーニングするための情報
    */
-  protected async retrainClassifier(job: Job<any>, tweet: ExtractedTweet, topic: Topic, dto: ReTrainDto): Promise<any> {
+  protected async retrainClassifier(
+    job: Job<any>,
+    tweet: ClassifiedTweet,
+    topic: Topic,
+    dto: ReTrainDto,
+  ): Promise<any> {
     // 当該ツイートが選択されたか否か
     const isSelected = tweet.predictedClass == 'accept';
 
@@ -180,7 +185,7 @@ export class RetrainerConsumer {
     // 分類されたツイートを取得してデータベースを更新
     const predictedTweet = predictedTweets[0];
     Logger.debug(
-      `Updating extracted tweet... (ID: ${tweet.id}, predictedClass after retraining: ${predictedTweet.predictedClass})`,
+      `Updating classified tweet... (ID: ${tweet.id}, predictedClass after retraining: ${predictedTweet.predictedClass})`,
       'TrainerConsumer/execRetrainerJob',
     );
     tweet.filtersResult = predictedTweet.filtersResult;

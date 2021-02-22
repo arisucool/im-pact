@@ -18,7 +18,7 @@ import { Topic } from './entities/topic.entity';
 import { CreateTopicDto } from './dto/create-topic.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdateTopicDto } from './dto/update-topic.dto';
-import { ExtractedTweet } from './ml/entities/extracted-tweet.entity';
+import { ClassifiedTweet } from './ml/entities/classified-tweet.entity';
 import { RejectTweetDto } from './dto/reject-tweet.dto';
 import { AcceptTweetDto } from './dto/accept-tweet.dto';
 
@@ -128,7 +128,7 @@ export class TopicsController {
   // ドキュメントの設定
   @ApiOperation({ summary: '指定されたトピックにおけるツイートの収集' })
   @ApiOkResponse({
-    type: ExtractedTweet,
+    type: ClassifiedTweet,
     description: 'ログ',
     isArray: true,
   })
@@ -149,7 +149,7 @@ export class TopicsController {
   // ドキュメントの設定
   @ApiOperation({ summary: '指定されたトピックにおけるアクションの実行' })
   @ApiOkResponse({
-    type: ExtractedTweet,
+    type: ClassifiedTweet,
     description: 'ログ',
     isArray: true,
   })
@@ -161,16 +161,16 @@ export class TopicsController {
   }
 
   /**
-   * 指定されたトピックにおける抽出済みツイートの取得
+   * 指定されたトピックにおける分類済みツイートの取得
    * @param id トピックID
    */
-  @Get(':id/extractedTweets/:predictedClass')
+  @Get(':id/classifiedTweets/:predictedClass')
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
   // ドキュメントの設定
-  @ApiOperation({ summary: '指定されたトピックにおける抽出済みツイートの取得' })
+  @ApiOperation({ summary: '指定されたトピックにおける分類済みツイートの取得' })
   @ApiOkResponse({
-    type: ExtractedTweet,
+    type: ClassifiedTweet,
     description: '該当ツイートの配列',
     isArray: true,
   })
@@ -184,27 +184,27 @@ export class TopicsController {
     required: false,
   })
   @ApiQuery({
-    name: 'lastExtractedAt',
+    name: 'lastClassifiedAt',
     type: Number,
-    description: '抽出日時 (ページング用であり、この値よりも収集日時の古い項目が取得される)',
+    description: '分類日時 (ページング用であり、この値よりも収集日時の古い項目が取得される)',
     required: false,
   })
-  getExtractedTweets(
+  getClassifiedTweets(
     @Param('id') id: number,
     @Param('predictedClass') predictedClass: string,
     @Query('pendingActionIndex') pendingActionIndex?: number,
-    @Query('lastExtractedAt') lastExtractedAt?: number,
+    @Query('lastClassifiedAt') lastClassifiedAt?: number,
   ) {
-    const lastExtractedAtAsDate = lastExtractedAt ? new Date(+lastExtractedAt) : new Date();
-    return this.topicsService.getExtractedTweets(id, predictedClass, pendingActionIndex, lastExtractedAtAsDate);
+    const lastClassifiedAtAsDate = lastClassifiedAt ? new Date(+lastClassifiedAt) : new Date();
+    return this.topicsService.getClassifiedTweets(id, predictedClass, pendingActionIndex, lastClassifiedAtAsDate);
   }
 
   /**
    * 指定されたトピックおよびツイートに対する承認
    * @param id トピックID
-   * @param extractedTweetId 抽出済みツイートのID
+   * @param classifiedTweetId 分類済みツイートのID
    */
-  @Post(':id/tweets/:extractedTweetId/accept')
+  @Post(':id/tweets/:classifiedTweetId/accept')
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
   // ドキュメントの設定
@@ -218,20 +218,20 @@ export class TopicsController {
   })
   acceptTweet(
     @Param('id') id: number,
-    @Param('extractedTweetId') extractedTweetId: number,
+    @Param('classifiedTweetId') classifiedTweetId: number,
     @Body(ValidationPipe) dto: AcceptTweetDto,
   ) {
     dto.topicId = id;
-    dto.extractedTweetId = extractedTweetId;
+    dto.classifiedTweetId = classifiedTweetId;
     return this.topicsService.acceptTweetByDto(dto);
   }
 
   /**
    * 指定されたトピックおよびツイートに対する拒否
    * @param id トピックID
-   * @param extractedTweetId 抽出済みツイートのID
+   * @param classifiedTweetId 分類済みツイートのID
    */
-  @Post(':id/tweets/:extractedTweetId/reject')
+  @Post(':id/tweets/:classifiedTweetId/reject')
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
   // ドキュメントの設定
@@ -245,21 +245,21 @@ export class TopicsController {
   })
   rejectTweet(
     @Param('id') id: number,
-    @Param('extractedTweetId') extractedTweetId: number,
+    @Param('classifiedTweetId') classifiedTweetId: number,
     @Body(ValidationPipe) dto: RejectTweetDto,
   ) {
     dto.topicId = id;
-    dto.extractedTweetId = extractedTweetId;
+    dto.classifiedTweetId = classifiedTweetId;
     return this.topicsService.rejectTweetByDto(dto);
   }
 
   /**
    * 指定されたトピックおよびツイートに対する承認
    * @param id トピックID
-   * @param extractedTweetId 抽出済みツイートのID
+   * @param classifiedTweetId 分類済みツイートのID
    * @param token 拒否用URLのトークン
    */
-  @Get(':id/tweets/:extractedTweetId/acceptWithAction')
+  @Get(':id/tweets/:classifiedTweetId/acceptWithAction')
   @HttpCode(200)
   // ドキュメントの設定
   @ApiOperation({ summary: '指定された承認用URLによるアクションの承認' })
@@ -272,22 +272,22 @@ export class TopicsController {
   })
   acceptTweetWithAction(
     @Param('id') id: number,
-    @Param('extractedTweetId') extractedTweetId: number,
+    @Param('classifiedTweetId') classifiedTweetId: number,
     @Query('token') token: string,
   ) {
     if (token === null) {
       throw new BadRequestException('token is null');
     }
-    return this.topicsService.acceptTweet(id, extractedTweetId, token);
+    return this.topicsService.acceptTweet(id, classifiedTweetId, token);
   }
 
   /**
    * 指定されたトピックおよびツイートに対するアクションの拒否
    * @param id トピックID
-   * @param extractedTweetId 抽出済みツイートのID
+   * @param classifiedTweetId 分類済みツイートのID
    * @param token 拒否用URLのトークン
    */
-  @Get(':id/tweets/:extractedTweetId/rejectWithAction')
+  @Get(':id/tweets/:classifiedTweetId/rejectWithAction')
   @HttpCode(200)
   // ドキュメントの設定
   @ApiOperation({ summary: '指定された拒否用URLによるアクションの拒否' })
@@ -300,9 +300,9 @@ export class TopicsController {
   })
   rejectTweetWithAction(
     @Param('id') id: number,
-    @Param('extractedTweetId') extractedTweetId: number,
+    @Param('classifiedTweetId') classifiedTweetId: number,
     @Query('token') token: string,
   ) {
-    return this.topicsService.rejectTweet(id, extractedTweetId, token);
+    return this.topicsService.rejectTweet(id, classifiedTweetId, token);
   }
 }

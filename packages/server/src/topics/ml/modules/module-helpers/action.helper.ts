@@ -2,7 +2,7 @@ import { BaseHelper } from './base.helper';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
 import { ModuleStorage } from '../module-storage';
 import { ModuleTweetStorage } from '../module-tweet-storage';
-import { ExtractedTweet } from '../../entities/extracted-tweet.entity';
+import { ClassifiedTweet } from '../../entities/classified-tweet.entity';
 import { Topic } from 'src/topics/entities/topic.entity';
 
 export class ActionHelper extends BaseHelper {
@@ -75,7 +75,7 @@ export class ActionHelper extends BaseHelper {
   /**
    * ツイートを承認して次のアクションへ遷移するためのURLの取得
    */
-  getAcceptUrlByTweet(tweet: ExtractedTweet): string {
+  getAcceptUrlByTweet(tweet: ClassifiedTweet): string {
     return `${process.env.BASE_URL}/api/topics/${this.topic.id}/tweets/${
       tweet.id
     }/acceptWithAction?token=t${this.getOwnActionIndex()}-${tweet.idStr}-${tweet.crawledAt.getTime()}`;
@@ -84,7 +84,7 @@ export class ActionHelper extends BaseHelper {
   /**
    * ツイートを拒否して以降のアクションをキャンセルするためのURLの取得
    */
-  getRejectUrlByTweet(tweet: ExtractedTweet): string {
+  getRejectUrlByTweet(tweet: ClassifiedTweet): string {
     return `${process.env.BASE_URL}/api/topics/${this.topic.id}/tweets/${
       tweet.id
     }/rejectWithAction?token=t${this.getOwnActionIndex()}-${tweet.idStr}-${tweet.crawledAt.getTime()}`;

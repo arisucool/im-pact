@@ -6,7 +6,7 @@ import { TwitterCrawlerService } from '../ml/twitter-crawler.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual } from 'typeorm';
 import { CrawledTweet } from '../ml/entities/crawled-tweet.entity';
-import { ExtractedTweet } from '../ml/entities/extracted-tweet.entity';
+import { ClassifiedTweet } from '../ml/entities/classified-tweet.entity';
 import { Topic } from '../entities/topic.entity';
 
 /**
@@ -19,8 +19,8 @@ export class CrawlerConsumer {
     private topicsRepository: Repository<Topic>,
     @InjectRepository(CrawledTweet)
     private crawledTweetRepository: Repository<CrawledTweet>,
-    @InjectRepository(ExtractedTweet)
-    private extractedTweetRepository: Repository<ExtractedTweet>,
+    @InjectRepository(ClassifiedTweet)
+    private classifiedTweetRepository: Repository<ClassifiedTweet>,
     private mlService: MlService,
     private twitterCrawlerService: TwitterCrawlerService,
   ) {}
@@ -50,7 +50,7 @@ export class CrawlerConsumer {
    * @param job ジョブ
    * @return 分類されたツイートの配列
    */
-  async crawl(id: number, job?: Job<any>): Promise<ExtractedTweet[]> {
+  async crawl(id: number, job?: Job<any>): Promise<ClassifiedTweet[]> {
     // トピックを取得
     const topic: Topic = await this.topicsRepository.findOne(id, {
       relations: ['crawlSocialAccount'],
@@ -76,7 +76,7 @@ export class CrawlerConsumer {
     job?.progress(10);
 
     // 未分類ツイートを取得 (併せて収集も実行)
-    let unextractedTweets = await this.getUnextractedTweets(topic);
+    let unclassifiedTweets = await this.getUnclassifiedTweets(topic);
 
     // ジョブのステータスを更新
     job?.progress(50);
@@ -84,7 +84,7 @@ export class CrawlerConsumer {
     // 未分類ツイートを分類
     const predictedTweets = await this.mlService.predictTweets(
       trainedModelId,
-      unextractedTweets,
+      unclassifiedTweets,
       filterSettings,
       topic.searchCondition.keywords,
     );
@@ -97,12 +97,12 @@ export class CrawlerConsumer {
       savedTweetIds = [];
     for (const tweet of predictedTweets) {
       // 当該ツイートを登録
-      console.log(`[TopicService] crawl - Inserting extracted tweets... ${tweet.idStr}`);
+      console.log(`[TopicService] crawl - Inserting classified tweets... ${tweet.idStr}`);
       tweet.predictedClass = tweet.predictedSelect ? 'accept' : 'reject';
       tweet.filtersResult = tweet.filtersResult;
       tweet.topic = topic.id;
       try {
-        savedTweets.push(await this.extractedTweetRepository.save(tweet));
+        savedTweets.push(await this.classifiedTweetRepository.save(tweet));
         savedTweetIds.push(tweet.idStr);
       } catch (e) {
         console.warn(e);
@@ -126,7 +126,7 @@ export class CrawlerConsumer {
    * @param numOfRequestTweets 要求するツイート件数
    * @return 未分類ツイートの配列
    */
-  private async getUnextractedTweets(topic: Topic, numOfRequestTweets = 50): Promise<CrawledTweet[]> {
+  private async getUnclassifiedTweets(topic: Topic, numOfRequestTweets = 50): Promise<CrawledTweet[]> {
     // ツイートを収集
     await this.twitterCrawlerService.crawlTweets(
       topic.crawlSocialAccount.id,
@@ -158,14 +158,14 @@ export class CrawlerConsumer {
       tweets = tweets.concat(tweetsOfThisKeyword);
     }
 
-    console.log(`[TopicService] getUnextractedTweets - Found tweets... ${tweets.length}`);
+    console.log(`[TopicService] getUnclassifiedTweets - Found tweets... ${tweets.length}`);
 
     // 最近収集されたツイートから分類済みのものを除く
     await Promise.all(
       tweets.map(
         async tweet =>
           (
-            await this.extractedTweetRepository.find({
+            await this.classifiedTweetRepository.find({
               where: {
                 topic: topic.id,
                 idStr: tweet.idStr,
@@ -190,7 +190,7 @@ export class CrawlerConsumer {
       );
     });
 
-    console.log(`[TopicService] getUnextractedTweets - Found unextracted tweets... ${tweets.length}`);
+    console.log(`[TopicService] getUnclassifiedTweets - Found unclassified tweets... ${tweets.length}`);
 
     // 指定件数まで減らす
     if (numOfRequestTweets < tweets.length) {

@@ -1,14 +1,14 @@
-import { ExtractedTweet } from '@arisucool/im-pact-core';
+import { ClassifiedTweet } from '@arisucool/im-pact-core';
 
 expect.extend({
-  toBeSorted: (received: any, tweets: ExtractedTweet[], sortProperty: string, isAsc: boolean) => {
+  toBeSorted: (received: any, tweets: ClassifiedTweet[], sortProperty: string, isAsc: boolean) => {
     // Find the allowed tweet
     let allowedItem = null;
     for (const key of Object.keys(received)) {
       if (received[key] === true) {
-        const extractedTweetId = parseInt(key);
-        allowedItem = tweets.find((tweet: ExtractedTweet) => {
-          return tweet.id === extractedTweetId;
+        const classifiedTweetId = parseInt(key);
+        allowedItem = tweets.find((tweet: ClassifiedTweet) => {
+          return tweet.id === classifiedTweetId;
         });
         break;
       }
@@ -25,9 +25,9 @@ expect.extend({
     let deniedItem = null;
     for (const key of Object.keys(received)) {
       if (received[key] === false) {
-        const extractedTweetId = parseInt(key);
-        deniedItem = tweets.find((tweet: ExtractedTweet) => {
-          return tweet.id === extractedTweetId;
+        const classifiedTweetId = parseInt(key);
+        deniedItem = tweets.find((tweet: ClassifiedTweet) => {
+          return tweet.id === classifiedTweetId;
         });
         break;
       }

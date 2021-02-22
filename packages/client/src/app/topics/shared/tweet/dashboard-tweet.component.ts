@@ -33,10 +33,10 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
   // ツイートフィルタの実行結果 (デバッグ用)
   filtersResult: string[];
 
-  // アイテムメニューを表示しているか否か
-  isShowingItemMenu = false;
+  // ツイートメニューを表示しているか否か
+  isShowingTweetMenu = false;
 
-  // アイテムメニューの選択肢
+  // ツイートメニューの選択肢
   destinationActions: string[] = null;
 
   // ツイートフィルタのトレーニング情報
@@ -119,7 +119,7 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
    * ツイートの承認ボタンがクリックされたときに呼び出されるリスナ
    * @param destinationActionIndex 当該ツイートをどのアクションへ遷移させるか
    */
-  onItemAccepted(destinationActionIndex: number): void {
+  onTweetAccepted(destinationActionIndex: number): void {
     // ディープラーニング分類器を再トレーニングするための情報を設定
     this.emitData.classifierRetrainingRequest.selected = true;
 
@@ -140,7 +140,7 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
   /**
    * ツイートの拒否ボタンがクリックされたときに呼び出されるリスナ
    */
-  onItemRejected(): void {
+  onTweetRejected(): void {
     // ディープラーニング分類器を再トレーニングするための情報を設定
     this.emitData.classifierRetrainingRequest.selected = false;
 

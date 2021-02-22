@@ -91,21 +91,21 @@ export class TopicsService {
   }
 
   /**
-   * 指定されたトピックIDによる抽出済みツイートの取得
+   * 指定されたトピックIDによる分類済みツイートの取得
    * @param topicId トピックID
    * @param predictedClass 分類されたクラス
    * @param lastActionIndex アクション番号 (承認ツイートを取得する場合に添える)
-   * @param lastExtractedAt 抽出日時 (この日付より古い項目が取得される)
-   * @return 抽出済みツイート
+   * @param lastClassifiedAt 分類日時 (この日付より古い項目が取得される)
+   * @return 分類済みツイート
    */
   async getClassifiedTweets(
     topicId: number,
     predictedClass: string,
     lastActionIndex?: number,
-    lastExtractedAt?: Date,
+    lastClassifiedAt?: Date,
   ): Promise<any[]> {
     return await this.api
-      .topicsControllerGetExtractedTweets(topicId, predictedClass, lastActionIndex, lastExtractedAt?.getTime())
+      .topicsControllerGetClassifiedTweets(topicId, predictedClass, lastActionIndex, lastClassifiedAt?.getTime())
       .toPromise();
   }
 

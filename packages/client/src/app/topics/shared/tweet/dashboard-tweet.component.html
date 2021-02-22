@@ -45,13 +45,13 @@
     </ul>
     <!---->
 
-    <!-- アイテムメニューボタン (ダッシュボード用) -->
+    <!-- ツイートメニューボタン (ダッシュボード用) -->
     <div class="classification-btn-container">
       <div
-        (click)="isShowingItemMenu = true"
+        (click)="isShowingTweetMenu = true"
         class="classification-btn"
         [ngClass]="{ selected: isSelected }"
-        matTooltip="クリックすると、このアイテムのメニューを表示します"
+        matTooltip="クリックすると、このツイートのメニューを表示します"
       >
         <mat-icon>more_vert</mat-icon>
       </div>
@@ -89,22 +89,26 @@
     <!---->
   </mat-card-content>
 
-  <!-- アイテムメニュー領域 -->
-  <mat-card-content class="item-menu-container" *ngIf="isShowingItemMenu">
+  <!-- ツイートメニュー領域 -->
+  <mat-card-content class="tweet-menu-container" *ngIf="isShowingTweetMenu">
     <!-- クローズボタン -->
     <div class="classification-btn-container">
-      <div (click)="isShowingItemMenu = false" class="classification-btn" matTooltip="クリックすると、キャンセルします">
+      <div
+        (click)="isShowingTweetMenu = false"
+        class="classification-btn"
+        matTooltip="クリックすると、キャンセルします"
+      >
         <mat-icon>close</mat-icon>
       </div>
     </div>
     <!---->
     <p class="caption">このツイートを...&nbsp;&nbsp;</p>
-    <div class="item-menu">
+    <div class="tweet-menu">
       <ul>
         <!-- ツイート拒否＆再トレーニングボタン (承認ツイートの場合のみ) -->
         <li style="margin-bottom: 1rem;" *ngIf="isSelected">
           <button
-            (click)="onItemRejected()"
+            (click)="onTweetRejected()"
             type="button"
             mat-stroked-button
             color="warn"
@@ -125,7 +129,7 @@
         <li *ngFor="let action of destinationActions">
           <button
             *ngIf="!isSelected"
-            (click)="onItemAccepted(action.index)"
+            (click)="onTweetAccepted(action.index)"
             type="button"
             mat-stroked-button
             color="primary"
@@ -137,7 +141,7 @@
           </button>
           <button
             *ngIf="isSelected"
-            (click)="onItemAccepted(action.index)"
+            (click)="onTweetAccepted(action.index)"
             type="button"
             mat-stroked-button
             color="primary"
@@ -157,9 +161,9 @@
         <!-- 各値 -->
         <span
           class="filter-value"
-          *ngFor="let item of filterResult.result.values | keyvalue"
-          matTooltip="{{ item.value.title }} (by {{ filterResult.filterName }})"
-          >{{ convertFilterResultValueToString(item.value.value) }}</span
+          *ngFor="let tweet of filterResult.result.values | keyvalue"
+          matTooltip="{{ tweet.value.title }} (by {{ filterResult.filterName }})"
+          >{{ convertFilterResultValueToString(tweet.value.value) }}</span
         >
         <!---->
       </div>

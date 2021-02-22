@@ -1,12 +1,12 @@
 // カード領域
 .mat-card-content {
-  // アイテムメニューを表示したときにカードのマージンが変動する現象の対策
+  // ツイートメニューを表示したときにカードのマージンが変動する現象の対策
   margin-bottom: 0px;
 }
 
-// アイテムメニュー領域 ・ ツイートフィルタ 再トレーニング領域
+// ツイートメニュー領域 ・ ツイートフィルタ 再トレーニング領域
 
-.item-menu-container,
+.tweet-menu-container,
 .filter-retraining-container {
   background-color: #fafafaee;
   border-radius: 4px;
@@ -22,10 +22,10 @@
   }
 }
 
-// アイテムメニュー領域
+// ツイートメニュー領域
 
-.item-menu-container {
-  .item-menu {
+.tweet-menu-container {
+  .tweet-menu {
     position: absolute;
     overflow-y: auto;
     top: 2.8rem;

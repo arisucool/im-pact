@@ -7,7 +7,7 @@ import { ActionManager } from '../ml/modules/action-manager';
 import { Topic } from '../entities/topic.entity';
 import { ModuleStorage } from '../ml/entities/module-storage.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
-import { ExtractedTweet } from '../ml/entities/extracted-tweet.entity';
+import { ClassifiedTweet } from '../ml/entities/classified-tweet.entity';
 import { Action, ActionBulk } from '../ml/modules/actions/interfaces/action.interface';
 
 /**
@@ -22,8 +22,8 @@ export class ActionConsumer {
     private moduleStorageRepository: Repository<ModuleStorage>,
     @InjectRepository(SocialAccount)
     private socialAccountRepository: Repository<SocialAccount>,
-    @InjectRepository(ExtractedTweet)
-    private extractedTweetRepository: Repository<ExtractedTweet>,
+    @InjectRepository(ClassifiedTweet)
+    private classifiedTweetRepository: Repository<ClassifiedTweet>,
   ) {}
 
   /**
@@ -88,7 +88,7 @@ export class ActionConsumer {
     }
     const actionManager = new ActionManager(
       this.moduleStorageRepository,
-      this.extractedTweetRepository,
+      this.classifiedTweetRepository,
       this.socialAccountRepository,
       actionSettings,
       topic.searchCondition.keywords,
@@ -183,7 +183,7 @@ export class ActionConsumer {
     }
     const actionManager = new ActionManager(
       this.moduleStorageRepository,
-      this.extractedTweetRepository,
+      this.classifiedTweetRepository,
       this.socialAccountRepository,
       actionSettings,
       topic.searchCondition.keywords,
@@ -211,14 +211,14 @@ export class ActionConsumer {
       }
 
       // 当該アクションを実行すべきツイートを取得
-      let tweets = await this.extractedTweetRepository.find({
+      let tweets = await this.classifiedTweetRepository.find({
         where: {
           topic: topic,
           completeActionIndex: Equal(actionIndex - 1),
           predictedClass: 'accept',
         },
         order: {
-          extractedAt: 'ASC',
+          classifiedAt: 'ASC',
         },
       });
       Logger.debug(
@@ -253,17 +253,17 @@ export class ActionConsumer {
       }
 
       // 一括実行された結果を反復
-      for (let extractedTweetId of Object.keys(results)) {
-        const result = results[extractedTweetId];
+      for (let classifiedTweetId of Object.keys(results)) {
+        const result = results[classifiedTweetId];
 
         // 実行結果を連想配列へ代入
-        allActionResults[extractedTweetId] = result;
+        allActionResults[classifiedTweetId] = result;
 
         // 当該ツイートを取得
-        let extractedTweetIdNum = parseInt(extractedTweetId);
-        if (isNaN(extractedTweetIdNum)) continue;
-        const tweet = tweets.find((tweet: ExtractedTweet) => {
-          return tweet.id === extractedTweetIdNum;
+        let classifiedTweetIdNum = parseInt(classifiedTweetId);
+        if (isNaN(classifiedTweetIdNum)) continue;
+        const tweet = tweets.find((tweet: ClassifiedTweet) => {
+          return tweet.id === classifiedTweetIdNum;
         });
         if (tweet == null) continue;
 
@@ -327,12 +327,12 @@ export class ActionConsumer {
    * @param numOfTweets 要求するツイート件数
    * @return 分類済みツイートの配列
    */
-  protected async getActionUncompletedTweets(topic: Topic, numOfTweets = 50): Promise<ExtractedTweet[]> {
+  protected async getActionUncompletedTweets(topic: Topic, numOfTweets = 50): Promise<ClassifiedTweet[]> {
     // トピックのアクション数を取得
     const numOfActions = topic.actions.length;
 
     // データベースからツイートを取得 (アクション未実行のツイート)
-    let tweets = await this.extractedTweetRepository.find({
+    let tweets = await this.classifiedTweetRepository.find({
       where: {
         topic: topic,
         completeActionIndex: LessThan(numOfActions - 1),
@@ -340,14 +340,14 @@ export class ActionConsumer {
         lastActionExecutedAt: IsNull(),
       },
       order: {
-        extractedAt: 'ASC',
+        classifiedAt: 'ASC',
       },
       take: numOfTweets,
     });
 
     // データベースからツイートを取得 (一つでもアクション実行済のツイート)
     tweets = tweets.concat(
-      await this.extractedTweetRepository.find({
+      await this.classifiedTweetRepository.find({
         where: {
           topic: topic,
           completeActionIndex: LessThan(numOfActions - 1),

@@ -97,7 +97,7 @@ export default class FilterTfCgIllustImageClassification implements TweetFilter 
     if (cachedClassifiedNumber) {
       // キャッシュがあれば、キャッシュから返す
       console.log(
-        `[TfIllustImageClassificationFilter] filter - return from cache... ${cachedClassifiedNumber} for ID: ${tweet.idStr} (extractedTweetId = ${tweet.id})`,
+        `[TfIllustImageClassificationFilter] filter - return from cache... ${cachedClassifiedNumber} for ID: ${tweet.idStr} (classifiedTweetId = ${tweet.id})`,
       );
       return this.getFilterResultByClassifiedNumber(cachedClassifiedNumber, tweetImageUrls);
     }

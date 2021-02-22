@@ -1,4 +1,4 @@
-import { Action, ActionHelper, ActionSettingsDefinition, ExtractedTweet } from '@arisucool/im-pact-core';
+import { Action, ActionHelper, ActionSettingsDefinition, ClassifiedTweet } from '@arisucool/im-pact-core';
 import axios from 'axios';
 
 export default class ApproveOnDiscordAction implements Action {
@@ -38,7 +38,7 @@ export default class ApproveOnDiscordAction implements Action {
     ];
   }
 
-  async execAction(tweet: ExtractedTweet): Promise<boolean> {
+  async execAction(tweet: ClassifiedTweet): Promise<boolean> {
     // 前回実行されたアクションを確認
     console.log(this.helper.getOwnActionIndex(), tweet.lastActionIndex);
     if (this.helper.getOwnActionIndex() === tweet.lastActionIndex && !tweet.lastActionError) {

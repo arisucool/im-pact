@@ -9,7 +9,7 @@ import { CreateTopicDto } from './dto/create-topic.dto';
 import { UpdateTopicDto } from './dto/update-topic.dto';
 import { Topic } from './entities/topic.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
-import { ExtractedTweet } from './ml/entities/extracted-tweet.entity';
+import { ClassifiedTweet } from './ml/entities/classified-tweet.entity';
 import { TrainAndValidateDto } from './ml/dto/train-and-validate.dto';
 import { CrawledTweet } from './ml/entities/crawled-tweet.entity';
 import { ReTrainDto, TweetFilterRetrainingRequest } from './ml/dto/retrain.dto';
@@ -24,8 +24,8 @@ export class TopicsService {
     private topicsRepository: Repository<Topic>,
     @InjectRepository(CrawledTweet)
     private crawledTweetRepository: Repository<CrawledTweet>,
-    @InjectRepository(ExtractedTweet)
-    private extractedTweetRepository: Repository<ExtractedTweet>,
+    @InjectRepository(ClassifiedTweet)
+    private classifiedTweetRepository: Repository<ClassifiedTweet>,
     @InjectQueue('crawler')
     private readonly crawlQueue: Queue,
     @InjectQueue('retrainer')
@@ -258,32 +258,32 @@ export class TopicsService {
   }
 
   /**
-   * 指定されたトピックにおける抽出済みツイートの取得
+   * 指定されたトピックにおける分類済みツイートの取得
    * @param topicId トピックID
    * @param predictedClass 分類されたクラス
    * @param pendingActionIndex ツイートのアクション番号
-   * @param lastExtractedAt 抽出日時 (ページング用。この値よりも収集日時の古い項目が取得される。)
+   * @param lastClassifiedAt 分類日時 (ページング用。この値よりも収集日時の古い項目が取得される。)
    */
-  async getExtractedTweets(
+  async getClassifiedTweets(
     topicId: number,
     predictedClass: string,
     pendingActionIndex?: number,
-    lastExtractedAt?: Date,
+    lastClassifiedAt?: Date,
   ): Promise<any[]> {
     let where: any = {
       topic: topicId,
       predictedClass: predictedClass,
-      extractedAt: LessThanOrEqual(lastExtractedAt),
+      classifiedAt: LessThanOrEqual(lastClassifiedAt),
     };
 
     if (pendingActionIndex) {
       where.completeActionIndex = pendingActionIndex - 1;
     }
 
-    const tweets = await this.extractedTweetRepository.find({
+    const tweets = await this.classifiedTweetRepository.find({
       where: where,
       order: {
-        extractedAt: 'DESC',
+        classifiedAt: 'DESC',
       },
       take: 50,
     });
@@ -293,20 +293,20 @@ export class TopicsService {
   /**
    * 指定されたトピックおよびツイートに対する承認
    * @param topicId トピックID
-   * @param extractedTweetId 抽出済みツイートのID
+   * @param classifiedTweetId 分類済みツイートのID
    * @param tokenStr 承認用URLのトークン
    * @param tweetFilterRetrainingRequests ツイートフィルタを再トレーニングするための情報
    * @oaram actionIndex アクション番号 (-1ならば最初のアクションから実行される。未指定ならば現在の次のアクションから実行される。)
    */
   async acceptTweet(
     topicId: number,
-    extractedTweetId: number,
+    classifiedTweetId: number,
     tokenStr?: string,
     tweetFilterRetrainingRequests?: TweetFilterRetrainingRequest[],
     actionIndex?: number,
   ): Promise<{
     retrainJobId: string;
-    acceptedTweet: ExtractedTweet;
+    acceptedTweet: ClassifiedTweet;
   }> {
     // URLトークンを確認
     let token = null;
@@ -324,7 +324,7 @@ export class TopicsService {
     }
 
     // データベースからツイートを取得
-    const tweet = await this.extractedTweetRepository.findOne(extractedTweetId, {
+    const tweet = await this.classifiedTweetRepository.findOne(classifiedTweetId, {
       loadRelationIds: true,
     });
     if (tweet == null) {
@@ -370,18 +370,18 @@ export class TopicsService {
   /**
    * 指定されたトピックおよびツイートに対する拒否
    * @param topicId トピックID
-   * @param extractedTweetId 抽出済みツイートのID
+   * @param classifiedTweetId 分類済みツイートのID
    * @param token 拒否用URLのトークン
    * @param tweetFilterRetrainingRequests ツイートフィルタを再トレーニングするための情報
    */
   async rejectTweet(
     topicId: number,
-    extractedTweetId: number,
+    classifiedTweetId: number,
     tokenStr?: string,
     tweetFilterRetrainingRequests?: TweetFilterRetrainingRequest[],
   ): Promise<{
     retrainJobId: string;
-    rejectedTweet: ExtractedTweet;
+    rejectedTweet: ClassifiedTweet;
   }> {
     // URLトークンを確認
     let token = null;
@@ -399,7 +399,7 @@ export class TopicsService {
     }
 
     // データベースからツイートを取得
-    const tweet = await this.extractedTweetRepository.findOne(extractedTweetId, {
+    const tweet = await this.classifiedTweetRepository.findOne(classifiedTweetId, {
       loadRelationIds: true,
     });
     if (tweet == null) {
@@ -447,7 +447,7 @@ export class TopicsService {
   async acceptTweetByDto(dto: AcceptTweetDto): Promise<any> {
     return await this.acceptTweet(
       dto.topicId,
-      dto.extractedTweetId,
+      dto.classifiedTweetId,
       null,
       dto.tweetFilterRetrainingRequests,
       dto.destinationActionIndex,
@@ -459,11 +459,11 @@ export class TopicsService {
    * @param dto DTO
    */
   async rejectTweetByDto(dto: RejectTweetDto): Promise<any> {
-    return await this.rejectTweet(dto.topicId, dto.extractedTweetId, null, dto.tweetFilterRetrainingRequests);
+    return await this.rejectTweet(dto.topicId, dto.classifiedTweetId, null, dto.tweetFilterRetrainingRequests);
   }
 
   /**
-   * 指定された抽出済みツイートによる再トレーニング (キューに対するジョブ追加)
+   * 指定された分類済みツイートによる再トレーニング (キューに対するジョブ追加)
    * (お手本分類、ツイートフィルタの学習、トレーニングおよび検証が再実行される)
    * @param topicId トピックID
    * @param tweet ツイート

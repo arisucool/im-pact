@@ -87,7 +87,7 @@
     <!---->
   </ngx-masonry>
   <!---->
-  <!-- ページャ領域 (アクション別承認アイテム) -->
+  <!-- ページャ領域 (アクション別承認ツイート) -->
   <div
     class="pager-container"
     *ngIf="!isLoadingAcceptedTweetsByActions[actionIndex] && 1 <= acceptedTweetsByActions[actionIndex].length"
@@ -114,7 +114,7 @@
       (click)="isOpenedDrawer = true"
       *ngIf="!isOpenedDrawer"
       class="drawer-opener-btn"
-      matTooltip="クリックすると、拒否されたアイテムを表示します"
+      matTooltip="クリックすると、拒否されたツイートを表示します"
     >
       <mat-icon>expand_less</mat-icon>
     </div>
@@ -122,7 +122,7 @@
       (click)="isOpenedDrawer = false"
       *ngIf="isOpenedDrawer"
       class="drawer-opener-btn"
-      matTooltip="クリックすると、拒否されたアイテムを非表示にします"
+      matTooltip="クリックすると、拒否されたツイートを非表示にします"
     >
       <mat-icon>expand_more</mat-icon>
     </div>
@@ -144,10 +144,10 @@
         </div>
         <!---->
 
-        <!-- 拒否アイテムグリッド -->
+        <!-- 拒否ツイートグリッド -->
         <div class="rejected-tweets-container">
           <ngx-masonry class="rejected-tweets tweets-grid" [updateLayout]="updateLayout">
-            <!-- 各アイテム -->
+            <!-- 各ツイート -->
             <div
               ngxMasonryItem
               fxFlex="23.5"
@@ -168,7 +168,7 @@
             <!---->
           </ngx-masonry>
 
-          <!-- ページャ領域 (拒否アイテム) -->
+          <!-- ページャ領域 (拒否ツイート) -->
           <div class="pager-container" *ngIf="!isLoadingRejectedTweets">
             <button (click)="loadMoreRejectedTweets()" mat-button mat-stroked-button type="button">
               <mat-icon style="margin-top: -2px;">expand_more</mat-icon>

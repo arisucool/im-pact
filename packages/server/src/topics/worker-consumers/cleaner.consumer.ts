@@ -4,7 +4,7 @@ import { Job } from 'bull';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CrawledTweet } from '../ml/entities/crawled-tweet.entity';
-import { ExtractedTweet } from '../ml/entities/extracted-tweet.entity';
+import { ClassifiedTweet } from '../ml/entities/classified-tweet.entity';
 import { Topic } from '../entities/topic.entity';
 import { MlModel } from '../ml/entities/ml-model.entity';
 
@@ -24,8 +24,8 @@ export class CleanerConsumer {
   // エンティティごとの行数の配分定義
   private DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES = {
     crawledTweet: 0.49, // 全体で 7500 行ならば... 3,650行
-    extractedTweetAccept: 0.28, // 〃 ならば... 2,100行
-    extractedTweetReject: 0.2, // 〃 ならば... 1,500行
+    classifiedTweetAccept: 0.28, // 〃 ならば... 2,100行
+    classifiedTweetReject: 0.2, // 〃 ならば... 1,500行
     mlModel: 0.005, // 〃 ならば... 37行
     // 残り (moduleStorage): 213行
   };
@@ -35,8 +35,8 @@ export class CleanerConsumer {
     private topicsRepository: Repository<Topic>,
     @InjectRepository(CrawledTweet)
     private crawledTweetRepository: Repository<CrawledTweet>,
-    @InjectRepository(ExtractedTweet)
-    private extractedTweetRepository: Repository<ExtractedTweet>,
+    @InjectRepository(ClassifiedTweet)
+    private classifiedTweetRepository: Repository<ClassifiedTweet>,
     @InjectRepository(MlModel)
     private mlModelRepository: Repository<MlModel>,
   ) {}
@@ -93,17 +93,17 @@ export class CleanerConsumer {
     const thresholdNumOfRows = maxDBRows * this.AUTO_CLEANUP_THRESOLD_RATE_FOR_DB_ROWS;
     const thresholdNumOfRowsOfCrawledTweet =
       this.DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES.crawledTweet * thresholdNumOfRows;
-    const thresholdNumOfRowsOfExtractedTweetAccept =
-      this.DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES.extractedTweetAccept * thresholdNumOfRows;
-    const thresholdNumOfRowsOfExtractedTweetReject =
-      this.DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES.extractedTweetReject * thresholdNumOfRows;
+    const thresholdNumOfRowsOfClassifiedTweetAccept =
+      this.DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES.classifiedTweetAccept * thresholdNumOfRows;
+    const thresholdNumOfRowsOfClassifiedTweetReject =
+      this.DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES.classifiedTweetReject * thresholdNumOfRows;
     const thresholdNumOfRowsOfMlModel = this.DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES.mlModel * thresholdNumOfRows;
 
     // データベース行数がしきい値に達しているかを返す
     if (
       thresholdNumOfRowsOfCrawledTweet <= (await this.crawledTweetRepository.count()) ||
-      thresholdNumOfRowsOfExtractedTweetAccept + thresholdNumOfRowsOfExtractedTweetReject <=
-        (await this.extractedTweetRepository.count()) ||
+      thresholdNumOfRowsOfClassifiedTweetAccept + thresholdNumOfRowsOfClassifiedTweetReject <=
+        (await this.classifiedTweetRepository.count()) ||
       thresholdNumOfRowsOfMlModel <= (await this.mlModelRepository.count())
     ) {
       return true;
@@ -141,9 +141,9 @@ export class CleanerConsumer {
       Logger.log(`Deleted ${i} items from CrawledTweet.`, 'CleanerConsumer/execCleanupDatabase');
     }
 
-    // Extracted エンティティを検索して削除
-    await this.execCleanupExtractedTweets(maxDBRows, 'accept');
-    await this.execCleanupExtractedTweets(maxDBRows, 'reject');
+    // Classified エンティティを検索して削除
+    await this.execCleanupClassifiedTweets(maxDBRows, 'accept');
+    await this.execCleanupClassifiedTweets(maxDBRows, 'reject');
 
     // MlModel エンティティを検索して削除
     await this.execCleanupMlModel(maxDBRows);
@@ -208,39 +208,39 @@ export class CleanerConsumer {
   }
 
   /**
-   * 抽出済みツイートのクリーンアップ
+   * 分類済みツイートのクリーンアップ
    * @param maxDBRows データベース行数の上限
    * @param predictedClass 分類クラス
    */
-  protected async execCleanupExtractedTweets(maxDBRows: number, predictedClass: string) {
+  protected async execCleanupClassifiedTweets(maxDBRows: number, predictedClass: string) {
     // エンティティのクリーンアップ後の行数を取得
     const cleanedUpNumOfRows = maxDBRows * this.AUTO_CLEANUP_DELETE_RATE_FOR_DB_ROWS;
-    let cleanedUpNumOfRowsOfExtractedTweetAtClass = 0;
+    let cleanedUpNumOfRowsOfClassifiedTweetAtClass = 0;
     if (predictedClass === 'accept') {
-      cleanedUpNumOfRowsOfExtractedTweetAtClass =
-        this.DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES.extractedTweetAccept * cleanedUpNumOfRows;
+      cleanedUpNumOfRowsOfClassifiedTweetAtClass =
+        this.DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES.classifiedTweetAccept * cleanedUpNumOfRows;
     } else {
-      cleanedUpNumOfRowsOfExtractedTweetAtClass =
-        this.DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES.extractedTweetReject * cleanedUpNumOfRows;
+      cleanedUpNumOfRowsOfClassifiedTweetAtClass =
+        this.DB_ROWS_RATE_ALLOCATION_EACH_ENTITIES.classifiedTweetReject * cleanedUpNumOfRows;
     }
 
     const numOfExpectedRemoveItems =
-      (await this.extractedTweetRepository.count({
+      (await this.classifiedTweetRepository.count({
         where: {
           predictedClass: predictedClass,
         },
-      })) - cleanedUpNumOfRowsOfExtractedTweetAtClass;
+      })) - cleanedUpNumOfRowsOfClassifiedTweetAtClass;
 
     if (numOfExpectedRemoveItems <= 0) {
       return;
     }
 
     Logger.debug(
-      `Counting items for ${predictedClass}... numOfExpectedRemoveItems = ${numOfExpectedRemoveItems}, cleanedUpNumOfRowsOfExtractedTweetAtClass = ${cleanedUpNumOfRowsOfExtractedTweetAtClass}`,
-      'CleanerConsumer/execCleanupExtractedTweets',
+      `Counting items for ${predictedClass}... numOfExpectedRemoveItems = ${numOfExpectedRemoveItems}, cleanedUpNumOfRowsOfClassifiedTweetAtClass = ${cleanedUpNumOfRowsOfClassifiedTweetAtClass}`,
+      'CleanerConsumer/execCleanupClassifiedTweets',
     );
 
-    const removeItems = await this.extractedTweetRepository.find({
+    const removeItems = await this.classifiedTweetRepository.find({
       where: {
         predictedClass: 'accept',
       },
@@ -253,15 +253,15 @@ export class CleanerConsumer {
     let i = 0;
     for (const item of removeItems) {
       Logger.debug(
-        `Delete ExtractedTweet (${predictedClass})... (id = ${item.id})`,
-        'CleanerConsumer/execCleanupExtractedTweets',
+        `Delete ClassifiedTweet (${predictedClass})... (id = ${item.id})`,
+        'CleanerConsumer/execCleanupClassifiedTweets',
       );
       await item.remove();
       i++;
     }
     Logger.log(
-      `Deleted ${i} items from ExtractedTweet (${predictedClass}).`,
-      'CleanerConsumer/execCleanupExtractedTweets',
+      `Deleted ${i} items from ClassifiedTweet (${predictedClass}).`,
+      'CleanerConsumer/execCleanupClassifiedTweets',
     );
   }
 }

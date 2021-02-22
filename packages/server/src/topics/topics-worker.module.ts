@@ -5,7 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CrawledTweet } from './ml/entities/crawled-tweet.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
 import { Topic } from './entities/topic.entity';
-import { ExtractedTweet } from './ml/entities/extracted-tweet.entity';
+import { ClassifiedTweet } from './ml/entities/classified-tweet.entity';
 import { ModuleStorage } from './ml/entities/module-storage.entity';
 import { TwitterCrawlerService } from './ml/twitter-crawler.service';
 import { MlModel } from './ml/entities/ml-model.entity';
@@ -22,7 +22,7 @@ import { TweetFilterService } from './ml/tweet-filter.service';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CrawledTweet, ExtractedTweet, SocialAccount, Topic, ModuleStorage, MlModel]),
+    TypeOrmModule.forFeature([CrawledTweet, ClassifiedTweet, SocialAccount, Topic, ModuleStorage, MlModel]),
     // キューを登録
     BullModule.registerQueue({
       name: 'action', // ./worker-consumers/action.consumer.ts にて処理される

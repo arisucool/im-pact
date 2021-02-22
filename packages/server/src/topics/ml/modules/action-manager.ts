@@ -5,7 +5,7 @@ import { ActionHelper } from './module-helpers/action.helper';
 import { ModuleStorage } from './module-storage';
 import { ModuleTweetStorage } from './module-tweet-storage';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
-import { ExtractedTweet } from '../entities/extracted-tweet.entity';
+import { ClassifiedTweet } from '../entities/classified-tweet.entity';
 import { Topic } from 'src/topics/entities/topic.entity';
 import { ManagerHelper } from './manager.helper';
 
@@ -16,14 +16,14 @@ export class ActionManager {
   /**
    * コンストラクタ
    * @param moduleStorageRepository モジュールストレージを読み書きするためのリポジトリ
-   * @param extractedTweetRepository 抽出済みツイートを読み書きするためのリポジトリ
+   * @param classifiedTweetRepository 分類済みツイートを読み書きするためのリポジトリ
    * @param socialAccountRepository ソーシャルアカウントを読み書きするためのリポジトリ
    * @param actionSettings アクション設定
    * @param topicKeywords トピックのキーワード (実際に検索が行われるわけではない。キーワードを用いて何か処理を行うために使用される。)
    */
   constructor(
     private moduleStorageRepository: Repository<ModuleStorageEntity.ModuleStorage>,
-    private extractedTweetRepository: Repository<ExtractedTweet>,
+    private classifiedTweetRepository: Repository<ClassifiedTweet>,
     private socialAccountRepository: Repository<SocialAccount>,
     private actionSettings: { [key: string]: any }[],
     private topicKeywords: string[],
@@ -42,7 +42,7 @@ export class ActionManager {
    * @param topic トピック
    * @return アクションが完了したか否か (実行すべきアクションがなければ null)
    */
-  async execActionToTweet(tweet: ExtractedTweet, topic: Topic): Promise<boolean | null> {
+  async execActionToTweet(tweet: ClassifiedTweet, topic: Topic): Promise<boolean | null> {
     let completeActionIndex = tweet.completeActionIndex;
 
     // 当該ツイートに対して実行すべきアクションを取得
@@ -86,7 +86,7 @@ export class ActionManager {
     const moduleTweetStorage = ModuleTweetStorage.factory(
       `Action${actionName}`,
       actionId,
-      this.extractedTweetRepository,
+      this.classifiedTweetRepository,
       moduleStorage,
     );
 

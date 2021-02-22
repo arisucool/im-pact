@@ -3,7 +3,7 @@
  */
 export * from './topics/entities/topic.entity';
 export * from './topics/ml/entities/crawled-tweet.entity';
-export * from './topics/ml/entities/extracted-tweet.entity';
+export * from './topics/ml/entities/classified-tweet.entity';
 export * from './topics/ml/entities/ml-model.entity';
 export * from './topics/ml/entities/module-storage.entity';
 export * from './topics/ml/entities/tweet.entity';

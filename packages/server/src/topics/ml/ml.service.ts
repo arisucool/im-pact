@@ -10,7 +10,7 @@ import { ModuleStorage } from './entities/module-storage.entity';
 import { MlModel } from './entities/ml-model.entity';
 import { Topic } from '../entities/topic.entity';
 import { ActionManager } from './modules/action-manager';
-import { ExtractedTweet } from './entities/extracted-tweet.entity';
+import { ClassifiedTweet } from './entities/classified-tweet.entity';
 import { CrawledTweet } from './entities/crawled-tweet.entity';
 import {
   TweetFilterResultWithMultiValues,

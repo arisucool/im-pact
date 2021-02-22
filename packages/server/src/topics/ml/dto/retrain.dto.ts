@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber } from 'class-validator';
-import { ExtractedTweet } from '../entities/extracted-tweet.entity';
+import { ClassifiedTweet } from '../entities/classified-tweet.entity';
 
 /**
  * ツイートフィルタを再トレーニングするための情報
@@ -52,10 +52,10 @@ export class ReTrainDto {
   @ApiProperty({
     description: '再トレーニングに与えるツイート',
     example: {},
-    type: ExtractedTweet,
+    type: ClassifiedTweet,
   })
   @IsNotEmpty()
-  tweet: ExtractedTweet;
+  tweet: ClassifiedTweet;
 
   @ApiProperty({
     description: '当該ツイートが選択されたか否か (承認か拒否か)',

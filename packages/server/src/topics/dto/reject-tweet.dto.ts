@@ -3,7 +3,7 @@ import { TweetFilterRetrainingRequest } from '../ml/dto/retrain.dto';
 
 export class RejectTweetDto {
   topicId: number;
-  extractedTweetId: number;
+  classifiedTweetId: number;
 
   @ApiProperty({
     description: 'ツイートフィルタを再トレーニングするための情報',

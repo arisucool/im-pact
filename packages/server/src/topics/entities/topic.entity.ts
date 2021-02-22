@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 import { IsNotEmpty, IsArray } from 'class-validator';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
-import { ExtractedTweet } from '../ml/entities/extracted-tweet.entity';
+import { ClassifiedTweet } from '../ml/entities/classified-tweet.entity';
 import { MlModel } from '../ml/entities/ml-model.entity';
 import { SearchCondition } from './search-condition.interface';
 
@@ -36,12 +36,12 @@ export class Topic extends BaseEntity {
   )
   crawlSocialAccount: SocialAccount;
 
-  // 抽出済みツイート
+  // 分類済みツイート
   @OneToMany(
-    () => ExtractedTweet,
-    extractedTweet => extractedTweet.topic,
+    () => ClassifiedTweet,
+    classifiedTweet => classifiedTweet.topic,
   )
-  extractedTweets: ExtractedTweet[];
+  classifiedTweets: ClassifiedTweet[];
 
   // 学習モデル
   @OneToMany(

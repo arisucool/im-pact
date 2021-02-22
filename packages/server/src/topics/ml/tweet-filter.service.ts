@@ -7,7 +7,7 @@ import { ModuleStorage } from './entities/module-storage.entity';
 import { TweetFilterRetrainingRequest } from './dto/retrain.dto';
 import { CrawledTweet } from './entities/crawled-tweet.entity';
 import { Topic } from '../entities/topic.entity';
-import { ExtractedTweet } from './entities/extracted-tweet.entity';
+import { ClassifiedTweet } from './entities/classified-tweet.entity';
 
 @Injectable()
 export class TweetFilterService {
@@ -21,7 +21,7 @@ export class TweetFilterService {
   ) {}
 
   async retrain(
-    tweet: ExtractedTweet,
+    tweet: ClassifiedTweet,
     topic: Topic,
     tweetFilterRetrainingRequests: TweetFilterRetrainingRequest[],
   ): Promise<void> {

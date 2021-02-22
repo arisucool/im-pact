@@ -1,4 +1,4 @@
-import { ActionTestHelper, ExtractedTweet } from '@arisucool/im-pact-core';
+import { ActionTestHelper, ClassifiedTweet } from '@arisucool/im-pact-core';
 import ActionWaitForSchedule from './index';
 
 import './matcher';
@@ -351,33 +351,33 @@ describe('execAction - sortConditionOfTweets option', () => {
     expect(await mod.execActionBulk(tweets)).toBeSorted(tweets, 'crawledAt', false);
   });
 
-  test('extractedAtAsc', async () => {
+  test('classifiedAtAsc', async () => {
     const mod: ActionWaitForSchedule = ActionTestHelper.initModule(
       'ActionWaitForSchedule',
       {
         maxNumOfTweetsAtOneTime: 1,
-        sortConditionOfTweets: 'extractedAtAsc',
+        sortConditionOfTweets: 'classifiedAtAsc',
         schedule: `* * * * *`,
       },
       ActionWaitForSchedule,
     );
 
     const tweets = ActionTestHelper.getTweets();
-    expect(await mod.execActionBulk(tweets)).toBeSorted(tweets, 'extractedAt', true);
+    expect(await mod.execActionBulk(tweets)).toBeSorted(tweets, 'classifiedAt', true);
   });
 
-  test('extractedAtDesc', async () => {
+  test('classifiedAtDesc', async () => {
     const mod: ActionWaitForSchedule = ActionTestHelper.initModule(
       'ActionWaitForSchedule',
       {
         maxNumOfTweetsAtOneTime: 1,
-        sortConditionOfTweets: 'extractedAtDesc',
+        sortConditionOfTweets: 'classifiedAtDesc',
         schedule: `* * * * *`,
       },
       ActionWaitForSchedule,
     );
 
     const tweets = ActionTestHelper.getTweets();
-    expect(await mod.execActionBulk(tweets)).toBeSorted(tweets, 'extractedAt', false);
+    expect(await mod.execActionBulk(tweets)).toBeSorted(tweets, 'classifiedAt', false);
   });
 });

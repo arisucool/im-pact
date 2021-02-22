@@ -1,4 +1,4 @@
-import { ActionBulk, ActionHelper, ActionSettingsDefinition, ExtractedTweet } from '@arisucool/im-pact-core';
+import { ActionBulk, ActionHelper, ActionSettingsDefinition, ClassifiedTweet } from '@arisucool/im-pact-core';
 import * as cronParser from 'cron-parser';
 
 export default class ActionWaitForSchedule implements ActionBulk {
@@ -36,8 +36,8 @@ export default class ActionWaitForSchedule implements ActionBulk {
           createdAtAsc: '投稿日時が古い順',
           crawledAtDesc: '収集日時が新しい順',
           crawledAtAsc: '収集日時が古い順',
-          extractedAtDesc: '分類日時が新しい順',
-          extractedAtAsc: '分類日時が古い順',
+          classifiedAtDesc: '分類日時が新しい順',
+          classifiedAtAsc: '分類日時が古い順',
         },
       },
       {
@@ -49,7 +49,7 @@ export default class ActionWaitForSchedule implements ActionBulk {
     ];
   }
 
-  async execActionBulk(tweets: ExtractedTweet[]): Promise<{ [key: string]: boolean }> {
+  async execActionBulk(tweets: ClassifiedTweet[]): Promise<{ [key: string]: boolean }> {
     // 設定を取得
     const maxNumOfTweetsAtOneTime = this.helper.getSetting().maxNumOfTweetsAtOneTime || 0;
     const sortConditionOfTweets = this.helper.getSetting().sortConditionOfTweets || null;
@@ -78,7 +78,7 @@ export default class ActionWaitForSchedule implements ActionBulk {
 
     // ツイートをソート
     if (sortConditionOfTweets) {
-      tweets = tweets.sort((a: ExtractedTweet, b: ExtractedTweet) => {
+      tweets = tweets.sort((a: ClassifiedTweet, b: ClassifiedTweet) => {
         switch (sortConditionOfTweets) {
           // いいね数
           case 'likesDesc':
@@ -106,10 +106,10 @@ export default class ActionWaitForSchedule implements ActionBulk {
           case 'crawledAtAsc':
             return a.crawledAt.getTime() < b.crawledAt.getTime() ? -1 : 1;
           // 分類日時
-          case 'extractedAtDesc':
-            return a.extractedAt.getTime() > b.extractedAt.getTime() ? -1 : 1;
-          case 'extractedAtAsc':
-            return a.extractedAt.getTime() < b.extractedAt.getTime() ? -1 : 1;
+          case 'classifiedAtDesc':
+            return a.classifiedAt.getTime() > b.classifiedAt.getTime() ? -1 : 1;
+          case 'classifiedAtAsc':
+            return a.classifiedAt.getTime() < b.classifiedAt.getTime() ? -1 : 1;
         }
       });
     }

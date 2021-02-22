@@ -1,4 +1,4 @@
-import { ActionTestHelper, ExtractedTweet } from '@arisucool/im-pact-core';
+import { ActionTestHelper, ClassifiedTweet } from '@arisucool/im-pact-core';
 import ActionShareOnDiscord from './index';
 
 describe('Initializations', () => {

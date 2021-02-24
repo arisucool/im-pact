@@ -408,12 +408,12 @@ export class MlService {
   ): Promise<number> {
     const [{ xs: xTest, ys: yTest }] = await validationDataset.toArray();
     // 検証用データセットの値を取得
-    const xData = xTest.dataSync();
+    const xData = await xTest.data();
     // 検証用データセットの正しい答えを取得
-    const yTrue = yTest.argMax(-1).dataSync();
+    const yTrue = await yTest.argMax(-1).data();
     let predictOutRaw = trainedModel.predict(xTest) as tf.Tensor;
     // 検証用データセットの予測した答えを取得
-    const yPred = predictOutRaw.argMax(-1).dataSync();
+    const yPred = await predictOutRaw.argMax(-1).data();
     //let predictOut = predictOutRaw.dataSync();
 
     // 検証用データセットを反復
@@ -497,9 +497,9 @@ export class MlService {
       const numOfFeatures = filterValues.length;
 
       // 指定された学習モデルにより予測を実行
-      const predictedClass = (trainedModel.predict(tf.tensor2d(filterValues, [1, numOfFeatures])) as tf.Tensor)
-        .argMax(-1)
-        .dataSync()[0];
+      const predictedClass = (
+        await (trainedModel.predict(tf.tensor2d(filterValues, [1, numOfFeatures])) as tf.Tensor).argMax(-1).data()
+      )[0];
 
       // 予測した答えを追加
       validationTweets[i].predictedSelect = predictedClass == 1;

@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { TrainAndValidateDto } from './dto/train-and-validate.dto';
 import { TweetFilterManager } from './modules/tweet-filter-manager';
 import { ModuleStorage } from './entities/module-storage.entity';
-import { MlModel } from './entities/ml-model.entity';
+import { MlModel, NormalizationConstants as NormalizationConstant } from './entities/ml-model.entity';
 import { Topic } from '../entities/topic.entity';
 import { ActionManager } from './modules/action-manager';
 import { ClassifiedTweet } from './entities/classified-tweet.entity';
@@ -106,7 +106,11 @@ export class MlService {
     const trainedModel = trainingResult.model;
 
     // 学習モデルをデータベースへ保存
-    const trainedModelId = await this.saveTrainedModel(dto.topicId, trainedModel);
+    const trainedModelId = await this.saveTrainedModel(
+      dto.topicId,
+      trainedModel,
+      generatedDatasets.normalizationConstants,
+    );
 
     // 検証用データセット(バッチ加工済み)による検証を実行
     Logger.log('Validating model...', 'MlService/trainAndValidate');
@@ -126,6 +130,7 @@ export class MlService {
       numOfFeatures,
       dto.filters,
       dto.topicKeywords,
+      generatedDatasets.normalizationConstants,
       false,
     );
     const scoreByTrainingTweets = resultOfTrainingTweets.score;
@@ -137,6 +142,7 @@ export class MlService {
       numOfFeatures,
       dto.filters,
       dto.topicKeywords,
+      generatedDatasets.normalizationConstants,
       true,
     );
     const scoreByTrainingTweetsExceptUnselect = resultOfTrainingTweetsExceptUnselect.score;
@@ -170,8 +176,13 @@ export class MlService {
    * 学習モデルの保存
    * @param topicId トピックのID
    * @param trainedModel 学習モデル
+   * @param normalizationConstants 分類時に説明変数を正規化するための情報
    */
-  protected async saveTrainedModel(topicId: number, trainedModel: tf.Sequential): Promise<number> {
+  protected async saveTrainedModel(
+    topicId: number,
+    trainedModel: tf.Sequential,
+    normalizationConstants: NormalizationConstant[],
+  ): Promise<number> {
     // ファイルを一時ディレクトリへ保存
     const TEMP_DIR_PATH = `/tmp/im-pact-model-save-${new Date().getTime()}`;
     await trainedModel.save(`file://${TEMP_DIR_PATH}`);
@@ -181,6 +192,7 @@ export class MlService {
     topic.id = topicId;
     const saveModel: MlModel = new MlModel();
     saveModel.topic = topic;
+    saveModel.normalizationConstants = normalizationConstants;
 
     // 一時ディレクトリからファイルを読みこみ
     saveModel.modelData = await new Promise((resolve, reject) => {
@@ -253,12 +265,19 @@ export class MlService {
     Logger.log('Executing batches on tweet filters...', 'MlService/getTrainingDatasets');
     await filterManager.batch();
 
+    // 説明変数の名前を列挙するための配列を初期化
+    let schemaOfFilterValues: {
+      filterName: string;
+      filterId: string;
+      keyOfValue: string;
+    }[] = null;
+
     // 各ツイートを反復
     Logger.log('Filtering tweets on tweet filters...', 'MlService/getTrainingDatasets');
     let rawDataset = [];
     for (let tweet of trainingTweets) {
       // 当該ツイートに対して全ツイートフィルタを実行
-      let filterResults: { filterName: string; result: TweetFilterResultWithMultiValues }[] = [];
+      let filterResults: { filterName: string; filterId: string; result: TweetFilterResultWithMultiValues }[] = [];
       try {
         filterResults = await filterManager.filterTweet(tweet);
       } catch (e) {
@@ -266,7 +285,7 @@ export class MlService {
         continue;
       }
 
-      // 全ツイートフィルタの結果から分類のための変数を抽出
+      // 全ツイートフィルタの結果から分類のための変数 (説明変数) を抽出
       const filterValues = this.getFilterValuesByFilterResults(filterResults);
       numOfFeatures = filterValues.length;
       // 生データセットの行を生成
@@ -275,6 +294,67 @@ export class MlService {
       rawDataRow.push(tweet.selected ? 1 : 0);
       // 生データセットへ追加
       rawDataset.push(rawDataRow);
+
+      // 説明変数の名前を残しておく
+      if (schemaOfFilterValues == null) {
+        schemaOfFilterValues = [];
+        for (const result of filterResults) {
+          for (const key of Object.keys(result.result.values)) {
+            schemaOfFilterValues.push({
+              filterId: result.filterId,
+              filterName: result.filterName,
+              keyOfValue: key,
+            });
+          }
+        }
+      }
+    }
+
+    // 生データセットの説明変数を Z-score normalization で正規化
+    // (NOTE: 生データセットの各行の最後の要素は、目的変数であるため、正規化しない)
+    const normalizationConstants: NormalizationConstant[] = [];
+    for (let column = 0; column < numOfFeatures; column++) {
+      // 当該説明変数の値および合計値を取得
+      const values = [];
+      let sum = 0.0;
+      for (let i = 0, l = rawDataset.length; i < l; i++) {
+        values.push(rawDataset[i][column]);
+        sum += rawDataset[i][column];
+      }
+
+      // 当該説明変数の平均値を算出
+      const mean = sum / rawDataset.length;
+
+      // 当該説明変数の標準偏差を算出
+      const v = values
+        .map(value => {
+          const diff = value - mean;
+          return diff ** 2;
+        })
+        .reduce((previous, current) => {
+          return previous + current;
+        });
+      const std = Math.sqrt(v / rawDataset.length);
+
+      Logger.log(
+        `Normalize column ${column} with z-score normalization... sum = ${sum}, mean = ${mean}, std = ${std}`,
+        'MlService/getTrainingDatasets',
+      );
+
+      // 当該説明変数を正規化
+      for (let i = 0, l = rawDataset.length; i < l; i++) {
+        rawDataset[i][column] = (rawDataset[i][column] - mean) / std;
+      }
+
+      // 今後の分類時に正規化を行うための情報を付加
+      const schema = schemaOfFilterValues[column];
+      normalizationConstants[column] = {
+        filterName: schema.filterName,
+        filterId: schema.filterId,
+        keyOfValue: schema.keyOfValue,
+        meanOfValue: mean,
+        stdOfValue: std,
+      };
     }
 
     // 生データセットを複製してシャッフル
@@ -320,6 +400,7 @@ export class MlService {
       trainingDataset: trainingDataset,
       validationDataset: validationDataset,
       numOfFeatures: numOfFeatures,
+      normalizationConstants: normalizationConstants,
     };
   }
 
@@ -444,6 +525,7 @@ export class MlService {
    * @param numOfFeatures データセットの変数の数
    * @oaram filterSettings ツイートフィルタの設定
    * @param topicKeywords トピックのキーワード  (実際に検索が行われるわけではない。ベイジアンフィルタ等で学習からキーワードを除いて精度を上げる場合などに使用される。)
+   * @param normalizationConstants 分類時に説明変数を正規化するための情報
    * @param excludeUnselectedTweets お手本分類でユーザによって選択されなかったツイートを検証から除外するか
    * @return 検証および分類の結果
    */
@@ -453,6 +535,7 @@ export class MlService {
     numOfFeatures: number,
     filterSettings: any[],
     topicKeywords: string[],
+    normalizationConstants: NormalizationConstant[],
     excludeUnselectedTweets = false,
   ): Promise<{ score: number; tweets: any[] }> {
     // 検証するツイートを抽出
@@ -488,13 +571,20 @@ export class MlService {
       try {
         filterResults = await filterManager.filterTweet(tweet);
       } catch (e) {
-        Logger.error('Error occurred on tweet filters...', e.stack, 'MlService/getTrainingDatasets');
+        Logger.error('Error occurred on tweet filters...', e.stack, 'MlService/validateByTrainingTweets');
         continue;
       }
 
-      // 全ツイートフィルタの結果から分類のための変数を抽出
+      // 全ツイートフィルタの結果から分類のための変数 (説明変数) を抽出
       const filterValues = this.getFilterValuesByFilterResults(filterResults);
       const numOfFeatures = filterValues.length;
+
+      // 説明変数を Z-score normalization で正規化
+      for (let column = 0, l = filterValues.length; column < l; column++) {
+        const normalizationConstant = normalizationConstants[column];
+        filterValues[column] =
+          (filterValues[column] - normalizationConstant.meanOfValue) / normalizationConstant.stdOfValue;
+      }
 
       // 指定された学習モデルにより予測を実行
       const predictedClass = (
@@ -577,9 +667,17 @@ export class MlService {
         continue;
       }
 
-      // 全ツイートフィルタの結果から分類のための変数を抽出
+      // 全ツイートフィルタの結果から分類のための変数 (説明変数) を抽出
       const filterValues = this.getFilterValuesByFilterResults(filterResults);
       const numOfFeatures = filterValues.length;
+
+      // 説明変数を Z-score normalization で正規化
+      const normalizationConstants = mlModel.normalizationConstants;
+      for (let column = 0, l = filterValues.length; column < l; column++) {
+        const normalizationConstant = normalizationConstants[column];
+        filterValues[column] =
+          (filterValues[column] - normalizationConstant.meanOfValue) / normalizationConstant.stdOfValue;
+      }
 
       // 指定された学習モデルにより予測を実行
       const predictedClass = (trainedModel.predict(tf.tensor2d(filterValues, [1, numOfFeatures])) as tf.Tensor)

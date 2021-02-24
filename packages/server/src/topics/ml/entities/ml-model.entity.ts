@@ -2,6 +2,14 @@ import { Entity, Column, BaseEntity, PrimaryGeneratedColumn, PrimaryColumn, Many
 import { IsNotEmpty, IsEmpty } from 'class-validator';
 import { Topic } from 'src/topics/entities/topic.entity';
 
+export interface NormalizationConstants {
+  filterName: string;
+  filterId: string;
+  keyOfValue: string;
+  meanOfValue: number;
+  stdOfValue: number;
+}
+
 /**
  * 学習モデルストレージのエンティティ
  */
@@ -33,4 +41,11 @@ export class MlModel extends BaseEntity {
   })
   @IsNotEmpty()
   modelWeightsData: Buffer;
+
+  // 説明変数を正規化するための情報
+  @Column({
+    type: 'json',
+    default: '{}',
+  })
+  normalizationConstants: NormalizationConstants[];
 }

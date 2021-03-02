@@ -76,7 +76,7 @@ export interface TweetFilterResult {
     /**
      * 値
      */
-    value: number;
+    value: number | number[];
   };
 }
 
@@ -106,7 +106,7 @@ export interface TweetFilterResultWithMultiValues {
       /**
        * 値
        */
-      value: number;
+      value: number | number[];
     };
   };
 }

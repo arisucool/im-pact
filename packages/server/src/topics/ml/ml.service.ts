@@ -248,9 +248,6 @@ export class MlService {
     // 検証用にデータセットを分割する割合
     const VALIDATION_FRACTION = 0.1;
 
-    // 変数の数を代入する変数
-    let numOfFeatures = 0;
-
     // ツイートフィルタを管理するモジュールを初期化
     const filterManager = new TweetFilterManager(
       this.moduleStorageRepository,
@@ -287,7 +284,6 @@ export class MlService {
 
       // 全ツイートフィルタの結果から分類のための変数 (説明変数) を抽出
       const filterValues = this.getFilterValuesByFilterResults(filterResults);
-      numOfFeatures = filterValues.length;
       // 生データセットの行を生成
       let rawDataRow = [];
       rawDataRow = rawDataRow.concat(filterValues);
@@ -310,10 +306,21 @@ export class MlService {
       }
     }
 
+    // 説明変数が存在するか確認
+    if (!schemaOfFilterValues || schemaOfFilterValues.length == 0) {
+      throw new Error('There is no filter values');
+    }
+
     // 生データセットの説明変数を Z-score normalization で正規化
     // (NOTE: 生データセットの各行の最後の要素は、目的変数であるため、正規化しない)
     const normalizationConstants: NormalizationConstant[] = [];
-    for (let column = 0; column < numOfFeatures; column++) {
+    for (let column = 0; column < schemaOfFilterValues.length; column++) {
+      // 当該説明変数がカテゴリカル変数か否かを確認
+      if (rawDataset[0][column] instanceof Array) {
+        // カテゴリカル変数は正規化しない
+        continue;
+      }
+
       // 当該説明変数の値および合計値を取得
       const values = [];
       let sum = 0.0;
@@ -356,6 +363,16 @@ export class MlService {
         stdOfValue: std,
       };
     }
+
+    // 生データセットの各行をフラットへ
+    // (One Hot Encoding された説明変数は配列になっているので、フラットへ変換)
+    rawDataset = rawDataset.map(dataRow => {
+      return [].concat(...dataRow);
+    });
+
+    // 設営変数の数を取得
+    // (NOTE:  生データセットの各行の最後の要素は、目的変数であるため、1つ減らす)
+    let numOfFeatures = rawDataset[0].length - 1;
 
     // 生データセットを複製してシャッフル
     Logger.log('Generating datasets...', 'MlService/getTrainingDatasets');
@@ -576,15 +593,20 @@ export class MlService {
       }
 
       // 全ツイートフィルタの結果から分類のための変数 (説明変数) を抽出
-      const filterValues = this.getFilterValuesByFilterResults(filterResults);
-      const numOfFeatures = filterValues.length;
+      let filterValues = this.getFilterValuesByFilterResults(filterResults);
 
       // 説明変数を Z-score normalization で正規化
       for (let column = 0, l = filterValues.length; column < l; column++) {
         const normalizationConstant = normalizationConstants[column];
+        if (!normalizationConstant) continue;
         filterValues[column] =
           (filterValues[column] - normalizationConstant.meanOfValue) / normalizationConstant.stdOfValue;
       }
+
+      // 説明変数の配列をフラットへ
+      // (One Hot Encoding された説明変数は配列になっているので、フラットへ変換)
+      filterValues = [].concat(...filterValues);
+      const numOfFeatures = filterValues.length;
 
       // 指定された学習モデルにより予測を実行
       const predictedClass = (
@@ -668,16 +690,21 @@ export class MlService {
       }
 
       // 全ツイートフィルタの結果から分類のための変数 (説明変数) を抽出
-      const filterValues = this.getFilterValuesByFilterResults(filterResults);
-      const numOfFeatures = filterValues.length;
+      let filterValues = this.getFilterValuesByFilterResults(filterResults);
 
       // 説明変数を Z-score normalization で正規化
       const normalizationConstants = mlModel.normalizationConstants;
       for (let column = 0, l = filterValues.length; column < l; column++) {
         const normalizationConstant = normalizationConstants[column];
+        if (!normalizationConstant) continue;
         filterValues[column] =
           (filterValues[column] - normalizationConstant.meanOfValue) / normalizationConstant.stdOfValue;
       }
+
+      // 説明変数の配列をフラットへ
+      // (One Hot Encoding された説明変数は配列になっているので、フラットへ変換)
+      filterValues = [].concat(...filterValues);
+      const numOfFeatures = filterValues.length;
 
       // 指定された学習モデルにより予測を実行
       const predictedClass = (trainedModel.predict(tf.tensor2d(filterValues, [1, numOfFeatures])) as tf.Tensor)

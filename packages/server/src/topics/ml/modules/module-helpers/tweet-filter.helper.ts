@@ -71,4 +71,27 @@ export class TweetFilterHelper extends BaseHelper {
     }
     return keywordStrings;
   }
+
+  /**
+   * One Hot Encoding 化された値の取得
+   * (カテゴリカル変数)
+   * @param value 値
+   * @param maxValue 最大値
+   */
+  oneToHot(value: number, maxValue: number): number[] {
+    if (maxValue < value) {
+      throw new Error(`Invalid value... value = ${value}, maxValue = ${maxValue}`);
+    }
+
+    const oneToHot = [];
+    for (let i = 0; i <= maxValue; i++) {
+      if (value == i) {
+        oneToHot.push(1);
+      } else {
+        oneToHot.push(0);
+      }
+    }
+
+    return oneToHot;
+  }
 }

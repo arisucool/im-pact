@@ -10,6 +10,8 @@ import * as Jimp from 'jimp';
 import * as fs from 'fs';
 
 export default class FilterTfCgIllustImageClassification implements TweetFilter {
+  private MAX_CLASSIFIED_NUMBER = 3;
+
   // 機械学習モデルファイルのディレクトリパス
   // NOTE: https://github.com/arisucool/tf-cg-illust-classifier/tree/master/tfjs から取得したもの
   private modelDirPath: string = null;
@@ -164,7 +166,7 @@ export default class FilterTfCgIllustImageClassification implements TweetFilter 
       },
       value: {
         title: '添付画像の分類クラス',
-        value: classifiedNumber,
+        value: this.helper.oneToHot(classifiedNumber, this.MAX_CLASSIFIED_NUMBER),
       },
     };
   }

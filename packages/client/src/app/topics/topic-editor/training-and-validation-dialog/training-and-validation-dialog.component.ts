@@ -77,6 +77,52 @@ export class TrainingAndValidationDialogComponent implements OnInit {
     this.dialogRef.close();
   }
 
+  analyze() {
+    // ファイル名の postfix を取得
+    const filenamePostfix = new Date().getTime().toString();
+
+    // ベクトルTSVファイルを保存
+    this.saveAsFileByTsvData(`vectors-${filenamePostfix}.tsv`, this.validationResult.embedding.vectorsTsv);
+    // メタデータTSVファイルを保存
+    this.saveAsFileByTsvData(`metadata-${filenamePostfix}.tsv`, this.validationResult.embedding.metadatasTsv);
+
+    // メッセージを表示
+    this.snackBar
+      .open(
+        '2件のTSVファイルを出力しました。Embedding Projector にて [Load] ボタンをクリックし、読み込ませてください。',
+        'Embedding Projector へ',
+        {
+          duration: 15000,
+        },
+      )
+      .onAction()
+      .subscribe(() => {
+        // Embedding Projector を開く
+        const open = window.open();
+        open.opener = null;
+        open.location = 'https://projector.tensorflow.org/' as any;
+      });
+  }
+
+  saveAsFileByTsvData(filename: string, data: string): void {
+    const bom = new Uint8Array([0xef, 0xbb, 0xbf]);
+    const blob = new Blob([bom, data], { type: 'text/tab-separated-values' });
+    const url = window.URL.createObjectURL(blob);
+
+    // ファイルを保存
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+
+    // 解放
+    link.remove();
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 5000);
+  }
+
   protected async trainAndValidate() {
     // 値を初期化
     this.tweets = null;

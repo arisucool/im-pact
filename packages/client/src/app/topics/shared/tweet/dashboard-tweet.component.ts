@@ -222,7 +222,7 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
    * @param value ツイートフィルタの実行結果
    * @return 整形された文字列 (例: "0.10" or "1")
    */
-  convertFilterResultValueToString(value: number[] | string): string {
+  convertFilterResultValueToString(value: number[] | number): string {
     if (value instanceof Array) {
       // One Hot Coding された値 (カテゴリカル変数) ならば、文字列 (例: "0") にして返す
       const index = value.findIndex((val: number) => val === 1);
@@ -236,6 +236,6 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
     }
 
     // 小数ならば、小数点以下2桁の文字列 (例: "0.10") にして返す
-    return parseFloat(value).toFixed(2);
+    return value.toFixed(2);
   }
 }

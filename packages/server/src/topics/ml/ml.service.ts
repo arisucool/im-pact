@@ -15,6 +15,8 @@ import { CrawledTweet } from './entities/crawled-tweet.entity';
 import {
   TweetFilterResultWithMultiValues,
   TweetFilterResult,
+  TweetFilterResultSummaryWithEvidenceText,
+  TweetFilterResultSummaryWithEvidenceImages,
 } from './modules/tweet-filters/interfaces/tweet-filter.interface';
 
 @Injectable()
@@ -132,6 +134,7 @@ export class MlService {
       dto.topicKeywords,
       generatedDatasets.normalizationConstants,
       false,
+      true, // Embedding Projector のためのベクトルデータの出力を有効化
     );
     const scoreByTrainingTweets = resultOfTrainingTweets.score;
 
@@ -144,6 +147,7 @@ export class MlService {
       dto.topicKeywords,
       generatedDatasets.normalizationConstants,
       true,
+      false,
     );
     const scoreByTrainingTweetsExceptUnselect = resultOfTrainingTweetsExceptUnselect.score;
 
@@ -165,6 +169,10 @@ export class MlService {
         scoreByTrainingDataset: scoreByTrainingDataset,
         scoreByTrainingTweets: scoreByTrainingTweets,
         scoreByTrainingTweetsExceptUnselect: scoreByTrainingTweetsExceptUnselect,
+        embedding: {
+          vectorsTsv: this.getEmbeddingVectorsTsvByEmbedding(resultOfTrainingTweets.embedding),
+          metadatasTsv: this.getEmbeddingMetadatasTsvByEmbedding(resultOfTrainingTweets.embedding),
+        },
         classifiedTweets: resultOfTrainingTweets.tweets,
       },
     };
@@ -370,7 +378,7 @@ export class MlService {
       return [].concat(...dataRow);
     });
 
-    // 設営変数の数を取得
+    // 説明変数の数を取得
     // (NOTE:  生データセットの各行の最後の要素は、目的変数であるため、1つ減らす)
     let numOfFeatures = rawDataset[0].length - 1;
 
@@ -544,6 +552,7 @@ export class MlService {
    * @param topicKeywords トピックのキーワード  (実際に検索が行われるわけではない。ベイジアンフィルタ等で学習からキーワードを除いて精度を上げる場合などに使用される。)
    * @param normalizationConstants 分類時に説明変数を正規化するための情報
    * @param excludeUnselectedTweets お手本分類でユーザによって選択されなかったツイートを検証から除外するか
+   * @param enableDumpEmbedding 埋め込みデータの出力を行うか (Embedding Projector による分析用)
    * @return 検証および分類の結果
    */
   protected async validateByTrainingTweets(
@@ -554,7 +563,12 @@ export class MlService {
     topicKeywords: string[],
     normalizationConstants: NormalizationConstant[],
     excludeUnselectedTweets = false,
-  ): Promise<{ score: number; tweets: any[] }> {
+    enableDumpEmbedding = false,
+  ): Promise<{
+    score: number;
+    tweets: any[];
+    embedding: { vectors: number[][]; metadataColumns: string[]; metadatas: string[][] };
+  }> {
     // 検証するツイートを抽出
     let validationTweets: any[] = [];
     for (let tweet of tweets) {
@@ -568,8 +582,23 @@ export class MlService {
     }
 
     // 変数を初期化
-    let score = 0,
-      numOfTweets = validationTweets.length;
+    let score = 0;
+    const numOfTweets = validationTweets.length;
+
+    // 埋め込みデータの初期化 (Embedding Projector による分析用)
+    let embedding: {
+      vectors: number[][];
+      metadataColumns: string[];
+      metadatas: string[][];
+    } = null;
+
+    if (enableDumpEmbedding) {
+      embedding = {
+        vectors: [],
+        metadataColumns: [],
+        metadatas: [],
+      };
+    }
 
     // フィルタマネージャを初期化
     const filterManager = new TweetFilterManager(
@@ -609,23 +638,86 @@ export class MlService {
       const numOfFeatures = filterValues.length;
 
       // 指定された学習モデルにより予測を実行
-      const predictedClass = (
-        await (trainedModel.predict(tf.tensor2d(filterValues, [1, numOfFeatures])) as tf.Tensor).argMax(-1).data()
-      )[0];
+      const predictResult = trainedModel.predict(tf.tensor2d(filterValues, [1, numOfFeatures])) as tf.Tensor;
+      let predictResultVectors = null;
+      if (embedding) {
+        predictResultVectors = await predictResult.data();
+      }
+      const predictedClass = (await predictResult.argMax(-1).data())[0];
 
       // 予測した答えを追加
       validationTweets[i].predictedSelect = predictedClass == 1;
       // ツイートフィルタの実行結果を追加
       validationTweets[i].filtersResult = filterResults;
-      i++;
 
       // 予測した答えが正しいか判定
       const correctClass = tweet.selected ? 1 : 0;
+      const isCorrect = correctClass === predictedClass;
 
+      // 埋め込みデータの追加 (Embedding Projector による分析用)
+      if (embedding) {
+        // 埋め込みデータのベクトルを追加
+        const vectors = [];
+        for (let i = 0, l = predictResultVectors.length; i < l; i++) {
+          vectors.push(predictResultVectors[i]);
+        }
+        embedding.vectors.push(vectors);
+
+        // 埋め込みデータのメタデータのカラム名を追加
+        if (embedding.metadataColumns.length === 0) {
+          embedding.metadataColumns = ['Is correct', 'Correct class', 'Predicted class'];
+          // 各ツイートフィルタの値 (説明変数) の名前
+          for (const result of filterResults) {
+            const filterName =
+              10 < result.filterName.length ? result.filterName.substring(0, 7) + '...' : result.filterName;
+            embedding.metadataColumns.push(filterName + '/evidence');
+
+            for (const key of Object.keys(result.result.values)) {
+              const columnName = 17 < key.length ? key.substring(0, 14) + '...' : key;
+              embedding.metadataColumns.push(filterName + '/' + columnName);
+            }
+          }
+        }
+
+        // 埋め込みデータのメタデータを初期化
+        const metadata = [];
+
+        // 埋め込みデータのメタデータ - 予測した答えが正しいか否か
+        metadata.push(isCorrect);
+
+        // 埋め込みデータのメタデータ - お手本分類における選択状況
+        metadata.push(tweet.selected ? 'accept' : 'reject');
+
+        // 埋め込みデータのメタデータ - ディープラーニング分類器による選択状況
+        metadata.push(predictedClass == 1 ? 'accept' : 'reject');
+
+        // 埋め込みデータのメタデータ - 各ツイートフィルタ (説明変数)
+        for (const result of filterResults) {
+          let evidence = 'N/A';
+          if (
+            (result.result.summary as TweetFilterResultSummaryWithEvidenceImages).evidenceImageUrls &&
+            1 <= (result.result.summary as TweetFilterResultSummaryWithEvidenceImages).evidenceImageUrls.length
+          ) {
+            evidence = (result.result.summary as TweetFilterResultSummaryWithEvidenceImages).evidenceImageUrls[0];
+          } else if ((result.result.summary as TweetFilterResultSummaryWithEvidenceText).evidenceText) {
+            evidence = (result.result.summary as TweetFilterResultSummaryWithEvidenceText).evidenceText;
+          }
+          metadata.push(evidence.replace(/\n/g, ''));
+
+          for (const key of Object.keys(result.result.values)) {
+            metadata.push(this.convertFilterResultValueToString(result.result.values[key].value));
+          }
+        }
+
+        // 埋め込みデータのメタデータを追加
+        embedding.metadatas.push(metadata);
+      }
+
+      // 次へ
       console.log(
         `[MlService] validateByTrainingTweets - tweet = ${tweet.idStr}, predictedClass = ${predictedClass}, correctClass = ${correctClass}`,
       );
-      const isCorrect = correctClass === predictedClass;
+      i++;
       if (!isCorrect) {
         // 不正解ならば、次へ
         continue;
@@ -638,6 +730,7 @@ export class MlService {
     return {
       score: Math.ceil(score),
       tweets: validationTweets,
+      embedding: embedding,
     };
   }
 
@@ -721,5 +814,67 @@ export class MlService {
     }
 
     return tweets;
+  }
+
+  /**
+   * 指定された埋め込みデータによるベクトルTSVの生成 (Embedding Projector による分析用)
+   */
+  getEmbeddingVectorsTsvByEmbedding(embedding: {
+    vectors: number[][];
+    metadataColumns: string[];
+    metadatas: string[][];
+  }): string {
+    if (!embedding || !embedding.vectors) {
+      return null;
+    }
+
+    let tsv = String();
+    for (let row = 0, rows = embedding.vectors.length; row < rows; row++) {
+      tsv += embedding.vectors[row].join('\t') + '\r\n';
+    }
+
+    return tsv;
+  }
+
+  /**
+   * 指定された埋め込みデータによるメタデータTSVの生成 (Embedding Projector による分析用)
+   */
+  getEmbeddingMetadatasTsvByEmbedding(embedding: {
+    vectors: number[][];
+    metadataColumns: string[];
+    metadatas: string[][];
+  }): string {
+    if (!embedding || !embedding.metadataColumns) {
+      return null;
+    }
+
+    let tsv = embedding.metadataColumns.join('\t') + '\r\n';
+    for (let row = 0, rows = embedding.metadatas.length; row < rows; row++) {
+      tsv += embedding.metadatas[row].join('\t') + '\r\n';
+    }
+
+    return tsv;
+  }
+
+  /**
+   * 指定されたツイートフィルタの実行結果からの文字列の取得
+   * @param value ツイートフィルタの実行結果
+   * @return 整形された文字列 (例: "0.1000" or "1")
+   */
+  convertFilterResultValueToString(value: number[] | number): string {
+    if (value instanceof Array) {
+      // One Hot Coding された値 (カテゴリカル変数) ならば、文字列 (例: "0") にして返す
+      const index = value.findIndex((val: number) => val === 1);
+      if (index === -1) return '-';
+      return String(index);
+    }
+
+    if (Number.isInteger(value)) {
+      // 整数ならば、そのまま文字列 (例: "100") にして返す
+      return String(value);
+    }
+
+    // 小数ならば、小数点以下4桁の文字列 (例: "0.1000") にして返す
+    return value.toFixed(4);
   }
 }

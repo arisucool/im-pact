@@ -133,38 +133,45 @@ export class MlService {
       dto.filters,
       dto.topicKeywords,
       generatedDatasets.normalizationConstants,
-      false,
       true, // Embedding Projector のためのベクトルデータの出力を有効化
     );
     const scoreByTrainingTweets = resultOfTrainingTweets.score;
 
-    // お手本分類の結果のうち、選択済みのツイートのみによる検証を実行
-    const resultOfTrainingTweetsExceptUnselect = await this.validateByTrainingTweets(
-      trainedModel,
-      trainingTweets,
-      numOfFeatures,
-      dto.filters,
-      dto.topicKeywords,
-      generatedDatasets.normalizationConstants,
-      true,
-      false,
+    // お手本分類の結果のうち、選択済みのツイートのみのスコアを算出
+    let numOfTrainingTweetsExceptUnselect = 0;
+    let scoreByTrainingTweetsExceptUnselect = 0;
+    for (const tweet of resultOfTrainingTweets.tweets) {
+      if (!tweet.selected) continue;
+      numOfTrainingTweetsExceptUnselect++;
+    }
+    for (const tweet of resultOfTrainingTweets.tweets) {
+      if (!tweet.selected || tweet.selected != tweet.predictedSelect) {
+        continue;
+      }
+      scoreByTrainingTweetsExceptUnselect += 100 / numOfTrainingTweetsExceptUnselect;
+    }
+    scoreByTrainingTweetsExceptUnselect = Math.ceil(scoreByTrainingTweetsExceptUnselect);
+
+    // 総合スコアを算出
+    const score = Math.min(
+      scoreByValidationDataset,
+      scoreByTrainingDataset,
+      scoreByTrainingTweets,
+      scoreByTrainingTweetsExceptUnselect,
     );
-    const scoreByTrainingTweetsExceptUnselect = resultOfTrainingTweetsExceptUnselect.score;
 
     // 結果を返す
-    Logger.log('Done', 'MlService/trainAndValidate');
+    Logger.log(
+      `Done... score = ${score} (ValidationDataset = ${scoreByValidationDataset}, TrainingDataset = ${scoreByTrainingDataset}, TrainingTweets = ${scoreByTrainingTweets}, TrainingTweetsExceptUnselect = ${scoreByTrainingTweetsExceptUnselect})`,
+      'MlService/trainAndValidate',
+    );
     const result = {
       trainingResult: {
         logs: trainingResult.logs,
         trainedModelId: trainedModelId,
       },
       validationResult: {
-        score: Math.min(
-          scoreByValidationDataset,
-          scoreByTrainingDataset,
-          scoreByTrainingTweets,
-          scoreByTrainingTweetsExceptUnselect,
-        ),
+        score: score,
         scoreByValidationDataset: scoreByValidationDataset,
         scoreByTrainingDataset: scoreByTrainingDataset,
         scoreByTrainingTweets: scoreByTrainingTweets,
@@ -562,28 +569,15 @@ export class MlService {
     filterSettings: any[],
     topicKeywords: string[],
     normalizationConstants: NormalizationConstant[],
-    excludeUnselectedTweets = false,
     enableDumpEmbedding = false,
   ): Promise<{
     score: number;
     tweets: any[];
     embedding: { vectors: number[][]; metadataColumns: string[]; metadatas: string[][] };
   }> {
-    // 検証するツイートを抽出
-    let validationTweets: any[] = [];
-    for (let tweet of tweets) {
-      if (excludeUnselectedTweets) {
-        if (tweet.selected) {
-          validationTweets.push(tweet);
-        }
-      } else {
-        validationTweets.push(tweet);
-      }
-    }
-
     // 変数を初期化
     let score = 0;
-    const numOfTweets = validationTweets.length;
+    const numOfTweets = tweets.length;
 
     // 埋め込みデータの初期化 (Embedding Projector による分析用)
     let embedding: {
@@ -611,7 +605,7 @@ export class MlService {
 
     // 検証するツイートを反復
     let i = 0;
-    for (let tweet of validationTweets) {
+    for (let tweet of tweets) {
       // 当該ツイートに対して全ツイートフィルタを実行
       let filterResults: { filterName: string; result: TweetFilterResultWithMultiValues }[] = [];
       try {
@@ -646,9 +640,9 @@ export class MlService {
       const predictedClass = (await predictResult.argMax(-1).data())[0];
 
       // 予測した答えを追加
-      validationTweets[i].predictedSelect = predictedClass == 1;
+      tweets[i].predictedSelect = predictedClass == 1;
       // ツイートフィルタの実行結果を追加
-      validationTweets[i].filtersResult = filterResults;
+      tweets[i].filtersResult = filterResults;
 
       // 予測した答えが正しいか判定
       const correctClass = tweet.selected ? 1 : 0;
@@ -729,7 +723,7 @@ export class MlService {
 
     return {
       score: Math.ceil(score),
-      tweets: validationTweets,
+      tweets: tweets,
       embedding: embedding,
     };
   }

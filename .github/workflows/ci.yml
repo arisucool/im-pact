@@ -64,6 +64,10 @@ jobs:
           done
           volumes="$(IFS=" "; echo "${volumes[*]}")"
 
+          # Prevent dependency container timeouts
+          export DOCKER_CLIENT_TIMEOUT=120
+          export COMPOSE_HTTP_TIMEOUT=120
+
           echo "Executing... docker-compose run --volume=${volumes} app npm run test-ci"
           docker-compose run ${volumes} app npm run test-ci | tee /tmp/npm-test-log.txt
 

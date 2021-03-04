@@ -242,7 +242,7 @@ export class CleanerConsumer {
 
     const removeItems = await this.classifiedTweetRepository.find({
       where: {
-        predictedClass: 'accept',
+        predictedClass: predictedClass,
       },
       order: {
         crawledAt: 'ASC',

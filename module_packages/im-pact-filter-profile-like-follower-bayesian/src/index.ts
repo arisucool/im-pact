@@ -112,21 +112,29 @@ export default class FilterTweetAuthorProfileLikeFollowerBayesian
       return;
     }
 
+    // トピックのキーワードの取得
+    const topicKeywords = await this.helper.getTopicKeywords();
+
     // ベイジアンフィルタの初期化
     const tokenizer = (text: string) => {
-      const cleanText = text
+      let cleanText = text
         // 先頭のRTを消去
         .replace(/^RT /g, '')
         // URLを消去
         .replace(/https?:\/\/[\w!?/\+\-_~=;\.,*&@#$%\(\)\'\[\]]+/g, '')
+        // うまく処理できないワードを変換
+        .replace(/(IDOLM@STER|ＩＤＯＬＭ＠ＳＴＥＲ)/g, 'IDOLMASTER')
         // メンションを消去
         .replace(/@[a-zA-Z0-9_\-]+/g, '')
-        // ハッシュタグからハッシュ記号を消去
-        .replace(/[#＃]([Ａ-Ｚａ-ｚA-Za-z一-鿆0-9０-９ぁ-ヶｦ-ﾟー]+)/g, '$1')
         // 参照文字を消去
         .replace(/&amp;/g, '&')
+        // 全角英数字を半角へ変換
+        .replace(/[Ａ-Ｚａ-ｚ０-９]/g, str => {
+          return String.fromCharCode(str.charCodeAt(0) - 0xfee0);
+        })
+        // ハッシュタグからハッシュ記号を消去
+        .replace(/[#＃]([A-Za-z一-鿆0-9ぁ-ヶｦ-ﾟー]+)/g, '$1')
         // その他のうまく処理できないワードを消去
-        .replace(/IDOLM@STER/g, 'IDOLMASTER')
         .replace(/(Master|MASTER)[\+＋]* (Lv|LV)[ \.][\d]{2,2}/g, '')
         .replace(/\d{1,2}:\d{1,2}/g, '')
         .replace(/\d{1,2}時\d{1,2}分/g, '')
@@ -134,9 +142,16 @@ export default class FilterTweetAuthorProfileLikeFollowerBayesian
         .replace(
           /["#$%&\'\\\\()*+,-./:;<=>?@\\^_`{|}~「」｢｣〔〕“”〈〉『』【】＆＊・（）()＄$＃#＠@。.、,？?！!｀＋￥％↑↓←→]/g,
           ' ',
-        )
-        // 連続の空白を除去
-        .replace(/\s{2,}/g, ' ');
+        );
+
+      // 検索ワードを独立させる
+      // (例: "名探偵橘ありす" -> "名探偵 橘 ありす")
+      for (const keyword of topicKeywords) {
+        cleanText = cleanText.replace(new RegExp(keyword, 'g'), ' $1 ');
+      }
+
+      // 連続した空白を単一の空白へ変換
+      cleanText = cleanText.replace(/\s{2,}/g, ' ');
 
       return this.segmenter.segment(cleanText);
     };

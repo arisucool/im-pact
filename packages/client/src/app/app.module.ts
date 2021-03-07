@@ -32,11 +32,12 @@ import { HomeComponent } from './home/home.component';
 import { ApiModule, Configuration } from '../.api-client';
 import { HttpClientModule } from '@angular/common/http';
 import { LoginComponent } from './auth/login.component';
+import { LicenseComponent } from './licenses/license.component';
 import { TopicsModule } from './topics/topics.module';
 import { ConfirmDialogComponent } from './shared/confirm-dialog.component';
 
 @NgModule({
-  declarations: [AppComponent, HomeComponent, LoginComponent, ConfirmDialogComponent],
+  declarations: [AppComponent, HomeComponent, LoginComponent, LicenseComponent, ConfirmDialogComponent],
   imports: [
     BrowserModule,
     FormsModule,

@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 import { HomeComponent } from './home/home.component';
 import { LoginComponent } from './auth/login.component';
+import { LicenseComponent } from './licenses/license.component';
 import { AuthGuard } from './guard/auth.guard';
 
 const routes: Routes = [
@@ -10,12 +11,14 @@ const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
   // ログイン
   { path: 'auth/login', component: LoginComponent },
+  // ライセンス情報
+  { path: 'licenses', component: LicenseComponent },
   // トピックス
   { path: 'topics', loadChildren: './topics/topics.module#TopicsModule' },
 ];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class AppRoutingModule { }
+export class AppRoutingModule {}

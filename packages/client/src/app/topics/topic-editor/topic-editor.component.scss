@@ -1,6 +1,7 @@
 // フォーム
 
 form {
+  margin-top: 1rem;
   padding-bottom: 5rem;
 }
 
@@ -9,6 +10,11 @@ form mat-form-field {
 }
 
 // セクション
+
+.mat-card > :first-child,
+.mat-card-content > :first-child {
+  margin-top: 1.5rem;
+}
 
 section {
   margin-bottom: 3rem;

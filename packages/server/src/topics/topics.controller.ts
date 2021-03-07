@@ -21,6 +21,7 @@ import { UpdateTopicDto } from './dto/update-topic.dto';
 import { ClassifiedTweet } from './ml/entities/classified-tweet.entity';
 import { RejectTweetDto } from './dto/reject-tweet.dto';
 import { AcceptTweetDto } from './dto/accept-tweet.dto';
+import { CrawledTweet } from './ml/entities/crawled-tweet.entity';
 
 @Controller('topics')
 @ApiBearerAuth()
@@ -128,8 +129,8 @@ export class TopicsController {
   // ドキュメントの設定
   @ApiOperation({ summary: '指定されたトピックにおけるツイートの収集' })
   @ApiOkResponse({
-    type: ClassifiedTweet,
-    description: 'ログ',
+    type: CrawledTweet,
+    description: '収集結果',
     isArray: true,
   })
   @ApiUnauthorizedResponse({
@@ -137,6 +138,27 @@ export class TopicsController {
   })
   crawl(@Param('id') id: number) {
     return this.topicsService.addJobToCrawlerQueue(id);
+  }
+
+  /**
+   * 指定されたトピックにおけるツイートの分類
+   * @param id トピックID
+   */
+  @Post(':id/classify')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  // ドキュメントの設定
+  @ApiOperation({ summary: '指定されたトピックにおける収集済みツイートの分類' })
+  @ApiOkResponse({
+    type: ClassifiedTweet,
+    description: '分類結果',
+    isArray: true,
+  })
+  @ApiUnauthorizedResponse({
+    description: '権限のエラー',
+  })
+  classify(@Param('id') id: number) {
+    return this.topicsService.addJobToClassifierQueue(id);
   }
 
   /**

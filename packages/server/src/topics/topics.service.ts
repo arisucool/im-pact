@@ -26,6 +26,8 @@ export class TopicsService {
     private crawledTweetRepository: Repository<CrawledTweet>,
     @InjectRepository(ClassifiedTweet)
     private classifiedTweetRepository: Repository<ClassifiedTweet>,
+    @InjectQueue('classifier')
+    private readonly classifierQueue: Queue,
     @InjectQueue('crawler')
     private readonly crawlQueue: Queue,
     @InjectQueue('retrainer')
@@ -66,6 +68,17 @@ export class TopicsService {
       });
       Logger.debug(
         `Add job to crawler queue... (Topic ID: ${topicId}, Job ID: ${job.id})`,
+        'TopicsService/onIntervalMinutes',
+      );
+    }
+
+    // 各トピックの分類ジョブをキューへ追加
+    for (const topicId of topicIds) {
+      const job = await this.classifierQueue.add({
+        topicId: topicId,
+      });
+      Logger.debug(
+        `Add job to classifier queue... (Topic ID: ${topicId}, Job ID: ${job.id})`,
         'TopicsService/onIntervalMinutes',
       );
     }
@@ -235,6 +248,21 @@ export class TopicsService {
     // crawler キューへジョブを追加
     // (crawler.consumer.ts にて順次処理される)
     const job = await this.crawlQueue.add({
+      topicId: id,
+    });
+
+    // ジョブIDを返す
+    return job.id.toString();
+  }
+
+  /**
+   * 指定されたトピックにおける収集済みツイートの分類 (キューに対するジョブ追加)
+   * @param id トピックID
+   */
+  async addJobToClassifierQueue(id: number): Promise<string> {
+    // classifier キューへジョブを追加
+    // (classifier.consumer.ts にて順次処理される)
+    const job = await this.classifierQueue.add({
       topicId: id,
     });
 

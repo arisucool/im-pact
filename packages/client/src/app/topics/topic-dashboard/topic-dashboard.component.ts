@@ -385,6 +385,15 @@ export class TopicDashboardComponent implements OnInit {
   }
 
   /**
+   * トピックの分類実行
+   * (サーバ上のキューへ追加される)
+   */
+  async execClassification() {
+    await this.topicsService.execClassification(this.topic.id);
+    this.snackBar.open('分類の実行をリクエストしました。しばらくお待ちください...', null, { duration: 1500 });
+  }
+
+  /**
    * トピックのアクション実行
    * (サーバ上のキューへ追加される)
    */

@@ -17,7 +17,7 @@ import { TweetFilterService } from './ml/tweet-filter.service';
 
 // 自動クリーンアップ - 完了またはエラーにより終了したジョブを残す数
 // (この数を超えた古いジョブは削除される)
-const AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT = 3;
+const AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT = 2;
 const AUTO_CLEANUP_NUM_OF_FINISHED_TRAINER_QUEUE_JOBS_LEFT = 2;
 
 /**
@@ -32,6 +32,13 @@ const AUTO_CLEANUP_NUM_OF_FINISHED_TRAINER_QUEUE_JOBS_LEFT = 2;
     // (但し、キューの処理は、別アプリケーション (../worker-app.module.ts) にて行われる)
     BullModule.registerQueue({
       name: 'action',
+      defaultJobOptions: {
+        removeOnComplete: AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT,
+        removeOnFail: AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT,
+      },
+    }),
+    BullModule.registerQueue({
+      name: 'classifier',
       defaultJobOptions: {
         removeOnComplete: AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT,
         removeOnFail: AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT,

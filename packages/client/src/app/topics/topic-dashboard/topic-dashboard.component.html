@@ -225,6 +225,19 @@
     </button>
     <!---->
 
+    <!-- トピック分類ボタン -->
+    <button
+      (click)="execClassification()"
+      class="topic-classify-btn"
+      mat-mini-fab
+      type="button"
+      color="primary"
+      matTooltip="クリックすると、このトピックの収集済みツイートに対し、分類を今すぐ行います"
+    >
+      <mat-icon>filter_alt</mat-icon>
+    </button>
+    <!---->
+
     <!-- トピックアクション実行ボタン -->
     <button
       (click)="execActions()"

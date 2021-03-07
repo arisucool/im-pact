@@ -15,6 +15,7 @@ import { TrainerConsumer } from './worker-consumers/trainer.consumer';
 import { RetrainerConsumer } from './worker-consumers/retrainer.consumer';
 import { CleanerConsumer } from './worker-consumers/cleaner.consumer';
 import { TweetFilterService } from './ml/tweet-filter.service';
+import { ClassifierConsumer } from './worker-consumers/classifier.consumer';
 
 /**
  * トピックに関するキュー処理のためのモジュール
@@ -26,6 +27,9 @@ import { TweetFilterService } from './ml/tweet-filter.service';
     // キューを登録
     BullModule.registerQueue({
       name: 'action', // ./worker-consumers/action.consumer.ts にて処理される
+    }),
+    BullModule.registerQueue({
+      name: 'classifier', // ./worker-consumers/classifier.consumer.ts にて処理される
     }),
     BullModule.registerQueue({
       name: 'cleaner', // ./worker-consumers/cleaner.consumer.ts にて処理される
@@ -48,6 +52,7 @@ import { TweetFilterService } from './ml/tweet-filter.service';
     TweetFilterService,
     // キューを処理するための Consumer
     ActionConsumer,
+    ClassifierConsumer,
     CleanerConsumer,
     CrawlerConsumer,
     TrainerConsumer,

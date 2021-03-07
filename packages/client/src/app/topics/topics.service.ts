@@ -153,6 +153,16 @@ export class TopicsService {
   }
 
   /**
+   * 指定されたトピックにおける収集済みツイートの分類の実行
+   * @param topicId トピックID
+   */
+  async execClassification(topicId: number): Promise<void> {
+    const jobId: number = (await this.api.topicsControllerClassify(topicId).toPromise()) as any;
+    // TODO: 完了を通知可能に
+    return null;
+  }
+
+  /**
    * 指定されたトピックにおける収集の実行
    * @param topicId トピックID
    */

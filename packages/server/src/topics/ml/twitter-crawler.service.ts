@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { GetExampleTweetsDto } from './dto/get-example-tweets.dto';
+import { CrawlExampleTweetsDto } from './dto/crawl-example-tweets.dto';
 import * as Twitter from 'twitter';
 import { SocialAccount } from '../../social-accounts/entities/social-account.entity';
 import { Repository } from 'typeorm';
@@ -18,7 +18,7 @@ export class TwitterCrawlerService {
 
   /**
    * ツイートの収集
-   * @param socialAccountId 検索に使用するソーシャルアカウントのID
+   * @param socialAccountId 収集に使用するソーシャルアカウントのID
    * @param searchCondition 検索条件
    * @param numOfMinTweets  最低ツイート数 (このツイート数が満たされるまでループする)
    * @return 保存されたツイートの配列
@@ -59,14 +59,10 @@ export class TwitterCrawlerService {
 
   /**
    * 学習用サンプルツイートの取得
-   * (未収集ならば、収集もあわせて行う)
    * @param dto 学習用サンプルツイートを収集するための情報
    * @return 検索結果のツイート配列
    */
-  async getExampleTweets(dto: GetExampleTweetsDto): Promise<any[]> {
-    const NUM_OF_REQUIRED_TWEETS = 1000;
-
-    // 既に収集されたツイートを検索
+  async getExampleTweets(dto: CrawlExampleTweetsDto): Promise<any[]> {
     let crawledTweets = [];
     for (const keyword of dto.searchCondition.keywords) {
       const query = this.getQueryBySearchConditionAndKeyword(dto.searchCondition, keyword);
@@ -76,23 +72,18 @@ export class TwitterCrawlerService {
       });
       crawledTweets = crawledTweets.concat(tweets);
     }
-    if (NUM_OF_REQUIRED_TWEETS <= crawledTweets.length) {
-      // 既に指定件数以上あれば、そのまま返す
-      return crawledTweets;
+
+    // 投稿日時の新しい順へソート
+    crawledTweets = crawledTweets.sort((a: CrawledTweet, b: CrawledTweet) => {
+      return a.createdAt.getTime() > b.createdAt.getTime() ? -1 : 1;
+    });
+
+    // 一定件数まで減らす
+    const NUM_OF_REQUESTED_TWEETS = 1000;
+    if (NUM_OF_REQUESTED_TWEETS < crawledTweets.length) {
+      crawledTweets = crawledTweets.slice(0, NUM_OF_REQUESTED_TWEETS);
     }
 
-    // 新たにツイートを収集
-    await this.crawlTweets(dto.crawlSocialAccountId, dto.searchCondition, NUM_OF_REQUIRED_TWEETS);
-
-    // 収集されたツイートを再検索
-    crawledTweets = [];
-    for (const keyword of dto.searchCondition.keywords) {
-      const query = this.getQueryBySearchConditionAndKeyword(dto.searchCondition, keyword);
-      crawledTweets = await this.crawledTweetRepository.find({
-        crawlQuery: query,
-        crawlLanguage: dto.searchCondition.language,
-      });
-    }
     return crawledTweets;
   }
 

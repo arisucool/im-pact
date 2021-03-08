@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 import {
   DefaultService,
-  GetExampleTweetsDto,
   CreateTopicDto,
   UpdateTopicDto,
   TrainAndValidateDto,
   TweetFilterRetrainingRequest,
+  CrawledTweet,
+  CrawlExampleTweetsDto,
 } from 'src/.api-client';
 import * as CryptoJS from 'crypto-js';
 
@@ -241,11 +242,32 @@ export class TopicsService {
       minReplies?: number;
       images?: boolean;
     },
-  ) {
-    const dto: GetExampleTweetsDto = {
+  ): Promise<CrawledTweet[]> {
+    // 収集を実行
+    const dto: CrawlExampleTweetsDto = {
       crawlSocialAccountId: crawlSocialAccountId,
       searchCondition: searchCondition,
     };
+    const jobId: number = (await this.api.mlControllerCrawlExampleTweets(dto).toPromise()) as any;
+
+    // 収集完了まで待機
+    await new Promise((resolve, reject) => {
+      const interval = setInterval(() => {
+        this.api
+          .mlControllerGetStatusOfCrawlExampleTweets(jobId)
+          .toPromise()
+          .then((jobStatus: any) => {
+            if (jobStatus.status !== 'completed' && jobStatus.status !== 'failed') return;
+            clearInterval(interval);
+            if (jobStatus.status === 'failed') {
+              return reject(jobStatus.errorMessage);
+            }
+            resolve(null);
+          });
+      }, 5000);
+    });
+
+    // 収集されたツイートを取得
     const tweets: any[] = await this.api.mlControllerGetExampleTweets(dto).toPromise();
     for (const tweet of tweets) {
       tweet.selected = false;

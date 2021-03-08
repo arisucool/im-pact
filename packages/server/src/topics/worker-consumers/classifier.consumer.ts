@@ -10,7 +10,7 @@ import { ClassifiedTweet } from '../ml/entities/classified-tweet.entity';
 import { Topic } from '../entities/topic.entity';
 
 /**
- * 分類 (ディープラーニング分類器) に関するキューを処理するためのコンシューマ
+ * ツイートの分類 (ディープラーニング分類器) に関するキューを処理するためのコンシューマ
  */
 @Processor('classifier')
 export class ClassifierConsumer {

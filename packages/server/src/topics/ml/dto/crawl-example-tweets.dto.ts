@@ -5,7 +5,7 @@ import { SearchCondition } from 'src/topics/entities/search-condition.interface'
 /**
  * 学習用サンプルツイートを収集するための情報
  */
-export class GetExampleTweetsDto {
+export class CrawlExampleTweetsDto {
   @ApiProperty({
     description: '収集に使用するソーシャルアカウントのID',
     example: 1,

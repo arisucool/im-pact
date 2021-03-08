@@ -18,7 +18,7 @@ import { TweetFilterService } from './ml/tweet-filter.service';
 // 自動クリーンアップ - 完了またはエラーにより終了したジョブを残す数
 // (この数を超えた古いジョブは削除される)
 const AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT = 2;
-const AUTO_CLEANUP_NUM_OF_FINISHED_TRAINER_QUEUE_JOBS_LEFT = 2;
+const AUTO_CLEANUP_NUM_OF_FINISHED_TRAINER_QUEUE_JOBS_LEFT = 1;
 
 /**
  * トピックに関する WebAPI を構築するためのモジュール
@@ -68,8 +68,8 @@ const AUTO_CLEANUP_NUM_OF_FINISHED_TRAINER_QUEUE_JOBS_LEFT = 2;
     BullModule.registerQueue({
       name: 'retrainer',
       defaultJobOptions: {
-        removeOnComplete: AUTO_CLEANUP_NUM_OF_FINISHED_TRAINER_QUEUE_JOBS_LEFT,
-        removeOnFail: AUTO_CLEANUP_NUM_OF_FINISHED_TRAINER_QUEUE_JOBS_LEFT,
+        removeOnComplete: AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT,
+        removeOnFail: AUTO_CLEANUP_NUM_OF_FINISHED_QUEUE_JOBS_LEFT,
       },
     }),
   ],

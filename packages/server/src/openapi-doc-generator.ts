@@ -36,6 +36,11 @@ async function bootstrap(): Promise<void> {
     useValue: {},
   });
 
+  mockedProviders.push({
+    provide: 'BullQueue_crawler',
+    useValue: {},
+  });
+
   // アプリケーションのインスタンスを生成
   const testingModule = await Test.createTestingModule({
     controllers: controllers,

@@ -14,40 +14,59 @@ export type TweetFilterSettingsDefinition =
   | TweetFilterSettingsDefinitionSelectItem;
 
 /**
+ * ツイートフィルタを再学習させるための選択肢
+ */
+export interface TweetFilterChoice {
+  /**
+   * 選択肢のキー
+   * (例: 'accept')
+   */
+  key: string;
+
+  /**
+   * 選択肢のアイコン
+   * (例: 'thumb_up')
+   */
+  icon: string;
+
+  /**
+   * 選択肢の表示名
+   * (例: '承認')
+   */
+  title: string;
+
+  /**
+   * 選択肢の色
+   * (例: '#f44336')
+   */
+  color: string;
+}
+
+/**
  * ツイートフィルタの実行結果のサマリ (要約文および根拠)
  */
-export interface TweetFilterResultSummaryWithEvidenceText {
+export interface TweetFilterResultSummary {
   /**
-   * 実行結果の要約文 (ツイートフィルタの実行結果を人間にとってわかりやすく表現したもの)
-   * (例: 'このツイート本文は承認である'、'このプロフィールは拒否である'、...)
+   * 実行結果の根拠の名称
+   * (例: 'ツイートの本文'、'投稿者のプロフィール'、...)
    */
-  summaryText: string;
+  evidenceTitle: string;
 
   /**
-   * 実行結果を要約した値
-   * (再トレーニングのときに使用される)
+   * 実行結果の選択肢
+   * (例: 'accept')
    */
-  summaryValue?: string;
+  resultChoiceKey?: 'accept' | 'reject' | string;
+}
 
+export interface TweetFilterResultSummaryWithEvidenceText extends TweetFilterResultSummary {
   /**
    * 実行結果の根拠 (実行結果の元となったツイート本文など)
    */
   evidenceText: string;
 }
 
-export interface TweetFilterResultSummaryWithEvidenceImages {
-  /**
-   * 実行結果の要約文 (ツイートフィルタの実行結果を人間にとってわかりやすく表現したもの)
-   * (例: 'この添付画像は承認である'、'この添付画像は恐らく拒否である'、'この添付画像は公式画像である'、...)
-   */
-  summaryText: string;
-
-  /**
-   * 実行結果を要約した値
-   * (再トレーニングのときに使用される)
-   */
-  summaryValue?: string;
-
+export interface TweetFilterResultSummaryWithEvidenceImages extends TweetFilterResultSummary {
   /**
    * 実行結果の根拠 (実行結果の元となった画像URL)
    */
@@ -78,6 +97,11 @@ export interface TweetFilterResult {
      */
     value: number | number[];
   };
+
+  /**
+   * 再学習のための選択肢
+   */
+  choices?: 'acceptOrReject' | TweetFilterChoice[];
 }
 
 /**
@@ -109,6 +133,11 @@ export interface TweetFilterResultWithMultiValues {
       value: number | number[];
     };
   };
+
+  /**
+   * 再学習のための選択肢
+   */
+  choices?: 'acceptOrReject' | TweetFilterChoice[];
 }
 
 /**

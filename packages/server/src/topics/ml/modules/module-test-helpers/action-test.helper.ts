@@ -48,7 +48,8 @@ export class ActionTestHelper {
           filterName: 'Test',
           result: {
             summary: {
-              summaryText: 'This tweet text should be accepted',
+              resultChoiceKey: 'accept',
+              evidenceTitle: 'ツイートの本文',
               evidenceText: 'テスト #arisucool',
             },
             values: {
@@ -61,6 +62,7 @@ export class ActionTestHelper {
                 value: 0.2,
               },
             },
+            choices: 'acceptOrReject',
           },
         },
       ],

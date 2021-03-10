@@ -23,17 +23,17 @@ export class TweetFilterRetrainingRequest {
     example: 'accept',
     type: String,
   })
-  previousSummaryValue: string;
+  previousChoiceKey: string;
 
   /**
-   * 判定結果に対するユーザの評価
+   * ユーザによる判定結果
    */
   @ApiProperty({
-    description: '判定結果に対するユーザの評価',
-    example: true,
-    type: Boolean,
+    description: 'ユーザによる判定結果',
+    example: 'reject',
+    type: String,
   })
-  isCorrect: boolean;
+  correctChoiceKey: string;
 }
 
 /**

@@ -36,7 +36,7 @@ export default class FilterTweetSensitiveFlag implements TweetFilter {
     // フィルタ結果を返す
     return {
       summary: {
-        summaryText: possiblySensitive ? 'このツイートはセンシティブである' : 'このツイートはセンシティブでない',
+        evidenceTitle: 'ツイートのセンシティブフラグ',
         evidenceText: possiblySensitive.toString(),
       },
       value: {

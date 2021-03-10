@@ -61,15 +61,14 @@ export default class FilterTweetAuthorProfileLikeFollowerBayesian
     const probabilityOfReject = resultOfReject ? resultOfReject.propability : 0.0;
 
     // フィルタ結果のサマリを生成
-    const summaryValue = probabilityOfReject < probabilityOfAccept ? 'accept' : 'reject';
-    const summaryText = summaryValue === 'accept' ? 'このプロフィールは承認である' : 'このプロフィールは拒否である';
+    const resultChoiceKey = probabilityOfReject < probabilityOfAccept ? 'accept' : 'reject';
 
     // フィルタ結果を返す
     return {
       summary: {
-        summaryText: summaryText,
-        summaryValue: summaryValue,
+        evidenceTitle: 'プロフィール',
         evidenceText: userProfile,
+        resultChoiceKey: resultChoiceKey,
       },
       values: {
         probabilityOfAccept: {
@@ -81,6 +80,7 @@ export default class FilterTweetAuthorProfileLikeFollowerBayesian
           value: probabilityOfReject,
         },
       },
+      choices: 'acceptOrReject',
     };
   }
 
@@ -95,12 +95,9 @@ export default class FilterTweetAuthorProfileLikeFollowerBayesian
     await this.helper.getStorage().set('storedClassifier', this.bayes.toJson());
   }
 
-  async retrain(tweet: Tweet, previousSummaryValue: string, isCorrect: boolean): Promise<void> {
-    if (previousSummaryValue === 'accept') {
-      this.train(tweet, isCorrect);
-    } else if (previousSummaryValue === 'reject') {
-      this.train(tweet, !isCorrect);
-    }
+  async retrain(tweet: Tweet, previousChoiceKey: string, correctChoiceKey: string): Promise<void> {
+    console.log('retrain', correctChoiceKey);
+    this.train(tweet, correctChoiceKey === 'accept' ? true : false);
   }
 
   async batch() {

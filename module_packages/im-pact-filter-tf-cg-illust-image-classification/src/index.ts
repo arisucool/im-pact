@@ -144,24 +144,9 @@ export default class FilterTfCgIllustImageClassification implements TweetFilter 
    * @retrun ツイートフィルタの実行結果
    */
   private getFilterResultByClassifiedNumber(classifiedNumber: number, tweetImageUrls: string[]): TweetFilterResult {
-    let summaryText = null;
-    switch (classifiedNumber) {
-      case 1:
-        summaryText = 'この画像はその他である';
-        break;
-      case 2:
-        summaryText = 'この画像は公式イラストである';
-        break;
-      case 3:
-        summaryText = 'この画像はファンイラストである';
-        break;
-      default:
-        summaryText = '画像の分類エラー';
-    }
-
     return {
       summary: {
-        summaryText: summaryText,
+        evidenceTitle: 'ツイートの添付画像',
         evidenceImageUrls: tweetImageUrls,
       },
       value: {

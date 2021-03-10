@@ -152,14 +152,14 @@ export class TweetFilterManager {
       throw new Error('retrainTweet - This filter was not supported retrain... ${filter.filterName}');
     }
 
-    if (retrainingReq.previousSummaryValue === null) {
-      throw new Error('retrainTweet - previousSummaryValue is null');
-    } else if (retrainingReq.isCorrect === null) {
-      throw new Error('retrainTweet - isCorrect is null');
+    if (retrainingReq.previousChoiceKey === null) {
+      throw new Error('retrainTweet - previousChoiceKey is null');
+    } else if (retrainingReq.correctChoiceKey === null) {
+      throw new Error('retrainTweet - correctChoiceKey is null');
     }
 
     // 当該ツイートフィルタで再トレーニングを実行
-    await mod.retrain(tweet, retrainingReq.previousSummaryValue, retrainingReq.isCorrect);
+    await mod.retrain(tweet, retrainingReq.previousChoiceKey, retrainingReq.correctChoiceKey);
   }
 
   /**
@@ -207,11 +207,30 @@ export class TweetFilterManager {
 
       // 当該ツイートフィルタでフィルタを実行
       let filterResult = await mod.filter(tweet);
+
+      // 実行結果を整形
+      if (filterResult.choices && filterResult.choices === 'acceptOrReject') {
+        filterResult.choices = [
+          {
+            key: 'reject',
+            title: '拒否',
+            color: '#f44336',
+            icon: 'thumb_down',
+          },
+          {
+            key: 'accept',
+            title: '承認',
+            color: '#01579b',
+            icon: 'thumb_up',
+          },
+        ];
+      }
       if ((filterResult as TweetFilterResult).value) {
         // 値が単一ならば、形式を変換
         const filterResult_: TweetFilterResultWithMultiValues = {
           summary: filterResult.summary,
           values: {},
+          choices: filterResult.choices,
         };
         filterResult_.values[filter.filterName] = {
           title: (filterResult as TweetFilterResult).value.title,

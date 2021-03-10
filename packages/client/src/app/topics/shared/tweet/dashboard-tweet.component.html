@@ -190,15 +190,7 @@
       ツイートフィルタの<br />&nbsp;再トレーニング &nbsp;
       <span style="font-size: 0.8rem;">({{ currentFilterTrainingIndex + 1 }}/{{ filterTrainings.length }})</span>
     </p>
-    <p
-      class="summary-text"
-      [ngClass]="{
-        accept: currentFilterTraining.filterResult.result.summary.summaryValue == 'accept',
-        reject: currentFilterTraining.filterResult.result.summary.summaryValue == 'reject'
-      }"
-    >
-      " {{ currentFilterTraining.filterResult.result.summary.summaryText }} "<br />
-    </p>
+    <p class="summary-text">この{{ currentFilterTraining.filterResult.result.summary.evidenceTitle }}は？</p>
     <p
       class="evidence"
       *ngIf="currentFilterTraining.filterResult.result.summary.evidenceText"
@@ -206,45 +198,73 @@
     >
       {{ currentFilterTraining.filterResult.result.summary.evidenceText }}
     </p>
-    <p class="filter-name" matTooltip="{{ currentFilterTraining.filter.description }}">
-      {{ currentFilterTraining.filterName }}
-    </p>
-    <div class="retraining-menu">
+    <div class="retraining-selection">
       <ul>
-        <!-- ツイートフィルタの不正解ボタン -->
-        <li style="margin-bottom: 1rem;">
+        <!-- 再トレーニングのための選択肢ボタン -->
+        <li *ngFor="let choice of currentFilterTraining.filterResult.result.choices">
+          <!-- 予測された答えの場合 -->
           <button
-            (click)="onTweetFilterRetrainingAnswered(false)"
+            (click)="onTweetFilterRetrainingAnswered(choice.key)"
+            type="button"
+            mat-flat-button
+            *ngIf="
+              currentFilterTraining.filterResult.result.summary.resultChoiceKey &&
+              currentFilterTraining.filterResult.result.summary.resultChoiceKey == choice.key
+            "
+            style="background-color: {{ choice.color }}; color: #ffffff;"
+            matTooltip="この{{ currentFilterTraining.filterResult.result.summary.evidenceTitle }}を {{
+              choice.title
+            }} として、 {{ currentFilterTraining.filterName }} に再トレーニングさせます"
+          >
+            <mat-icon style="font-size: 1.2rem; margin-top: 4px;">{{ choice.icon }}</mat-icon>
+            &nbsp;{{ choice.title }}
+          </button>
+          <!---->
+
+          <!-- 予測された答えでない場合 -->
+          <button
+            (click)="onTweetFilterRetrainingAnswered(choice.key)"
             type="button"
             mat-stroked-button
-            color="warn"
-            matTooltip="この判断は間違いだったとして、ツイートフィルタ {{
-              currentFilterTraining.filter.filterName
-            }} に再トレーニングさせます"
+            *ngIf="
+              !currentFilterTraining.filterResult.result.summary.resultChoiceKey ||
+              currentFilterTraining.filterResult.result.summary.resultChoiceKey != choice.key
+            "
+            style="color: {{ choice.color }};"
+            matTooltip="この{{ currentFilterTraining.filterResult.result.summary.evidenceTitle }}を {{
+              choice.title
+            }} として、 {{ currentFilterTraining.filterName }} に再トレーニングさせます"
           >
-            <mat-icon style="font-size: 1.2rem; margin-top: 4px;">thumb_down</mat-icon>
-            &nbsp;間違い
+            <mat-icon style="font-size: 1.2rem; margin-top: 4px;">{{ choice.icon }}</mat-icon>
+            &nbsp;{{ choice.title }}
           </button>
-        </li>
-        <!---->
-        <!-- ツイートフィルタの正解ボタン -->
-        <li style="margin-bottom: 1rem;">
-          <button
-            (click)="onTweetFilterRetrainingAnswered(true)"
-            type="button"
-            mat-stroked-button
-            color="primary"
-            matTooltip="この判断は正しかったとして、ツイートフィルタ {{
-              currentFilterTraining.filter.filterName
-            }} に再トレーニングさせます"
-          >
-            <mat-icon style="font-size: 1.2rem; margin-top: 3px;">thumb_up</mat-icon>
-            &nbsp;正しい
-          </button>
+          <!---->
+
+          <!-- 予測された答えかどうかの表示 -->
+          <p class="selection-by-filter" style="color: {{ choice.color }}">
+            <span
+              *ngIf="
+                currentFilterTraining.filterResult.result.summary.resultChoiceKey &&
+                currentFilterTraining.filterResult.result.summary.resultChoiceKey == choice.key
+              "
+              >予測された答え</span
+            >
+            <span
+              *ngIf="
+                !currentFilterTraining.filterResult.result.summary.resultChoiceKey ||
+                currentFilterTraining.filterResult.result.summary.resultChoiceKey != choice.key
+              "
+              ><br
+            /></span>
+          </p>
+          <!---->
         </li>
         <!---->
       </ul>
     </div>
+    <p class="filter-name" matTooltip="{{ currentFilterTraining.filter.description }}">
+      by {{ currentFilterTraining.filterName }}
+    </p>
     <!---->
   </mat-card-content>
   <!---->

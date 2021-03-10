@@ -12,6 +12,35 @@ export interface TweetFilter {
 }
 
 /**
+ * ツイートフィルタを再学習させるための選択肢
+ */
+export interface TweetFilterChoice {
+  /**
+   * 選択肢のキー
+   * (例: 'accept')
+   */
+  key: string;
+
+  /**
+   * 選択肢のアイコン
+   * (例: 'thumb_up')
+   */
+  icon: string;
+
+  /**
+   * 選択肢の表示名
+   * (例: '承認')
+   */
+  title: string;
+
+  /**
+   * 選択肢の色
+   * (例: '#f44336')
+   */
+  color: string;
+}
+
+/**
  * ツイートフィルタの実行結果
  */
 export interface TweetFilterResult {
@@ -22,10 +51,10 @@ export interface TweetFilterResult {
      * 実行結果のサマリ
      */
     summary: {
-      summaryText: string;
-      summaryValue?: string;
+      evidenceTitle: string;
       evidenceImageUrls?: string[];
       evidenceText?: string;
+      resultChoiceKey?: string;
     };
 
     /**
@@ -48,6 +77,11 @@ export interface TweetFilterResult {
         value: number;
       };
     };
+
+    /**
+     * 再学習のための選択肢
+     */
+    choices: TweetFilterChoice[];
   };
 }
 

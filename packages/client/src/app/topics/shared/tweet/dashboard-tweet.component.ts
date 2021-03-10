@@ -172,16 +172,16 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
   }
 
   /**
-   * ツイートフィルタの再トレーニングのための正解ボタン・不正解ボタンがクリックされたときに呼び出されるリスナ
-   * @param isCorrect ツイートフィルタの判断が正しかったか否か
+   * ツイートフィルタの再トレーニングのための選択肢ボタンがクリックされたときに呼び出されるリスナ
+   * @param choiceKey 選択肢のキー
    */
-  onTweetFilterRetrainingAnswered(isCorrect: boolean): void {
+  onTweetFilterRetrainingAnswered(choiceKey: string): void {
     // ユーザによって入力された情報を保持
     this.emitData.filterRetrainingRequests.push({
       filterId: this.filterTrainings[this.currentFilterTrainingIndex].filterResult.filterId,
-      isCorrect: isCorrect,
-      previousSummaryValue: this.filterTrainings[this.currentFilterTrainingIndex].filterResult.result.summary
-        .summaryValue,
+      previousChoiceKey: this.filterTrainings[this.currentFilterTrainingIndex].filterResult.result.summary
+        .resultChoiceKey,
+      correctChoiceKey: choiceKey,
     });
 
     // 次のツイートフィルタが存在するかを確認

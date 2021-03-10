@@ -123,15 +123,14 @@ export default class FilterTweetTextBayesian implements TweetFilter, TweetFilter
     const probabilityOfReject = resultOfReject ? resultOfReject.propability : 0.0;
 
     // フィルタ結果のサマリを生成
-    const summaryValue = probabilityOfReject < probabilityOfAccept ? 'accept' : 'reject';
-    const summaryText = summaryValue === 'accept' ? 'このツイート本文は承認である' : 'このツイート本文は拒否である';
+    const resultChoiceKey = probabilityOfReject < probabilityOfAccept ? 'accept' : 'reject';
 
     // フィルタ結果を返す
     return {
       summary: {
-        summaryText: summaryText,
-        summaryValue: summaryValue,
+        evidenceTitle: 'ツイート本文',
         evidenceText: tweet.text,
+        resultChoiceKey: resultChoiceKey,
       },
       values: {
         probabilityOfAccept: {
@@ -143,6 +142,7 @@ export default class FilterTweetTextBayesian implements TweetFilter, TweetFilter
           value: probabilityOfReject,
         },
       },
+      choices: 'acceptOrReject',
     };
   }
 
@@ -165,12 +165,8 @@ export default class FilterTweetTextBayesian implements TweetFilter, TweetFilter
     await this.helper.getStorage().set('storedClassifier', this.bayes.toJson());
   }
 
-  async retrain(tweet: Tweet, previousSummaryValue: string, isCorrect: boolean): Promise<void> {
-    console.log('retrain', previousSummaryValue, isCorrect);
-    if (previousSummaryValue === 'accept') {
-      this.train(tweet, isCorrect);
-    } else if (previousSummaryValue === 'reject') {
-      this.train(tweet, !isCorrect);
-    }
+  async retrain(tweet: Tweet, previousChoiceKey: string, correctChoiceKey: string): Promise<void> {
+    console.log('retrain', correctChoiceKey);
+    this.train(tweet, correctChoiceKey === 'accept' ? true : false);
   }
 }

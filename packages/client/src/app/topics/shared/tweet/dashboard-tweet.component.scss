@@ -99,22 +99,23 @@
 // ツイートフィルタ 再トレーニング領域
 
 .filter-retraining-container {
+  // キャプション
+
   .caption {
     text-align: left;
     margin-left: 1.5rem;
   }
 
+  // サマリテキスト
+
   .summary-text {
-    font-size: 0.9rem;
-    margin: 1rem 1rem 0.2rem 1rem;
-    text-align: center;
+    color: #222;
+    font-size: 0.8rem;
+    margin: 1.1rem 1rem 0.4rem 1.6rem;
+    text-align: left;
   }
-  .summary-text.accept {
-    color: #01579b;
-  }
-  .summary-text.reject {
-    color: #f44336;
-  }
+
+  // ツイートフィルタによる判断の根拠
 
   .evidence {
     background-color: #ffffff;
@@ -129,16 +130,9 @@
     text-align: center;
   }
 
-  .filter-name {
-    color: #777;
-    font-size: 0.8rem;
-    font-style: italic;
-    text-align: center;
-    margin: 0.5rem 1rem 0.2rem 1.5rem;
-    text-align: right;
-  }
+  // 再トレーニングの選択肢
 
-  .retraining-menu {
+  .retraining-selection {
     position: relative;
 
     ul {
@@ -148,20 +142,42 @@
       margin: 0 0 0 0;
       width: 100%;
 
-      // メニュー項目
+      // 選択肢
 
       li {
         box-sizing: border-box;
         display: inline-block;
-        margin: 0.5rem 2% 0.5rem 2%;
+        margin: 0.5rem 2% 0 2%;
         width: 46%;
 
         // ボタン
+
         button {
           width: 100%;
           overflow: hidden;
         }
+
+        // 予測結果表示
+
+        .selection-by-filter {
+          font-size: 0.7rem;
+          width: 100%;
+          text-align: center;
+          margin: 0.15rem 0 0 0;
+          color: #555;
+          font-style: italic;
+        }
       }
     }
+  }
+
+  // ツイートフィルタ名
+
+  .filter-name {
+    color: #777;
+    font-size: 0.7rem;
+    font-style: italic;
+    margin: 0.4rem 1rem 0.2rem 1.5rem;
+    text-align: center;
   }
 }

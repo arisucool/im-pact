@@ -1,8 +1,12 @@
 # 生成されたファイル
 npm-debug.log
 node_modules/
-packages/**/node_modules/
 packages/**/dist/
+packages/**/node_modules/
+packages/**/test-report/
+module_packages/**/dist/
+module_packages/**/node_modules/
+module_packages/**/test-report/
 
 # バージョン管理システム関連のファイル
 .git/

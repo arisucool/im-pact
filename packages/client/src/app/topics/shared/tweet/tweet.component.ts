@@ -8,23 +8,21 @@ import { Component, OnInit, Input, EventEmitter, Output } from '@angular/core';
 export class TweetComponent implements OnInit {
   @Input() tweet: any;
   @Input() mode: any;
-  @Output() onSelectChangedEvent = new EventEmitter<boolean>();
+  @Output() selectChangedEvent = new EventEmitter<boolean>();
   isSelected = null;
 
   // ツイートのデータ
   rawData: any;
-
-  constructor() {}
 
   ngOnInit(): void {
     if (!this.mode) {
       this.mode = this.tweet.predictedSelect !== undefined ? 'validation' : 'training';
     }
 
-    if (this.mode == 'dashboard') {
+    if (this.mode === 'dashboard') {
       this.isSelected = this.tweet.predictedClass === 'accept' ? true : false;
     } else {
-      this.isSelected = this.tweet.selected != undefined ? this.tweet.selected : false;
+      this.isSelected = this.tweet.selected !== undefined ? this.tweet.selected : false;
     }
 
     this.rawData = JSON.parse(this.tweet.rawJSONData);
@@ -35,6 +33,6 @@ export class TweetComponent implements OnInit {
    */
   onClassificationButtonClicked() {
     this.isSelected = !this.isSelected;
-    this.onSelectChangedEvent.emit(this.isSelected);
+    this.selectChangedEvent.emit(this.isSelected);
   }
 }

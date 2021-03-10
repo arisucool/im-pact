@@ -18,6 +18,10 @@ import { MatTabGroup } from '@angular/material/tabs';
   styleUrls: ['./topic-editor.component.scss'],
 })
 export class TopicEditorComponent implements OnInit {
+  // ツイートフィルタのパターンのタブを制御するための変数
+  @ViewChild(MatTabGroup) tabGroup: MatTabGroup;
+  currentShowingFilterPatternTabIndex = 0;
+
   // トピック
   topic = {
     // トピックID
@@ -32,8 +36,16 @@ export class TopicEditorComponent implements OnInit {
     },
     // 収集スケジュール
     crawlSchedule: null,
-    // キーワード
-    keywords: [],
+    // 検索条件
+    searchCondition: {
+      keywords: [],
+      language: null,
+      to: null,
+      minFaves: 0,
+      minRetweets: 0,
+      minReplies: 0,
+      images: false,
+    },
     // ツイートフィルタ
     filterPatterns: [
       {
@@ -64,10 +76,6 @@ export class TopicEditorComponent implements OnInit {
 
 # 【例】 7月31日の毎時0分・15分・30分・45分に実行する場合
 0,15,30,45  *  31  7  *`;
-
-  // ツイートフィルタのパターンのタブを制御するための変数
-  @ViewChild(MatTabGroup) tabGroup: MatTabGroup;
-  currentShowingFilterPatternTabIndex = 0;
 
   constructor(
     private topicsService: TopicsService,
@@ -127,7 +135,7 @@ export class TopicEditorComponent implements OnInit {
   async save() {
     console.log(this.topic);
     try {
-      let savedTopic: any = await this.topicsService.saveTopic(this.topic);
+      const savedTopic: any = await this.topicsService.saveTopic(this.topic);
 
       this.snackBar.open('トピックを保存しました', null, { duration: 1000 });
 
@@ -142,21 +150,24 @@ export class TopicEditorComponent implements OnInit {
    * キーワードの追加
    */
   addKeyword(): void {
-    if (1 <= this.topic.keywords.length && this.topic.keywords[this.topic.keywords.length - 1].length === 0) {
+    if (
+      1 <= this.topic.searchCondition.keywords.length &&
+      this.topic.searchCondition.keywords[this.topic.searchCondition.keywords.length - 1].length === 0
+    ) {
       // 既に空のキーワードがあれば何もしない
       return;
     }
-    this.topic.keywords.push('');
+    this.topic.searchCondition.keywords.push('');
   }
 
   /**
    * 指定されたキーワードの削除
    * @param delete_keyword キーワード
    */
-  deleteKeyword(delete_keyword: string): void {
-    this.topic.keywords = this.topic.keywords.filter(keyword => {
-      return keyword !== delete_keyword;
-    });
+  deleteKeyword(deleteKeyword: string): void {
+    this.topic.searchCondition.keywords = this.topic.searchCondition.keywords.filter(
+      keyword => keyword !== deleteKeyword,
+    );
   }
 
   /**
@@ -164,7 +175,7 @@ export class TopicEditorComponent implements OnInit {
    */
   async openTrainerDialog() {
     // 設定状況を確認
-    if (this.topic.keywords.length <= 0 || this.topic.keywords[0].length <= 0) {
+    if (this.topic.searchCondition.keywords.length <= 0 || this.topic.searchCondition.keywords[0].length <= 0) {
       // キーワードが一つも登録されていなければ、エラーを表示
       this.snackBar.open('エラー: キーワードが一つも追加されていません。先にキーワードの追加を行ってください。', null, {
         duration: 5000,
@@ -176,7 +187,7 @@ export class TopicEditorComponent implements OnInit {
     const dialogRef = this.dialog.open(TrainerDialogComponent, {
       data: {
         crawlSocialAccountId: this.topic.crawlSocialAccount.id,
-        keywords: this.topic.keywords,
+        searchCondition: this.topic.searchCondition,
         // 前回のお手本分類の結果 (お手本分類の編集を行う場合のために)
         tweets: this.topic.trainingTweets || null,
       },
@@ -194,12 +205,12 @@ export class TopicEditorComponent implements OnInit {
    * @param filterPatternIndex 使用するツイートフィルタパターンのインデックス番号
    */
   async openTrainingAndValidationDialog(filterPatternIndex: number = null) {
-    if (filterPatternIndex == -1) {
+    if (filterPatternIndex === -1) {
       filterPatternIndex = this.topic.enabledFilterPatternIndex;
     }
 
     // 設定状況を確認
-    if (this.topic.keywords.length <= 0 || this.topic.keywords[0].length <= 0) {
+    if (this.topic.searchCondition.keywords.length <= 0 || this.topic.searchCondition.keywords[0].length <= 0) {
       // キーワードが一つも登録されていなければ、エラーを表示
       this.snackBar.open('エラー: キーワードが一つも追加されていません。先にキーワードの追加を行ってください。', null, {
         duration: 5000,
@@ -228,7 +239,7 @@ export class TopicEditorComponent implements OnInit {
       data: {
         topicId: this.topic.id,
         filters: this.topic.filterPatterns[filterPatternIndex].filters,
-        topicKeywords: this.topic.keywords,
+        topicKeywords: this.topic.searchCondition.keywords,
         trainingTweets: this.topic.trainingTweets,
       },
     });
@@ -262,7 +273,7 @@ export class TopicEditorComponent implements OnInit {
     let filterPatternNameNumber = 0;
     for (const pattern of this.topic.filterPatterns) {
       if (pattern.name.match(/(\d+)$/)) {
-        const num = parseInt(RegExp.$1);
+        const num = parseInt(RegExp.$1, 10);
         if (filterPatternNameNumber < num) {
           filterPatternNameNumber = num;
         }
@@ -290,7 +301,7 @@ export class TopicEditorComponent implements OnInit {
    * 全ツイートフィルタパターンのスコアのリセット
    */
   cleanScoreOfAllTweetFilterPatterns(): void {
-    for (let filterPattern of this.topic.filterPatterns) {
+    for (const filterPattern of this.topic.filterPatterns) {
       filterPattern.score = null;
     }
   }
@@ -327,7 +338,8 @@ export class TopicEditorComponent implements OnInit {
 
         // 現在表示中のツイートフィルタパターンへ当該ツイートフィルタを追加
         this.topic.filterPatterns[this.currentShowingFilterPatternTabIndex].filters.push({
-          name: choosedFilterName,
+          id: this.topicsService.getTweetFilterUid(choosedFilterName),
+          filterName: choosedFilterName,
           settings: {},
         });
 
@@ -351,7 +363,8 @@ export class TopicEditorComponent implements OnInit {
         if (!choosedActionName) return;
         // トピックへ追加
         this.topic.actions.push({
-          name: choosedActionName,
+          id: this.topicsService.getActionUid(choosedActionName),
+          actionName: choosedActionName,
           settings: {},
         });
       });
@@ -394,7 +407,7 @@ export class TopicEditorComponent implements OnInit {
    * @param actionIndex アクションのインデックス番号
    */
   moveActionToUp(actionIndex: number) {
-    if (actionIndex == 0 || this.topic.actions.length == 0) return;
+    if (actionIndex === 0 || this.topic.actions.length === 0) return;
 
     this.topic.actions.splice(actionIndex - 1, 2, this.topic.actions[actionIndex], this.topic.actions[actionIndex - 1]);
   }
@@ -403,7 +416,7 @@ export class TopicEditorComponent implements OnInit {
    * @param actionIndex アクションのインデックス番号
    */
   moveActionToDown(actionIndex: number) {
-    if (this.topic.actions.length - 1 == actionIndex || this.topic.actions.length == 0) return;
+    if (this.topic.actions.length - 1 === actionIndex || this.topic.actions.length === 0) return;
     actionIndex += 1;
     this.topic.actions.splice(actionIndex - 1, 2, this.topic.actions[actionIndex], this.topic.actions[actionIndex - 1]);
   }
@@ -426,7 +439,7 @@ export class TopicEditorComponent implements OnInit {
    * @param index
    * @param obj
    */
-  myTrackBy(index: number, obj: any): any {
+  myTrackBy(index: number): any {
     return index;
   }
 }

@@ -6,7 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
 import { Repository, MoreThanOrEqual } from 'typeorm';
 import { CrawledTweet } from '../ml/entities/crawled-tweet.entity';
-import { ExtractedTweet } from '../ml/entities/extracted-tweet.entity';
+import { ClassifiedTweet } from '../ml/entities/classified-tweet.entity';
 import { Topic } from '../entities/topic.entity';
 import { TrainAndValidateDto } from '../ml/dto/train-and-validate.dto';
 import { ReTrainDto } from '../ml/dto/retrain.dto';

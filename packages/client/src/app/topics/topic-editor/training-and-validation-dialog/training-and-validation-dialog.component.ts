@@ -27,7 +27,7 @@ export class TrainingAndValidationDialogComponent implements OnInit {
   tweets: any[];
 
   // 絞り込みモード
-  filterMode: string = 'all';
+  filterMode = 'all';
 
   // トピックID
   topicId: number;
@@ -60,7 +60,7 @@ export class TrainingAndValidationDialogComponent implements OnInit {
     await this.trainAndValidate();
   }
 
-  async onChangeFilterMode(event: any) {
+  async onChangeFilterMode() {
     this.loadTweets();
   }
 
@@ -77,6 +77,52 @@ export class TrainingAndValidationDialogComponent implements OnInit {
     this.dialogRef.close();
   }
 
+  analyze() {
+    // ファイル名の postfix を取得
+    const filenamePostfix = new Date().getTime().toString();
+
+    // ベクトルTSVファイルを保存
+    this.saveAsFileByTsvData(`vectors-${filenamePostfix}.tsv`, this.validationResult.embedding.vectorsTsv);
+    // メタデータTSVファイルを保存
+    this.saveAsFileByTsvData(`metadata-${filenamePostfix}.tsv`, this.validationResult.embedding.metadatasTsv);
+
+    // メッセージを表示
+    this.snackBar
+      .open(
+        '2件のTSVファイルを出力しました。Embedding Projector にて [Load] ボタンをクリックし、読み込ませてください。',
+        'Embedding Projector へ',
+        {
+          duration: 15000,
+        },
+      )
+      .onAction()
+      .subscribe(() => {
+        // Embedding Projector を開く
+        const open = window.open();
+        open.opener = null;
+        open.location = 'https://projector.tensorflow.org/' as any;
+      });
+  }
+
+  saveAsFileByTsvData(filename: string, data: string): void {
+    const bom = new Uint8Array([0xef, 0xbb, 0xbf]);
+    const blob = new Blob([bom, data], { type: 'text/tab-separated-values' });
+    const url = window.URL.createObjectURL(blob);
+
+    // ファイルを保存
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+
+    // 解放
+    link.remove();
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 5000);
+  }
+
   protected async trainAndValidate() {
     // 値を初期化
     this.tweets = null;
@@ -87,8 +133,8 @@ export class TrainingAndValidationDialogComponent implements OnInit {
 
     // トレーニングおよび検証を実行
     this.status = 'AIがトレーニングしています...';
-    let trainingResult,
-      validationResult = null;
+    let trainingResult = null;
+    let validationResult = null;
     try {
       const result = await this.topicsService.trainAndValidate(
         this.topicId,
@@ -140,22 +186,16 @@ export class TrainingAndValidationDialogComponent implements OnInit {
     let tweets = this.validationResult.classifiedTweets;
 
     // 絞り込み
-    if (this.filterMode == 'correct') {
+    if (this.filterMode === 'correct') {
       // 正解ツイートのみならば
-      tweets = tweets.filter((tweet: any) => {
-        return tweet.predictedSelect === tweet.selected;
-      });
+      tweets = tweets.filter((tweet: any) => tweet.predictedSelect === tweet.selected);
     } else if (this.filterMode === 'incorrect') {
       // 不正解ツイートのみならば
-      tweets = tweets.filter((tweet: any) => {
-        return tweet.predictedSelect !== tweet.selected;
-      });
+      tweets = tweets.filter((tweet: any) => tweet.predictedSelect !== tweet.selected);
     }
 
     // リツイート数でソート
-    tweets = tweets.sort((a: any, b: any) => {
-      return b.crawledRetweetCount - a.crawledRetweetCount;
-    });
+    tweets = tweets.sort((a: any, b: any) => b.crawledRetweetCount - a.crawledRetweetCount);
 
     // ツイートの表示
     this.tweets = tweets;

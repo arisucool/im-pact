@@ -17,7 +17,7 @@ export class DialogService {
    * @param content 本文
    */
   async openConfirm(title: string, content: string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       // ダイアログを開く
       const dialogRef = this.dialog.open(ConfirmDialogComponent, {
         data: {

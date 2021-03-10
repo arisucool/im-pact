@@ -1,32 +1,22 @@
 import { Process, Processor } from '@nestjs/bull';
 import { Logger, BadRequestException } from '@nestjs/common';
-import { Job, DoneCallback } from 'bull';
-import { MlService } from '../ml/ml.service';
+import { Job } from 'bull';
 import { TwitterCrawlerService } from '../ml/twitter-crawler.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
-import { Repository, MoreThanOrEqual } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CrawledTweet } from '../ml/entities/crawled-tweet.entity';
-import { ExtractedTweet } from '../ml/entities/extracted-tweet.entity';
 import { Topic } from '../entities/topic.entity';
-
-export default function(job: Job, cb: DoneCallback) {
-  cb(null, 'It works');
-}
+import { CrawlExampleTweetsDto } from '../ml/dto/crawl-example-tweets.dto';
+import { SearchCondition } from '../entities/search-condition.interface';
 
 /**
- * 収集に関するキューを処理するためのコンシューマ
+ * ツイートの収集に関するキューを処理するためのコンシューマ
  */
 @Processor('crawler')
 export class CrawlerConsumer {
   constructor(
     @InjectRepository(Topic)
     private topicsRepository: Repository<Topic>,
-    @InjectRepository(CrawledTweet)
-    private crawledTweetRepository: Repository<CrawledTweet>,
-    @InjectRepository(ExtractedTweet)
-    private extractedTweetRepository: Repository<ExtractedTweet>,
-    private mlService: MlService,
     private twitterCrawlerService: TwitterCrawlerService,
   ) {}
 
@@ -36,11 +26,24 @@ export class CrawlerConsumer {
    * @param job ジョブ
    */
   @Process()
-  async execJob(job: Job<any>) {
+  async execJob(job: Job<any>): Promise<CrawledTweet[]> {
     Logger.debug(`Job starting... (ID: ${job.id})`, 'CrawlerConsumer/execJob');
-    const topicId = job.data.topicId;
     try {
-      const tweets = await this.crawl(topicId, job);
+      let tweets: CrawledTweet[] = [];
+
+      // ジョブのパラメータを確認
+      if (job.data.topicId) {
+        // 当該トピックのツイートを収集
+        const topicId = job.data.topicId;
+        tweets = await this.crawlTweetsByTopicId(topicId, job);
+      } else if ((job.data.dto as CrawlExampleTweetsDto) && job.data.dto.searchCondition) {
+        // お手本分類および学習用サンプルとしてツイートを収集
+        tweets = await this.crawlTweetsByGetExampleTweetsDto(job.data.dto as CrawlExampleTweetsDto, job);
+      } else {
+        throw new Error('Invalid job parameter');
+      }
+
+      // 完了
       Logger.debug(`Job completed... (ID: ${job.id})`, 'CrawlerConsumer/execJob');
       return tweets;
     } catch (e) {
@@ -50,12 +53,12 @@ export class CrawlerConsumer {
   }
 
   /**
-   * 指定されたトピックにおけるツイートの収集
+   * 指定されたトピックのためのツイートの収集
    * @param id トピックID
    * @param job ジョブ
-   * @return 分類されたツイートの配列
+   * @return 収集されたツイートの配列
    */
-  async crawl(id: number, job?: Job<any>): Promise<ExtractedTweet[]> {
+  async crawlTweetsByTopicId(id: number, job?: Job<any>): Promise<CrawledTweet[]> {
     // トピックを取得
     const topic: Topic = await this.topicsRepository.findOne(id, {
       relations: ['crawlSocialAccount'],
@@ -64,148 +67,56 @@ export class CrawlerConsumer {
       throw new BadRequestException('Invalid item');
     }
 
-    // フィルタパターンを取得
-    if (!topic.filterPatterns[topic.enabledFilterPatternIndex]) {
-      throw new BadRequestException('Invalid filter pattern');
-    }
-    const filterPatern = JSON.parse(topic.filterPatterns[topic.enabledFilterPatternIndex]);
-    const filterSettings = filterPatern.filters;
-
-    // 学習モデルを取得
-    const trainedModelId = filterPatern.trainedModelId;
-    if (!trainedModelId) {
-      throw new BadRequestException('trainedModel not registered');
-    }
-
     // ジョブのステータスを更新
     job?.progress(10);
 
-    // 未分類ツイートを取得 (併せて収集も実行)
-    let unextractedTweets = await this.getUnextractedTweets(topic);
-
-    // ジョブのステータスを更新
-    job?.progress(50);
-
-    // 未分類ツイートを分類
-    const predictedTweets = await this.mlService.predictTweets(
-      trainedModelId,
-      unextractedTweets,
-      filterSettings,
-      topic.keywords,
-    );
-
-    // ジョブのステータスを更新
-    job?.progress(75);
-
-    // 分類されたツイートを反復
-    const savedTweets = [],
-      savedTweetIds = [];
-    for (const tweet of predictedTweets) {
-      // 当該ツイートを登録
-      console.log(`[TopicService] crawl - Inserting extracted tweets... ${tweet.idStr}`);
-      tweet.predictedClass = tweet.predictedSelect ? 'accept' : 'reject';
-      tweet.filtersResult = tweet.filtersResult;
-      tweet.topic = topic.id;
-      try {
-        savedTweets.push(await this.extractedTweetRepository.save(tweet));
-        savedTweetIds.push(tweet.idStr);
-      } catch (e) {
-        console.warn(e);
-      }
-    }
-
-    // ジョブの収集済みツイート情報を更新
-    if (job) job.update({ topicId: topic.id, tweetIds: savedTweetIds });
+    // 収集を実行
+    const numOfKeywords = topic.searchCondition.keywords.length;
+    const numOfMinTweets = 150 * numOfKeywords;
+    const crawledTweets = await this.crawlTweets(topic.crawlSocialAccount.id, topic.searchCondition, numOfMinTweets);
 
     // ジョブのステータスを更新
     job?.progress(100);
 
-    // 分類されたツイートを返す
-    console.log(`[TopicService] crawl - Done`);
-    return savedTweets;
+    // 完了
+    Logger.log(`Crawled ${crawledTweets.length} tweets`, 'CrawlerConsumer/crawlTweets');
+    return crawledTweets;
   }
 
   /**
-   * 指定されたトピックにおける未分類ツイートの取得・収集
-   * @param topic トピック
-   * @param numOfRequestTweets 要求するツイート件数
-   * @return 未分類ツイートの配列
+   * 指定された条件におけるツイートの収集
+   * (トピックが未保存の状態でも収集が行える。学習用サンプルを収集するために使用する。)
+   * @param dto 学習用サンプルツイートを収集するための情報
+   * @param job ジョブ
+   * @return 収集されたツイートの配列
    */
-  private async getUnextractedTweets(topic: Topic, numOfRequestTweets: number = 50): Promise<CrawledTweet[]> {
-    // トピックのキーワードを反復
-    for (const keyword of topic.keywords) {
-      // 当該キーワードにてツイートを収集
-      const NUM_OF_MAX_CRAWL_TWEETS_OF_EACH_KEYWORD = numOfRequestTweets * 3; // TODO: API のコール制限を考えつつ調整できるようにしたい
-      await this.twitterCrawlerService.crawlTweets(
-        topic.crawlSocialAccount.id,
-        keyword,
-        NUM_OF_MAX_CRAWL_TWEETS_OF_EACH_KEYWORD,
-      );
-    }
+  async crawlTweetsByGetExampleTweetsDto(dto: CrawlExampleTweetsDto, job: Job<any>): Promise<CrawledTweet[]> {
+    const NUM_OF_REQUIRED_TWEETS = 1000;
 
-    // トピックのキーワードを再度反復
-    let tweets = [];
-    for (const keyword of topic.keywords) {
-      // 当該キーワードにて最近収集されたツイートを検索
-      const NUM_OF_MAX_FIND_TWEETS_OF_EACH_KEYWORD = numOfRequestTweets * 10;
-      const RANGE_OF_HOURS_TO_FIND = 24; // 24時間前に収集したツイートまで
+    // 収集を実行
+    const crawledTweets = await this.crawlTweets(dto.crawlSocialAccountId, dto.searchCondition, NUM_OF_REQUIRED_TWEETS);
 
-      let whereCrawledAt = new Date();
-      whereCrawledAt.setHours(RANGE_OF_HOURS_TO_FIND * -1);
+    // ジョブのステータスを更新
+    job?.progress(100);
 
-      const tweetsOfThisKeyword = await this.crawledTweetRepository.find({
-        where: {
-          crawlKeyword: keyword,
-          crawledAt: MoreThanOrEqual(whereCrawledAt),
-        },
-        order: {
-          crawledAt: 'ASC',
-        },
-        //take: NUM_OF_MAX_FIND_TWEETS_OF_EACH_KEYWORD,
-      });
-      tweets = tweets.concat(tweetsOfThisKeyword);
-    }
+    // 完了
+    Logger.log(`Crawled ${crawledTweets.length} tweets for example tweets`, 'CrawlerConsumer/crawlExampleTweets');
+    return crawledTweets;
+  }
 
-    console.log(`[TopicService] getUnextractedTweets - Found tweets... ${tweets.length}`);
-
-    // 最近収集されたツイートから分類済みのものを除く
-    await Promise.all(
-      tweets.map(
-        async tweet =>
-          (
-            await this.extractedTweetRepository.find({
-              where: {
-                topic: topic.id,
-                idStr: tweet.idStr,
-              },
-            })
-          ).length,
-      ),
-    ).then(
-      findResults =>
-        (tweets = tweets.filter((tweet, index) => {
-          if (0 < findResults[index]) return false;
-          return true;
-        })),
-    );
-
-    // 重複を除去
-    tweets = tweets.filter((item, i, self) => {
-      return (
-        self.findIndex(item_ => {
-          return item.idStr == item_.idStr;
-        }) === i
-      );
-    });
-
-    console.log(`[TopicService] getUnextractedTweets - Found unextracted tweets... ${tweets.length}`);
-
-    // 指定件数まで減らす
-    if (numOfRequestTweets < tweets.length) {
-      tweets = tweets.slice(0, numOfRequestTweets);
-    }
-
-    // 未分類のツイートを返す
-    return tweets;
+  /**
+   * 指定されたパラメータによるツイートの収集
+   * (収集されたツイートは、検索条件のキーワードなどに基づいて保存される。従って、トピックに関係なく使用できる。)
+   * @param socialAccountId 収集に使用するソーシャルアカウントのID
+   * @param searchCondition 検索条件
+   * @param numOfMinTweets  最低ツイート数 (このツイート数が満たされるまでループする)
+   * @return 保存されたツイートの配列
+   */
+  protected async crawlTweets(
+    crawlSocialAccountId: number,
+    searchCondition: SearchCondition,
+    numOfMinTweets: number,
+  ): Promise<CrawledTweet[]> {
+    return await this.twitterCrawlerService.crawlTweets(crawlSocialAccountId, searchCondition, numOfMinTweets);
   }
 }

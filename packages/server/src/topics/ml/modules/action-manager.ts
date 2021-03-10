@@ -1,15 +1,13 @@
 import * as fs from 'fs';
 import { Repository } from 'typeorm';
 import * as ModuleStorageEntity from '../entities/module-storage.entity';
-import { ActionHelper } from './action-helper';
+import { ActionHelper } from './module-helpers/action.helper';
 import { ModuleStorage } from './module-storage';
+import { ModuleTweetStorage } from './module-tweet-storage';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
-import { ExtractedTweet } from '../entities/extracted-tweet.entity';
-import { Action } from './actions/interfaces/action.interface';
-import { ApprovalOnDiscordAction } from './actions/approval-on-discord-action';
-import { PostToDiscordAction } from './actions/post-to-discord-action';
-import { WaitForSecondsAction } from './actions/wait-for-seconds-action';
+import { ClassifiedTweet } from '../entities/classified-tweet.entity';
 import { Topic } from 'src/topics/entities/topic.entity';
+import { ManagerHelper } from './manager.helper';
 
 /**
  * アクションモジュールを管理するためのクラス
@@ -18,49 +16,24 @@ export class ActionManager {
   /**
    * コンストラクタ
    * @param moduleStorageRepository モジュールストレージを読み書きするためのリポジトリ
+   * @param classifiedTweetRepository 分類済みツイートを読み書きするためのリポジトリ
    * @param socialAccountRepository ソーシャルアカウントを読み書きするためのリポジトリ
    * @param actionSettings アクション設定
    * @param topicKeywords トピックのキーワード (実際に検索が行われるわけではない。キーワードを用いて何か処理を行うために使用される。)
    */
   constructor(
     private moduleStorageRepository: Repository<ModuleStorageEntity.ModuleStorage>,
+    private classifiedTweetRepository: Repository<ClassifiedTweet>,
     private socialAccountRepository: Repository<SocialAccount>,
     private actionSettings: { [key: string]: any }[],
     private topicKeywords: string[],
   ) {}
 
   /**
-   * 利用可能なアクションモジュール名の取得
+   * 利用可能なアクション名の取得
    */
-  async getAvailableModuleNames(): Promise<string[]> {
-    // アクションのモジュールディレクトリからディレクトリを列挙
-    let moduleDirNames: string[] = await new Promise((resolve, reject) => {
-      fs.readdir(`${__dirname}/actions/`, (err, files) => {
-        let directories: string[] = [];
-        files
-          .filter(filePath => {
-            return !fs.statSync(`${__dirname}/actions/${filePath}`).isFile();
-          })
-          .filter(filePath => {
-            return filePath !== 'interfaces';
-          })
-          .forEach(filePath => {
-            directories.push(filePath);
-          });
-        resolve(directories);
-      });
-    });
-    // 各ディレクトリ名をモジュール名 (キャメルケース) へ変換
-    moduleDirNames = moduleDirNames.map(str => {
-      let arr = str.split('-');
-      let capital = arr.map((item, index) =>
-        index ? item.charAt(0).toUpperCase() + item.slice(1).toLowerCase() : item.toLowerCase(),
-      );
-      let lowerCamelChars = capital.join('').split('');
-      lowerCamelChars[0] = lowerCamelChars[0].toUpperCase();
-      return lowerCamelChars.join('');
-    });
-    return moduleDirNames;
+  async getAvailableActionNames(): Promise<string[]> {
+    return await ManagerHelper.getAvailableActionNames();
   }
 
   /**
@@ -69,13 +42,12 @@ export class ActionManager {
    * @param topic トピック
    * @return アクションが完了したか否か (実行すべきアクションがなければ null)
    */
-  async execActionToTweet(tweet: ExtractedTweet, topic: Topic): Promise<boolean | null> {
+  async execActionToTweet(tweet: ClassifiedTweet, topic: Topic): Promise<boolean | null> {
     let completeActionIndex = tweet.completeActionIndex;
 
     // 当該ツイートに対して実行すべきアクションを取得
     const nextActionIndex = completeActionIndex + 1;
     const numOfActions = this.actionSettings.length;
-    console.log(numOfActions, nextActionIndex);
     if (numOfActions <= nextActionIndex) {
       // 次に実行すべきアクションがなければ
       return null;
@@ -84,9 +56,12 @@ export class ActionManager {
     const nextAction = this.actionSettings[nextActionIndex];
 
     // アクションを初期化
-    const mod: Action = await this.getModule(nextAction.name, nextActionIndex, topic);
+    const mod: any = await this.getModule(nextAction.actionName, nextAction.id, nextActionIndex, topic);
     if (mod === null) {
-      throw new Error(`[ActionManager] - actionTweet - This action was invalid... ${nextAction.name}`);
+      throw new Error(`[ActionManager] - actionTweet - This action was invalid... ${nextAction.actionName}`);
+    } else if (mod.execAction === undefined) {
+      // 単体アクション実行に非対応ならば
+      return false;
     }
 
     // 当該アクションでアクションを実行
@@ -99,12 +74,21 @@ export class ActionManager {
   /**
    * 指定されたアクションモジュールの取得
    * @param actionName アクション名
+   * @param actionId   アクションID (モジュールストレージを分離するための識別子)
    * @param actionIndex アクションのインデックス番号
    * @param topic トピック
    */
-  async getModule(actionName: string, actionIndex: number = -1, topic: Topic) {
+  async getModule(actionName: string, actionId: string, actionIndex = -1, topic: Topic) {
     // ModuleStorage の初期化
-    const moduleStorage = ModuleStorage.factory(actionName, this.moduleStorageRepository);
+    const moduleStorage = await ModuleStorage.factory(`Action${actionName}`, actionId, this.moduleStorageRepository);
+
+    // ModuleTweetStorage の初期化
+    const moduleTweetStorage = ModuleTweetStorage.factory(
+      `Action${actionName}`,
+      actionId,
+      this.classifiedTweetRepository,
+      moduleStorage,
+    );
 
     // ソーシャルアカウントの取得
     // TODO: 複数アカウントの対応
@@ -119,8 +103,10 @@ export class ActionManager {
 
     // ヘルパの初期化
     const moduleHelper = ActionHelper.factory(
-      actionName,
+      `Action${actionName}`,
+      actionId,
       moduleStorage,
+      moduleTweetStorage,
       actionSetting,
       socialAccount,
       topic,
@@ -129,15 +115,15 @@ export class ActionManager {
 
     // モジュールの初期化
     // NOTE: ツイートフィルタと異なり、アクションはツイートごとにモジュールおよびヘルパを初期化する
-    switch (actionName) {
-      case 'ApprovalOnDiscordAction':
-        return new ApprovalOnDiscordAction(moduleHelper);
-      case 'PostToDiscordAction':
-        return new PostToDiscordAction(moduleHelper);
-      case 'WaitForSecondsAction':
-        return new WaitForSecondsAction(moduleHelper);
+    const moduleDirectoryPath = await ManagerHelper.getDirectoryPathByActionName(actionName);
+    if (!moduleDirectoryPath) {
+      throw new Error(`There is no matched module (actionName = ${actionName}).`);
     }
-
-    return null;
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod = require(moduleDirectoryPath);
+    if (mod.default === undefined) {
+      throw new Error(`There is no default export on action (path = ${moduleDirectoryPath}).`);
+    }
+    return new mod.default(moduleHelper);
   }
 }

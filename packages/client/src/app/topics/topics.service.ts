@@ -1,11 +1,14 @@
 import { Injectable } from '@angular/core';
 import {
   DefaultService,
-  GetExampleTweetsDto,
   CreateTopicDto,
   UpdateTopicDto,
   TrainAndValidateDto,
+  TweetFilterRetrainingRequest,
+  CrawledTweet,
+  CrawlExampleTweetsDto,
 } from 'src/.api-client';
+import * as CryptoJS from 'crypto-js';
 
 @Injectable({
   providedIn: 'root',
@@ -18,7 +21,7 @@ export class TopicsService {
    * @param topicId トピックID
    */
   async getTopic(topicId: number) {
-    let topic: any = await this.api.topicsControllerFindOne(topicId).toPromise();
+    const topic: any = await this.api.topicsControllerFindOne(topicId).toPromise();
 
     // JSON でシリアライズされた項目をパース
     // TODO: APIクライアント側でどうにかする方法がないのかを考える
@@ -45,7 +48,15 @@ export class TopicsService {
     name: any;
     crawlSocialAccount: any;
     crawlSchedule: any;
-    keywords: any[];
+    searchCondition: {
+      keywords: string[];
+      language: string;
+      to: string;
+      minFaves: number;
+      minRetweets: number;
+      minReplies: number;
+      images: boolean;
+    };
     filterPatterns: any[];
     enabledFilterPatternIndex: number;
     actions: any[];
@@ -53,11 +64,11 @@ export class TopicsService {
   }) {
     if (topic.id === null) {
       // 新規作成
-      let dto: CreateTopicDto = {
+      const dto: CreateTopicDto = {
         name: topic.name,
         crawlSchedule: topic.crawlSchedule,
         crawlSocialAccountId: +topic.crawlSocialAccount.id,
-        keywords: topic.keywords,
+        searchCondition: topic.searchCondition,
         filterPatterns: topic.filterPatterns,
         enabledFilterPatternIndex: topic.enabledFilterPatternIndex,
         actions: topic.actions,
@@ -66,11 +77,11 @@ export class TopicsService {
       return await this.api.topicsControllerCreate(dto).toPromise();
     } else {
       // 編集
-      let dto: UpdateTopicDto = {
+      const dto: UpdateTopicDto = {
         id: topic.id,
         name: topic.name,
         crawlSchedule: topic.crawlSchedule,
-        keywords: topic.keywords,
+        searchCondition: topic.searchCondition,
         filterPatterns: topic.filterPatterns,
         enabledFilterPatternIndex: topic.enabledFilterPatternIndex,
         actions: topic.actions,
@@ -81,21 +92,21 @@ export class TopicsService {
   }
 
   /**
-   * 指定されたトピックIDによる抽出済みツイートの取得
+   * 指定されたトピックIDによる分類済みツイートの取得
    * @param topicId トピックID
    * @param predictedClass 分類されたクラス
    * @param lastActionIndex アクション番号 (承認ツイートを取得する場合に添える)
-   * @param lastExtractedAt 抽出日時 (この日付より古い項目が取得される)
-   * @return 抽出済みツイート
+   * @param lastClassifiedAt 分類日時 (この日付より古い項目が取得される)
+   * @return 分類済みツイート
    */
   async getClassifiedTweets(
     topicId: number,
     predictedClass: string,
     lastActionIndex?: number,
-    lastExtractedAt?: Date,
+    lastClassifiedAt?: Date,
   ): Promise<any[]> {
     return await this.api
-      .topicsControllerGetExtractedTweets(topicId, predictedClass, lastActionIndex, lastExtractedAt?.getTime())
+      .topicsControllerGetClassifiedTweets(topicId, predictedClass, lastActionIndex, lastClassifiedAt?.getTime())
       .toPromise();
   }
 
@@ -105,8 +116,18 @@ export class TopicsService {
    * @param tweet ツイート
    * @param actionIndex アクション番号 (-1ならば最初のアクションから実行される。未指定ならば現在の次のアクションから実行される。)
    */
-  async acceptTweet(topicId: number, tweet: any, actionIndex?: number) {
-    return await this.api.topicsControllerAcceptTweet(topicId, tweet.id, actionIndex).toPromise();
+  async acceptTweet(
+    topicId: number,
+    tweet: any,
+    tweetFilterRetrainingRequests: TweetFilterRetrainingRequest[],
+    actionIndex?: number,
+  ) {
+    return await this.api
+      .topicsControllerAcceptTweet(topicId, tweet.id, {
+        destinationActionIndex: actionIndex,
+        tweetFilterRetrainingRequests: tweetFilterRetrainingRequests,
+      })
+      .toPromise();
   }
 
   /**
@@ -114,8 +135,12 @@ export class TopicsService {
    * @param topicId トピックID
    * @param tweet ツイート
    */
-  async rejectTweet(topicId: number, tweet: any) {
-    return await this.api.topicsControllerRejectTweet(topicId, tweet.id).toPromise();
+  async rejectTweet(topicId: number, tweet: any, tweetFilterRetrainingRequests: TweetFilterRetrainingRequest[]) {
+    return await this.api
+      .topicsControllerRejectTweet(topicId, tweet.id, {
+        tweetFilterRetrainingRequests: tweetFilterRetrainingRequests,
+      })
+      .toPromise();
   }
 
   /**
@@ -124,6 +149,16 @@ export class TopicsService {
    */
   async execCrawl(topicId: number): Promise<void> {
     const jobId: number = (await this.api.topicsControllerCrawl(topicId).toPromise()) as any;
+    // TODO: 完了を通知可能に
+    return null;
+  }
+
+  /**
+   * 指定されたトピックにおける収集済みツイートの分類の実行
+   * @param topicId トピックID
+   */
+  async execClassification(topicId: number): Promise<void> {
+    const jobId: number = (await this.api.topicsControllerClassify(topicId).toPromise()) as any;
     // TODO: 完了を通知可能に
     return null;
   }
@@ -154,11 +189,11 @@ export class TopicsService {
 
   /**
    * 指定されたツイートフィルタの取得
-   * @param moduleName ツイートフィルタ名 (例: 'TweetTextRegExpFilter')
+   * @param filterName ツイートフィルタ名 (例: 'TweetTextBayesian')
    */
-  async getTweetFilter(moduleName: string) {
+  async getTweetFilter(filterName: string) {
     const filters = await this.getAvailableTweetFilters();
-    return filters[moduleName];
+    return filters[filterName];
   }
 
   /**
@@ -170,23 +205,71 @@ export class TopicsService {
 
   /**
    * 指定されたアクションの取得
-   * @param moduleName アクション名 (例: 'ApprovalOnDiscordAction')
+   * @param actionName アクション名 (例: 'ApproveOnDiscord')
    */
-  async getAction(moduleName: string) {
+  async getAction(actionName: string) {
     const actions = await this.getAvailableActions();
-    return actions[moduleName];
+    return actions[actionName];
+  }
+
+  /**
+   * ツイートフィルタのユニークIDの生成・取得
+   */
+  getTweetFilterUid(filterName: string): string {
+    const rand = Math.random() * Math.floor(999999999);
+    return CryptoJS.SHA1(`Filter-${filterName}-${new Date().getTime()}-${rand}`).toString(CryptoJS.enc.Hex);
+  }
+
+  /**
+   * アクションのユニークIDの生成・取得
+   */
+  getActionUid(actionName: string): string {
+    const rand = Math.random() * Math.floor(999999999);
+    return CryptoJS.SHA1(`Action-${actionName}-${new Date().getTime()}-${rand}`).toString(CryptoJS.enc.Hex);
   }
 
   /**
    * 学習用サンプルツイートの取得
    */
-  async getSampleTweets(crawlSocialAccountId: number, keyword: string) {
-    const dto: GetExampleTweetsDto = {
+  async getSampleTweets(
+    crawlSocialAccountId: number,
+    searchCondition: {
+      keywords: string[];
+      language: string;
+      to?: string;
+      minFaves?: number;
+      minRetweets?: number;
+      minReplies?: number;
+      images?: boolean;
+    },
+  ): Promise<CrawledTweet[]> {
+    // 収集を実行
+    const dto: CrawlExampleTweetsDto = {
       crawlSocialAccountId: crawlSocialAccountId,
-      keyword: keyword,
+      searchCondition: searchCondition,
     };
-    let tweets: any[] = await this.api.mlControllerGetExampleTweets(dto).toPromise();
-    for (let tweet of tweets) {
+    const jobId: number = (await this.api.mlControllerCrawlExampleTweets(dto).toPromise()) as any;
+
+    // 収集完了まで待機
+    await new Promise((resolve, reject) => {
+      const interval = setInterval(() => {
+        this.api
+          .mlControllerGetStatusOfCrawlExampleTweets(jobId)
+          .toPromise()
+          .then((jobStatus: any) => {
+            if (jobStatus.status !== 'completed' && jobStatus.status !== 'failed') return;
+            clearInterval(interval);
+            if (jobStatus.status === 'failed') {
+              return reject(jobStatus.errorMessage);
+            }
+            resolve(null);
+          });
+      }, 5000);
+    });
+
+    // 収集されたツイートを取得
+    const tweets: any[] = await this.api.mlControllerGetExampleTweets(dto).toPromise();
+    for (const tweet of tweets) {
       tweet.selected = false;
     }
     return tweets;
@@ -223,14 +306,14 @@ export class TopicsService {
           .mlControllerGetStatusOfTrainAndValidate(jobId)
           .toPromise()
           .then((jobStatus: any) => {
-            if (jobStatus.status != 'completed' && jobStatus.status != 'failed') return;
+            if (jobStatus.status !== 'completed' && jobStatus.status !== 'failed') return;
             clearInterval(interval);
             if (jobStatus.status === 'failed') {
               return reject(jobStatus.errorMessage);
             }
             resolve(jobStatus.result);
           });
-      }, 1000);
+      }, 5000);
     });
   }
 }

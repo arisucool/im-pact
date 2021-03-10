@@ -9,10 +9,13 @@ import { CreateTopicDto } from './dto/create-topic.dto';
 import { UpdateTopicDto } from './dto/update-topic.dto';
 import { Topic } from './entities/topic.entity';
 import { SocialAccount } from 'src/social-accounts/entities/social-account.entity';
-import { ExtractedTweet } from './ml/entities/extracted-tweet.entity';
+import { ClassifiedTweet } from './ml/entities/classified-tweet.entity';
 import { TrainAndValidateDto } from './ml/dto/train-and-validate.dto';
 import { CrawledTweet } from './ml/entities/crawled-tweet.entity';
-import { ReTrainDto } from './ml/dto/retrain.dto';
+import { ReTrainDto, TweetFilterRetrainingRequest } from './ml/dto/retrain.dto';
+import { RejectTweetDto } from './dto/reject-tweet.dto';
+import { AcceptTweetDto } from './dto/accept-tweet.dto';
+import { TweetFilterResult } from './ml/modules/tweet-filters/interfaces/tweet-filter.interface';
 
 @Injectable()
 export class TopicsService {
@@ -21,14 +24,18 @@ export class TopicsService {
     private topicsRepository: Repository<Topic>,
     @InjectRepository(CrawledTweet)
     private crawledTweetRepository: Repository<CrawledTweet>,
-    @InjectRepository(ExtractedTweet)
-    private extractedTweetRepository: Repository<ExtractedTweet>,
+    @InjectRepository(ClassifiedTweet)
+    private classifiedTweetRepository: Repository<ClassifiedTweet>,
+    @InjectQueue('classifier')
+    private readonly classifierQueue: Queue,
     @InjectQueue('crawler')
     private readonly crawlQueue: Queue,
     @InjectQueue('retrainer')
     private readonly retrainerQueue: Queue,
     @InjectQueue('action')
     private readonly actionQueue: Queue,
+    @InjectQueue('cleaner')
+    private readonly cleanerQueue: Queue,
   ) {}
 
   /**
@@ -36,6 +43,20 @@ export class TopicsService {
    */
   @Cron('* * * * *')
   async onIntervalMinutes() {
+    // 全てのトピックIDを取得
+    const topicIds = await this.getTopicIds();
+
+    // 各トピックのアクション実行ジョブをキューへ追加
+    for (const topicId of topicIds) {
+      const job = await this.actionQueue.add({
+        topicId: topicId,
+      });
+      Logger.debug(
+        `Add job to action queue... (Topic ID: ${topicId}, Job ID: ${job.id})`,
+        'TopicsService/onIntervalMinutes',
+      );
+    }
+
     // このタイミングで収集を実行すべきトピックIDを取得
     const crawlTopicIds = await this.getTopicIdsToBeCrawledOnNow();
     if (crawlTopicIds.length === 0) return;
@@ -50,26 +71,33 @@ export class TopicsService {
         'TopicsService/onIntervalMinutes',
       );
     }
-  }
 
-  /**
-   * 15分毎の定期処理
-   */
-  @Cron('*/15 * * * *') // TODO:
-  async onIntervalTenMinutes() {
-    // 全てのトピックIDを取得
-    const topicIds = await this.getTopicIds();
-
-    // 各トピックのアクション実行ジョブをキューへ追加
+    // 各トピックの分類ジョブをキューへ追加
     for (const topicId of topicIds) {
-      const job = await this.actionQueue.add({
+      const job = await this.classifierQueue.add({
         topicId: topicId,
       });
       Logger.debug(
-        `Add job to action queue... (Topic ID: ${topicId}, Job ID: ${job.id})`,
-        'TopicsService/onIntervalTenMinutes',
+        `Add job to classifier queue... (Topic ID: ${topicId}, Job ID: ${job.id})`,
+        'TopicsService/onIntervalMinutes',
       );
     }
+  }
+
+  /**
+   * 10分毎の定期処理
+   */
+  @Cron('*/10 * * * *') // TODO:
+  async onIntervalTenMinutes() {}
+
+  /**
+   * 30分毎の定期処理
+   */
+  @Cron('*/30 * * * *')
+  async onIntervalHalfHours() {
+    // 自動クリーンアップをキューへ追加
+    this.cleanerQueue.add({});
+    Logger.debug(`Add job to cleaner queue...`, 'TopicsService/onIntervalHalfHours');
   }
 
   /**
@@ -153,7 +181,7 @@ export class TopicsService {
   async create(dto: CreateTopicDto): Promise<Topic> {
     const topic = new Topic();
     topic.name = dto.name;
-    topic.keywords = dto.keywords;
+    topic.searchCondition = dto.searchCondition;
     topic.crawlSocialAccount = new SocialAccount();
     topic.crawlSocialAccount.id = dto.crawlSocialAccountId;
     topic.crawlSchedule = dto.crawlSchedule;
@@ -228,6 +256,21 @@ export class TopicsService {
   }
 
   /**
+   * 指定されたトピックにおける収集済みツイートの分類 (キューに対するジョブ追加)
+   * @param id トピックID
+   */
+  async addJobToClassifierQueue(id: number): Promise<string> {
+    // classifier キューへジョブを追加
+    // (classifier.consumer.ts にて順次処理される)
+    const job = await this.classifierQueue.add({
+      topicId: id,
+    });
+
+    // ジョブIDを返す
+    return job.id.toString();
+  }
+
+  /**
    * 指定されたトピックにおけるアクションの実行 (キューに対するジョブ追加)
    * @param id トピックID
    */
@@ -243,32 +286,32 @@ export class TopicsService {
   }
 
   /**
-   * 指定されたトピックにおける抽出済みツイートの取得
+   * 指定されたトピックにおける分類済みツイートの取得
    * @param topicId トピックID
    * @param predictedClass 分類されたクラス
    * @param pendingActionIndex ツイートのアクション番号
-   * @param lastExtractedAt 抽出日時 (ページング用。この値よりも収集日時の古い項目が取得される。)
+   * @param lastClassifiedAt 分類日時 (ページング用。この値よりも収集日時の古い項目が取得される。)
    */
-  async getExtractedTweets(
+  async getClassifiedTweets(
     topicId: number,
     predictedClass: string,
     pendingActionIndex?: number,
-    lastExtractedAt?: Date,
+    lastClassifiedAt?: Date,
   ): Promise<any[]> {
     let where: any = {
       topic: topicId,
       predictedClass: predictedClass,
-      extractedAt: LessThanOrEqual(lastExtractedAt),
+      classifiedAt: LessThanOrEqual(lastClassifiedAt),
     };
 
     if (pendingActionIndex) {
       where.completeActionIndex = pendingActionIndex - 1;
     }
 
-    const tweets = await this.extractedTweetRepository.find({
+    const tweets = await this.classifiedTweetRepository.find({
       where: where,
       order: {
-        extractedAt: 'DESC',
+        classifiedAt: 'DESC',
       },
       take: 50,
     });
@@ -278,11 +321,21 @@ export class TopicsService {
   /**
    * 指定されたトピックおよびツイートに対する承認
    * @param topicId トピックID
-   * @param extractedTweetId 抽出済みツイートのID
+   * @param classifiedTweetId 分類済みツイートのID
    * @param tokenStr 承認用URLのトークン
+   * @param tweetFilterRetrainingRequests ツイートフィルタを再トレーニングするための情報
    * @oaram actionIndex アクション番号 (-1ならば最初のアクションから実行される。未指定ならば現在の次のアクションから実行される。)
    */
-  async acceptTweet(topicId: number, extractedTweetId: number, tokenStr?: string, actionIndex?: number) {
+  async acceptTweet(
+    topicId: number,
+    classifiedTweetId: number,
+    tokenStr?: string,
+    tweetFilterRetrainingRequests?: TweetFilterRetrainingRequest[],
+    actionIndex?: number,
+  ): Promise<{
+    retrainJobId: string;
+    acceptedTweet: ClassifiedTweet;
+  }> {
     // URLトークンを確認
     let token = null;
     const shouldConfirmToken = tokenStr !== null;
@@ -299,7 +352,7 @@ export class TopicsService {
     }
 
     // データベースからツイートを取得
-    const tweet = await this.extractedTweetRepository.findOne(extractedTweetId, {
+    const tweet = await this.classifiedTweetRepository.findOne(classifiedTweetId, {
       loadRelationIds: true,
     });
     if (tweet == null) {
@@ -328,7 +381,12 @@ export class TopicsService {
     await tweet.save();
 
     // ツイートを用いて再トレーニング
-    const jobId = await this.retrainWithTweet(tweetTopicId, tweet);
+    const jobId = await this.retrainWithTweet({
+      topicId: topicId,
+      isSelected: true,
+      tweet: tweet,
+      tweetFilterRetrainingRequests: tweetFilterRetrainingRequests,
+    });
 
     // レスポンスを返す
     return {
@@ -340,10 +398,19 @@ export class TopicsService {
   /**
    * 指定されたトピックおよびツイートに対する拒否
    * @param topicId トピックID
-   * @param extractedTweetId 抽出済みツイートのID
+   * @param classifiedTweetId 分類済みツイートのID
    * @param token 拒否用URLのトークン
+   * @param tweetFilterRetrainingRequests ツイートフィルタを再トレーニングするための情報
    */
-  async rejectTweet(topicId: number, extractedTweetId: number, tokenStr?: string) {
+  async rejectTweet(
+    topicId: number,
+    classifiedTweetId: number,
+    tokenStr?: string,
+    tweetFilterRetrainingRequests?: TweetFilterRetrainingRequest[],
+  ): Promise<{
+    retrainJobId: string;
+    rejectedTweet: ClassifiedTweet;
+  }> {
     // URLトークンを確認
     let token = null;
     const shouldConfirmToken = tokenStr !== null;
@@ -360,7 +427,7 @@ export class TopicsService {
     }
 
     // データベースからツイートを取得
-    const tweet = await this.extractedTweetRepository.findOne(extractedTweetId, {
+    const tweet = await this.classifiedTweetRepository.findOne(classifiedTweetId, {
       loadRelationIds: true,
     });
     if (tweet == null) {
@@ -387,7 +454,12 @@ export class TopicsService {
     await tweet.save();
 
     // ツイートを用いて再トレーニング
-    const jobId = await this.retrainWithTweet(tweetTopicId, tweet);
+    const jobId = await this.retrainWithTweet({
+      topicId: topicId,
+      isSelected: false,
+      tweet: tweet,
+      tweetFilterRetrainingRequests: tweetFilterRetrainingRequests,
+    });
 
     // レスポンスを返す
     return {
@@ -397,19 +469,37 @@ export class TopicsService {
   }
 
   /**
-   * 指定された抽出済みツイートによる再トレーニング (キューに対するジョブ追加)
+   * 指定されたDTOによるツイートの承認
+   * @param dto DTO
+   */
+  async acceptTweetByDto(dto: AcceptTweetDto): Promise<any> {
+    return await this.acceptTweet(
+      dto.topicId,
+      dto.classifiedTweetId,
+      null,
+      dto.tweetFilterRetrainingRequests,
+      dto.destinationActionIndex,
+    );
+  }
+
+  /**
+   * 指定されたDTOによるツイートの拒否
+   * @param dto DTO
+   */
+  async rejectTweetByDto(dto: RejectTweetDto): Promise<any> {
+    return await this.rejectTweet(dto.topicId, dto.classifiedTweetId, null, dto.tweetFilterRetrainingRequests);
+  }
+
+  /**
+   * 指定された分類済みツイートによる再トレーニング (キューに対するジョブ追加)
    * (お手本分類、ツイートフィルタの学習、トレーニングおよび検証が再実行される)
    * @param topicId トピックID
    * @param tweet ツイート
+   * @return ジョブID
    */
-  async retrainWithTweet(topicId: number, tweet: ExtractedTweet) {
+  async retrainWithTweet(dto: ReTrainDto): Promise<string> {
     // retrainer キューへジョブを追加
     // (trainer.consumer.ts にて順次処理される)
-    const dto: ReTrainDto = {
-      topicId: topicId,
-      isSelected: tweet.predictedClass === 'accepted',
-      tweet: tweet,
-    };
     const job = await this.retrainerQueue.add({
       dto: dto,
     });

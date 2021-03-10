@@ -1,19 +1,50 @@
 {
   "name": "im-pact",
-  "description": "\"im pact\" is Twitter crawler and bot for Producers and Everyone.",
   "version": "0.0.0",
   "private": true,
+  "description": "\"im pact\" is Twitter crawler and bot for Producers and Everyone.",
   "scripts": {
-    "start": "lerna run start:prod --scope=server --stream",
-    "start:dev": "lerna run start:dev --stream",
-    "build": "lerna run build --scope=server --stream && lerna run build --scope=client --stream",
-    "postinstall": "lerna bootstrap"
+    "build": "lerna run build --scope=@arisucool/im-pact-core --stream && lerna run build --scope=client --stream && lerna run build --scope={@arisucool/,}im-pact-{action,filter}-* --stream",
+    "commit": "cz",
+    "postinstall": "lerna bootstrap --hoist --nohoist=@types/jasmine --loglevel=verbose",
+    "start": "lerna run start:prod --scope=@arisucool/im-pact-core --stream",
+    "start:dev": "lerna run start:dev --concurrency=100  --no-sort --stream",
+    "test": "npm run test:server && npm run test:client && npm run test:actions && npm run test:filters",
+    "test-ci": "lerna run build --scope=@arisucool/im-pact-core --stream && lerna run build --scope={@arisucool/,}im-pact-{action,filter}-* --stream && (npm run test:server -- -- -- --coverage || exit 0) && (npm run test:client -- -- -- --no-watch --code-coverage || exit 0) && npm run test:actions -- -- -- --coverage && npm run test:filters -- -- -- --coverage",
+    "test:actions": "lerna run test --scope={@arisucool/,}im-pact-action-* --stream",
+    "test:client": "lerna run test --scope=client --stream",
+    "test:filters": "lerna run test --scope={@arisucool/,}im-pact-filter-* --stream",
+    "test:server": "lerna run test --scope=@arisucool/im-pact-core --stream"
+  },
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ],
+    "rules": {
+      "subject-case": [
+        0
+      ]
+    }
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   },
   "dependencies": {
-    "lerna": "^3.20.2",
-    "ts-node": "^9.1.1"
+    "lerna": "3.22.1",
+    "ts-node": "9.1.1"
   },
   "devDependencies": {
-    "prettier": "^1.19.1"
+    "@commitlint/cli": "11.0.0",
+    "@commitlint/config-conventional": "11.0.0",
+    "cz-conventional-changelog": "3.3.0",
+    "husky": "4.3.8",
+    "prettier": "1.19.1"
   }
 }

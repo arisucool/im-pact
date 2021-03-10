@@ -2,7 +2,7 @@ import { Entity, Column, PrimaryColumn, BeforeInsert, BaseEntity, PrimaryGenerat
 import { IsNotEmpty } from 'class-validator';
 import { CrawledTweet } from 'src/topics/ml/entities/crawled-tweet.entity';
 import { Topic } from 'src/topics/entities/topic.entity';
-import { ExtractedTweet } from 'src/topics/ml/entities/extracted-tweet.entity';
+import { ClassifiedTweet } from 'src/topics/ml/entities/classified-tweet.entity';
 
 export enum SocialService {
   TWITTER = 'twitter',
@@ -60,10 +60,10 @@ export class SocialAccount extends BaseEntity {
   )
   crawledTweets: CrawledTweet[];
 
-  // 抽出済みツイート
+  // 分類済みツイート
   @OneToMany(
-    () => ExtractedTweet,
-    extractedTweet => extractedTweet.socialAccount,
+    () => ClassifiedTweet,
+    classifiedTweet => classifiedTweet.socialAccount,
   )
-  extractedTweets: ExtractedTweet[];
+  classifiedTweets: ClassifiedTweet[];
 }

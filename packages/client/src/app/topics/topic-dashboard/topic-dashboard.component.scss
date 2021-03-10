@@ -81,6 +81,13 @@
       }
     }
 
+    // 各ミニボタン - トピック分類ボタン
+    .topic-classify-btn {
+      mat-icon {
+        margin-top: -2px;
+      }
+    }
+
     // 各ミニボタン- トピックアクション実行ボタン
     .topic-exec-action-btn {
       mat-icon {
@@ -360,7 +367,7 @@
       // ドロワ領域 (通常時)
 
       .drawer:not(.loading) {
-        // 角の色を拒否アイテムグリッドと同色へ
+        // 角の色を拒否ツイートグリッドと同色へ
         background-color: #dfdfdf;
       }
 

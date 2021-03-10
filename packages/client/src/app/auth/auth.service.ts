@@ -20,7 +20,6 @@ export class AuthService {
 
     // アクセストークンを設定
     this.api.configuration.accessToken = this.currentAccessToken;
-
   }
 
   /**
@@ -55,7 +54,6 @@ export class AuthService {
    * @return ログインに成功したか否か
    */
   async login(userId: string, userPassword: string): Promise<boolean> {
-
     // ログインを実行
     const loginDto: LoginDto = {
       id: userId,
@@ -71,36 +69,30 @@ export class AuthService {
       return false;
     }
 
-    const access_token = result.access_token;
+    const accessToken = result.access_token;
 
     // セッション情報を記憶
     window.localStorage.setItem('im_pact_user_id', userId);
-    window.localStorage.setItem('im_pact_token', access_token);
+    window.localStorage.setItem('im_pact_token', accessToken);
 
     return true;
-
   }
 
   /**
    * ログアウトの実行
    */
   async logout() {
-
     this.clearSession();
-
   }
 
   /**
    * セッション情報のクリア
    */
   protected clearSession() {
-
     this.currentUserId = null;
     window.localStorage.removeItem('im_pact_user_id');
 
     this.currentAccessToken = null;
     window.localStorage.removeItem('im_pact_token');
-
   }
-
 }

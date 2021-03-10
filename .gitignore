@@ -5,3 +5,4 @@ db_datas/
 redis_datas/
 node_modules/
 packages/client/src/.api-client/
+!.gitkeep

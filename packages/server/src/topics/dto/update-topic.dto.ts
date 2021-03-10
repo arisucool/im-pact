@@ -33,14 +33,28 @@ export class UpdateTopicDto {
   crawlSchedule: string;
 
   @ApiProperty({
-    description: 'キーワード',
-    example: ['橘', 'ありす'],
-    type: String,
-    isArray: true,
+    description: '検索条件',
+    example: {
+      keywords: ['橘', 'ありす'],
+      language: 'ja',
+      to: null,
+      minFaves: 1,
+      minRetweets: 1,
+      minReplies: 0,
+      images: true,
+    },
+    type: Object,
   })
-  @IsArray()
   @IsNotEmpty()
-  keywords: string[];
+  searchCondition: {
+    keywords: string[];
+    language: string;
+    to: string;
+    minFaves: number;
+    minRetweets: number;
+    minReplies: number;
+    images: boolean;
+  };
 
   @ApiProperty({
     description: 'フィルタパターン',

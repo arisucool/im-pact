@@ -48,11 +48,33 @@
   </div>
   <!---->
 
-  <!-- OK ボタン-->
+  <!-- ボタン領域 -->
   <div mat-dialog-actions style="margin-top: 0.5rem;">
-    <button (click)="finish()" mat-raised-button color="primary" mat-dialog-close style="float: right;">
+    <!-- OK ボタン -->
+    <button
+      (click)="finish()"
+      mat-raised-button
+      color="primary"
+      mat-dialog-close
+      [disabled]="isLoading"
+      style="float: right;"
+      matTooltip="クリックすると、このトレーニング＆検証の結果を採用して、元の画面へ戻ります。"
+    >
       OK
     </button>
+    <!---->
+
+    <!-- 分析ボタン -->
+    <button
+      (click)="analyze()"
+      mat-raised-button
+      [disabled]="isLoading"
+      style="float: right; margin-right: 1rem;"
+      matTooltip="クリックすると、この検証結果を Embedding Projector で分析できます。"
+    >
+      分析
+    </button>
+    <!---->
   </div>
   <!---->
 </div>

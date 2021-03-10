@@ -6,4 +6,5 @@ import { Tweet } from 'src/topics/ml/entities/tweet.entity';
  */
 export interface TweetFilterTrain extends TweetFilter {
   train(tweet: Tweet, isSelected: boolean): Promise<void>;
+  retrain(tweet: Tweet, previousSummaryValue: string, isCorrect: boolean): Promise<void>;
 }

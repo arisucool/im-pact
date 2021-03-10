@@ -27,7 +27,7 @@
       アクション全完了
     </span>
     <span class="action-name" *ngIf="actionIndex != actionIndexOfAllActionCompleted">
-      {{ topic.actions[actionIndex].name }}
+      {{ topic.actions[actionIndex].actionName }}
     </span>
     <!---->
     <!-- 当該アクションのツイート数 -->
@@ -78,14 +78,16 @@
       <app-dashboard-tweet
         [tweet]="tweet"
         [actions]="topic.actions"
-        (onItemButtonClickedEvent)="onItemButtonClicked(tweet.idStr, $event)"
+        [filters]="topic.filterPatterns[topic.enabledFilterPatternIndex]?.filters"
+        [availableFilters]="availableFilters"
+        (tweetReclassificationRequest)="onTweetReclassificationRequested(tweet.idStr, $event)"
       >
       </app-dashboard-tweet>
     </div>
     <!---->
   </ngx-masonry>
   <!---->
-  <!-- ページャ領域 (アクション別承認アイテム) -->
+  <!-- ページャ領域 (アクション別承認ツイート) -->
   <div
     class="pager-container"
     *ngIf="!isLoadingAcceptedTweetsByActions[actionIndex] && 1 <= acceptedTweetsByActions[actionIndex].length"
@@ -112,7 +114,7 @@
       (click)="isOpenedDrawer = true"
       *ngIf="!isOpenedDrawer"
       class="drawer-opener-btn"
-      matTooltip="クリックすると、拒否されたアイテムを表示します"
+      matTooltip="クリックすると、拒否されたツイートを表示します"
     >
       <mat-icon>expand_less</mat-icon>
     </div>
@@ -120,7 +122,7 @@
       (click)="isOpenedDrawer = false"
       *ngIf="isOpenedDrawer"
       class="drawer-opener-btn"
-      matTooltip="クリックすると、拒否されたアイテムを非表示にします"
+      matTooltip="クリックすると、拒否されたツイートを非表示にします"
     >
       <mat-icon>expand_more</mat-icon>
     </div>
@@ -142,10 +144,10 @@
         </div>
         <!---->
 
-        <!-- 拒否アイテムグリッド -->
+        <!-- 拒否ツイートグリッド -->
         <div class="rejected-tweets-container">
           <ngx-masonry class="rejected-tweets tweets-grid" [updateLayout]="updateLayout">
-            <!-- 各アイテム -->
+            <!-- 各ツイート -->
             <div
               ngxMasonryItem
               fxFlex="23.5"
@@ -158,13 +160,15 @@
               <app-dashboard-tweet
                 [tweet]="tweet"
                 [actions]="topic.actions"
-                (onItemButtonClickedEvent)="onItemButtonClicked(tweet.idStr, $event)"
+                [filters]="topic.filterPatterns[topic.enabledFilterPatternIndex]?.filters"
+                [availableFilters]="availableFilters"
+                (tweetReclassificationRequest)="onTweetReclassificationRequested(tweet.idStr, $event)"
               ></app-dashboard-tweet>
             </div>
             <!---->
           </ngx-masonry>
 
-          <!-- ページャ領域 (拒否アイテム) -->
+          <!-- ページャ領域 (拒否ツイート) -->
           <div class="pager-container" *ngIf="!isLoadingRejectedTweets">
             <button (click)="loadMoreRejectedTweets()" mat-button mat-stroked-button type="button">
               <mat-icon style="margin-top: -2px;">expand_more</mat-icon>
@@ -218,6 +222,19 @@
       matTooltip="クリックすると、このトピックの収集を今すぐ行います"
     >
       <mat-icon>rss_feed</mat-icon>
+    </button>
+    <!---->
+
+    <!-- トピック分類ボタン -->
+    <button
+      (click)="execClassification()"
+      class="topic-classify-btn"
+      mat-mini-fab
+      type="button"
+      color="primary"
+      matTooltip="クリックすると、このトピックの収集済みツイートに対し、分類を今すぐ行います"
+    >
+      <mat-icon>filter_alt</mat-icon>
     </button>
     <!---->
 

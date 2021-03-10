@@ -45,13 +45,13 @@
       </div>
     </div>
     <!---->
-    <!-- アイテムメニューボタン (ダッシュボード用) -->
+    <!-- ツイートメニューボタン (ダッシュボード用) -->
     <div class="classification-btn-container" *ngIf="mode == 'dashboard'">
       <div
-        (click)="onItemButtonClicked()"
+        (click)="onTweetButtonClicked()"
         class="classification-btn"
         [ngClass]="{ selected: isSelected }"
-        matTooltip="クリックすると、このアイテムのメニューを表示します"
+        matTooltip="クリックすると、このツイートのメニューを表示します"
       >
         <mat-icon>more_vert</mat-icon>
       </div>

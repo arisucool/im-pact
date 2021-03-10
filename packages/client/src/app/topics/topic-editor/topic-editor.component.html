@@ -91,14 +91,16 @@
           </h3>
           <span class="description">
             Twitter を検索するためのキーワードを設定します。<br />
-            各キーワードは OR検索となり、より単純なワードを複数登録することで、収集範囲が広がります。<br />
-            例:　"橘"、"ありす"、"スウィート・ソアー"、"ももぺあべりー"、"BRIGHT:LIGHTS"、...
+            探したいキャラクター等の関連ワードを幾つも登録することで、収集範囲が広がります。<br />
+            また、"橘" や "ありす" のように、他と被りやすい短いワードも問題ありません。<br />
+            例
+            (橘ありす):　"橘"、"ありす"、"タチバナ"、"ももぺあべりー"、"ももあり"、"スウィート・ソアー"、"まゆあり、"BRIGHT:LIGHTS"、"ありふみ"、...
           </span>
         </div>
         <!---->
 
         <!-- キーワード欄 -->
-        <p *ngFor="let keyword of topic.keywords; let keywordIndex = index; trackBy: myTrackBy">
+        <p *ngFor="let keyword of topic.searchCondition.keywords; let keywordIndex = index; trackBy: myTrackBy">
           <mat-icon style="color: #666;">search</mat-icon>
           &nbsp;&nbsp;
           <mat-form-field appearance="outline" floatLabel="auto">
@@ -107,13 +109,14 @@
             </mat-label>
             <input
               name="keyword_{{ keywordIndex }}"
-              [(ngModel)]="topic.keywords[keywordIndex]"
+              [(ngModel)]="topic.searchCondition.keywords[keywordIndex]"
               matInput
               placeholder="例: ありす"
             />
             <!-- キーワード削除ボタン -->
             <button
               (click)="deleteKeyword(keyword)"
+              type="button"
               matTooltip="このキーワードを削除"
               mat-icon-button
               matSuffix
@@ -139,12 +142,55 @@
 
       <hr />
 
-      <!-- お手本分類 セクション -->
+      <!-- 検索条件 セクション -->
       <section>
         <!-- セクション 見出し -->
         <div class="section-caption">
           <h3>
             <span class="section-number">3</span>
+            検索条件の設定
+          </h3>
+          <span class="description">
+            Twitter を検索するための条件を設定します。<br />
+            例えば、イラストや写真を探したい場合は、"画像付き" にチェックを入れてください。
+          </span>
+        </div>
+        <!---->
+
+        <!-- 検索条件欄 -->
+        <mat-form-field appearance="outline" floatLabel="always" class="mat-form-field--no-underline">
+          <mat-label>ツイートの種類</mat-label>
+          <input matInput placeholder="Input" style="display: none" />
+          &nbsp;
+          <mat-checkbox name="search_condition_with_image" [(ngModel)]="topic.searchCondition.images"
+            >画像付き</mat-checkbox
+          >
+        </mat-form-field>
+        <br />
+
+        <p>
+          <mat-form-field appearance="outline" floatLabel="always">
+            <mat-label>検索する言語</mat-label>
+            <mat-select name="search_condition_language" [(ngModel)]="topic.searchCondition.language">
+              <mat-option value="en">en - 英語 / English</mat-option>
+              <mat-option value="ja">ja - 日本語 / Japanese</mat-option>
+              <mat-option value="ko">ko - 韓国語 / Korean</mat-option>
+              <mat-option value="zh">zh - 中国語 / Chinese</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </p>
+        <!---->
+      </section>
+      <!---->
+
+      <hr />
+
+      <!-- お手本分類 セクション -->
+      <section>
+        <!-- セクション 見出し -->
+        <div class="section-caption">
+          <h3>
+            <span class="section-number">4</span>
             お手本分類
           </h3>
           <span class="description">
@@ -196,7 +242,7 @@
         <!-- セクション 見出し -->
         <div class="section-caption">
           <h3>
-            <span class="section-number">4</span>
+            <span class="section-number">5</span>
             ツイートフィルタの設定
           </h3>
           <span class="description">
@@ -261,10 +307,11 @@
             >
               <!-- 見出し -->
               <div class="module-setting-caption">
-                <h4>{{ moduleSetting.name }}</h4>
+                <h4>{{ moduleSetting.filterName }}</h4>
                 <span class="description">
-                  {{ availableTweetFilters[moduleSetting.name]?.description }}&nbsp;&nbsp;/&nbsp;&nbsp;
-                  適用範囲:&nbsp;{{ availableTweetFilters[moduleSetting.name]?.scope }}
+                  {{ availableTweetFilters[moduleSetting.filterName]?.description }}&nbsp;&nbsp;/&nbsp;&nbsp;
+                  適用範囲:&nbsp;{{ availableTweetFilters[moduleSetting.filterName]?.scope }}<br />
+                  (ID: {{ moduleSetting.id }})
                 </span>
 
                 <!-- ツイートフィルタ操作領域 -->
@@ -286,15 +333,15 @@
               </div>
               <!---->
               <!-- エラー (モジュールが存在しない場合) -->
-              <p style="margin: -1rem 0 1rem 0;" *ngIf="!availableTweetFilters[moduleSetting.name]">
+              <p style="margin: -1rem 0 1rem 0;" *ngIf="!availableTweetFilters[moduleSetting.filterName]">
                 <span style="font-size: 0.8rem;"
                   >このツイートフィルタは、インストールされていないか、致命的なエラーが発生しているため、無効化されています</span
                 >
               </p>
               <!-- 設定項目領域 -->
-              <div *ngIf="availableTweetFilters[moduleSetting.name]">
+              <div *ngIf="availableTweetFilters[moduleSetting.filterName]">
                 <!-- 各設定項目 -->
-                <p *ngFor="let settingItem of availableTweetFilters[moduleSetting.name]?.settings">
+                <p *ngFor="let settingItem of availableTweetFilters[moduleSetting.filterName]?.settings">
                   <!-- テキスト入力欄 -->
                   <mat-form-field
                     *ngIf="
@@ -331,11 +378,25 @@
                     ></textarea>
                   </mat-form-field>
                   <!---->
+                  <!-- セレクトボックス入力欄 -->
+                  <mat-form-field *ngIf="settingItem.type === 'select'" appearance="outline" floatLabel="always">
+                    <mat-label>{{ settingItem.title }}</mat-label>
+                    <mat-select
+                      name="filter_{{ filterIndex }}_{{ settingItem.name }}"
+                      placeholder="{{ settingItem.placeholder }}"
+                      [(ngModel)]="moduleSetting.settings[settingItem.name]"
+                    >
+                      <mat-option *ngFor="let option of settingItem.options | keyvalue" [value]="option.key">{{
+                        option.value
+                      }}</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                  <!---->
                 </p>
                 <!---->
                 <!-- 設定項目 (一つも存在しない場合) -->
                 <p
-                  *ngIf="availableTweetFilters[moduleSetting.name]?.settings.length === 0"
+                  *ngIf="availableTweetFilters[moduleSetting.filterName]?.settings.length === 0"
                   style="margin: -1rem 0 1rem 0;"
                 >
                   <span style="font-size: 0.8rem;">設定項目はありません</span>
@@ -382,7 +443,7 @@
         <!-- セクション 見出し -->
         <div class="section-caption">
           <h3>
-            <span class="section-number">5</span>
+            <span class="section-number">6</span>
             トレーニング＆検証
           </h3>
           <span class="description">
@@ -481,7 +542,7 @@
         <!-- セクション 見出し -->
         <div class="section-caption">
           <h3>
-            <span class="section-number">6</span>
+            <span class="section-number">7</span>
             アクションの設定
           </h3>
           <span class="description">
@@ -538,23 +599,26 @@
             </div>
             <!---->
             <!-- アクション名 -->
-            <h4>{{ moduleSetting.name }}</h4>
+            <h4>{{ moduleSetting.actionName }}</h4>
             <!---->
             <!-- アクション説明文 -->
-            <span class="description">{{ availableActions[moduleSetting.name]?.description }}</span>
+            <span class="description"
+              >{{ availableActions[moduleSetting.actionName]?.description }}<br />
+              (ID: {{ moduleSetting.id }})
+            </span>
             <!---->
           </div>
           <!---->
           <!-- エラー (モジュールが存在しない場合) -->
-          <p style="margin: -1rem 0 1rem 0;" *ngIf="!availableActions[moduleSetting.name]">
+          <p style="margin: -1rem 0 1rem 0;" *ngIf="!availableActions[moduleSetting.actionName]">
             <span style="font-size: 0.8rem;"
               >このアクションは、インストールされていないか、致命的なエラーが発生しているため、無効化されています</span
             >
           </p>
           <!-- 設定項目領域 -->
-          <div *ngIf="availableActions[moduleSetting.name]">
+          <div *ngIf="availableActions[moduleSetting.actionName]">
             <!-- 各設定項目 -->
-            <p *ngFor="let settingItem of availableActions[moduleSetting.name]?.settings">
+            <p *ngFor="let settingItem of availableActions[moduleSetting.actionName]?.settings">
               <!-- テキスト入力欄 -->
               <mat-form-field
                 *ngIf="
@@ -635,10 +699,27 @@
                 <!---->
               </mat-form-field>
               <!---->
+              <!-- セレクトボックス入力欄 -->
+              <mat-form-field *ngIf="settingItem.type === 'select'" appearance="outline" floatLabel="always">
+                <mat-label>{{ settingItem.title }}</mat-label>
+                <mat-select
+                  name="filter_{{ filterIndex }}_{{ settingItem.name }}"
+                  placeholder="{{ settingItem.placeholder }}"
+                  [(ngModel)]="moduleSetting.settings[settingItem.name]"
+                >
+                  <mat-option *ngFor="let option of settingItem.options | keyvalue" [value]="option.key">{{
+                    option.value
+                  }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <!---->
             </p>
             <!---->
             <!-- 設定項目 (一つも存在しない場合) -->
-            <p *ngIf="availableActions[moduleSetting.name]?.settings.length === 0" style="margin: -1rem 0 1rem 0;">
+            <p
+              *ngIf="availableActions[moduleSetting.actionName]?.settings.length === 0"
+              style="margin: -1rem 0 1rem 0;"
+            >
               <span style="font-size: 0.8rem;">設定項目はありません</span>
             </p>
             <!---->

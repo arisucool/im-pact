@@ -1,12 +1,13 @@
 // カード領域
 .mat-card-content {
-  // アイテムメニューを表示したときにカードのマージンが変動する現象の対策
+  // ツイートメニューを表示したときにカードのマージンが変動する現象の対策
   margin-bottom: 0px;
 }
 
-// アイテムメニュー領域
+// ツイートメニュー領域 ・ ツイートフィルタ 再トレーニング領域
 
-.item-menu-container {
+.tweet-menu-container,
+.filter-retraining-container {
   background-color: #fafafaee;
   border-radius: 4px;
   position: absolute;
@@ -19,8 +20,12 @@
     margin: 1.6rem 1rem 0.2rem 1rem;
     text-align: center;
   }
+}
 
-  .item-menu {
+// ツイートメニュー領域
+
+.tweet-menu-container {
+  .tweet-menu {
     position: absolute;
     overflow-y: auto;
     top: 2.8rem;
@@ -52,7 +57,7 @@
   .filters-result {
     box-sizing: border-box;
     border-radius: 4px;
-    color: #555555;
+    color: #555;
     font-size: 0.8rem;
     padding: 0 1rem 1.7rem 1rem;
     position: absolute;
@@ -65,5 +70,98 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     word-break: keep-all;
+
+    .filter {
+      box-sizing: border-box;
+      margin-left: 1px;
+      margin-right: 1px;
+      padding: 1px 3px 1px 3px;
+
+      .filter-value {
+        box-sizing: border-box;
+        cursor: pointer;
+        margin-left: 3px;
+        margin-right: 3px;
+      }
+
+      .filter-value:hover {
+        text-decoration: underline;
+      }
+    }
+
+    .filter:hover {
+      background-color: #e0e0e0;
+      color: #444;
+    }
+  }
+}
+
+// ツイートフィルタ 再トレーニング領域
+
+.filter-retraining-container {
+  .caption {
+    text-align: left;
+    margin-left: 1.5rem;
+  }
+
+  .summary-text {
+    font-size: 0.9rem;
+    margin: 1rem 1rem 0.2rem 1rem;
+    text-align: center;
+  }
+  .summary-text.accept {
+    color: #01579b;
+  }
+  .summary-text.reject {
+    color: #f44336;
+  }
+
+  .evidence {
+    background-color: #ffffff;
+    border: solid 2px #ddd;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    height: 2.3rem;
+    margin: 0.5rem 1rem 0.5rem 1rem;
+    overflow: hidden;
+    padding: 0.2rem;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .filter-name {
+    color: #777;
+    font-size: 0.8rem;
+    font-style: italic;
+    text-align: center;
+    margin: 0.5rem 1rem 0.2rem 1.5rem;
+    text-align: right;
+  }
+
+  .retraining-menu {
+    position: relative;
+
+    ul {
+      box-sizing: border-box;
+      list-style-type: none;
+      padding: 0 1rem 0 1rem;
+      margin: 0 0 0 0;
+      width: 100%;
+
+      // メニュー項目
+
+      li {
+        box-sizing: border-box;
+        display: inline-block;
+        margin: 0.5rem 2% 0.5rem 2%;
+        width: 46%;
+
+        // ボタン
+        button {
+          width: 100%;
+          overflow: hidden;
+        }
+      }
+    }
   }
 }

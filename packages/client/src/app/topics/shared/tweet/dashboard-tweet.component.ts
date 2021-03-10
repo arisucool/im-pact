@@ -1,5 +1,7 @@
 import { Component, OnInit, Input, EventEmitter, Output } from '@angular/core';
 import { TweetComponent } from './tweet.component';
+import { TweetFilterTraining, TweetFilter, TweetFilterResult } from '../tweet-filter.interface';
+import { TweetReclassificationEvent } from '../tweet-reclassification-event.interface';
 
 @Component({
   selector: 'app-dashboard-tweet',
@@ -9,11 +11,20 @@ import { TweetComponent } from './tweet.component';
 export class DashboardTweetComponent extends TweetComponent implements OnInit {
   @Input() tweet: any;
   @Input() actions: any[];
-  @Output() onItemButtonClickedEvent = new EventEmitter<{
-    tweetIdStr: string;
-    selected: boolean;
-    actionIndex?: number;
-  }>();
+  @Input() filters: {
+    id: string;
+    filterName: string;
+    description: string;
+    settings: { [key: string]: any };
+    features: {
+      train: boolean;
+      batch: boolean;
+    };
+  }[];
+  @Input() availableFilters: any;
+  @Output() tweetReclassificationRequest = new EventEmitter<TweetReclassificationEvent>();
+
+  // ツイートが選択されたか
   isSelected = null;
 
   // ツイートのデータ
@@ -22,11 +33,27 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
   // ツイートフィルタの実行結果 (デバッグ用)
   filtersResult: string[];
 
-  // アイテムメニューを表示しているか否か
-  isShowingItemMenu: boolean = false;
+  // ツイートメニューを表示しているか否か
+  isShowingTweetMenu = false;
 
-  // アイテムメニューの選択肢
-  detinationActions: string[];
+  // ツイートメニューの選択肢
+  destinationActions: string[] = null;
+
+  // ツイートフィルタのトレーニング情報
+  // (承認→拒否 または 拒否→承認にする場合は、ツイートフィルタの再トレーニングも併せて行うため、トレーニング可能なフィルタの情報を代入しておく)
+  filterTrainings: TweetFilterTraining[] = [];
+  currentFilterTraining: TweetFilterTraining = null;
+  currentFilterTrainingIndex = -1;
+
+  // 親コンポーネントへ送信するための情報
+  protected emitData: TweetReclassificationEvent = {
+    tweetIdStr: null,
+    destinationActionIndex: null,
+    classifierRetrainingRequest: {
+      selected: null,
+    },
+    filterRetrainingRequests: [],
+  };
 
   constructor() {
     super();
@@ -35,50 +62,180 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
   ngOnInit(): void {
     this.isSelected = this.tweet.predictedClass === 'accept' ? true : false;
     this.rawData = JSON.parse(this.tweet.rawJSONData);
-    this.filtersResult = this.tweet.filtersResult.map(result => {
-      if (Number.isInteger(result) || !result.match(/\./)) {
-        return new String(result);
-      } else {
-        return parseFloat(result).toFixed(1);
-      }
-    });
 
     // 当該ツイートがどのアクションまで実行されたかを取得
-    let completeActionIndex = this.tweet.completeActionIndex;
+    const completeActionIndex = this.tweet.completeActionIndex;
 
     // 当該ツイートの遷移可能なアクションを列挙
-    this.detinationActions = JSON.parse(JSON.stringify(this.actions)).map((action: any, index: number) => {
+    this.destinationActions = JSON.parse(JSON.stringify(this.actions)).map((action: any, index: number) => {
       action.index = index;
       return action;
     });
     if (this.isSelected) {
       // 承認済みツイートならば、現在所属しているアクションを除く
-      this.detinationActions = this.detinationActions.filter((action: any, index: number) => {
-        return completeActionIndex + 1 !== index;
+      this.destinationActions = this.destinationActions.filter(
+        (action: any, index: number) => completeActionIndex + 1 !== index,
+      );
+    }
+
+    // 当該ツイートに対するツイートフィルタの実行結果からトレーニング情報を生成
+    this.filterTrainings = this.getFilterTrainings(this.availableFilters, this.tweet.filtersResult);
+  }
+
+  /**
+   * ツイートフィルタのトレーニング情報の取得
+   * @param availableFilters ツイートフィルタの配列
+   * @param filtersResult ツイートフィルタの実行結果
+   */
+  getFilterTrainings(availableFilters: TweetFilter[], filtersResult: TweetFilterResult[]): TweetFilterTraining[] {
+    const filterTrainings: TweetFilterTraining[] = [];
+
+    // ツイートフィルタの実行結果を反復
+    for (const filterResult of filtersResult) {
+      // 当該ツイートフィルタを取得
+      const filter: TweetFilter = availableFilters[filterResult.filterName];
+      if (!filter) {
+        continue;
+      }
+
+      // 当該ツイートフィルタが学習に対応をしているか確認
+      if (!filter.features.train) {
+        // 学習に非対応ならばスキップ
+        continue;
+      }
+
+      // 配列へ追加
+      filterTrainings.push({
+        filter: filter,
+        filterName: filterResult.filterName,
+        filterResult: filterResult,
       });
     }
+
+    return filterTrainings;
   }
 
   /**
-   * 承認ボタンがクリックされたときに呼び出されるリスナ
+   * ツイートの承認ボタンがクリックされたときに呼び出されるリスナ
+   * @param destinationActionIndex 当該ツイートをどのアクションへ遷移させるか
    */
-  onItemAccepted(actionIndex: number) {
-    // 親コンポーネントへイベントを送信
-    this.onItemButtonClickedEvent.emit({
-      tweetIdStr: this.tweet.idStr,
-      selected: true,
-      actionIndex: actionIndex,
-    });
+  onTweetAccepted(destinationActionIndex: number): void {
+    // ディープラーニング分類器を再トレーニングするための情報を設定
+    this.emitData.classifierRetrainingRequest.selected = true;
+
+    // ツイートの遷移先アクションを設定
+    this.emitData.destinationActionIndex = destinationActionIndex;
+
+    // ツイートフィルタの再トレーニングが可能かどうかを確認
+    if (this.isAvailableNextTweetFilterRetraining()) {
+      // 再トレーニングを表示
+      this.showNextTweetFilterRetraining();
+      return;
+    }
+
+    // 再トレーニング可能なツイートフィルタがなければ、ただちに親コンポーネントへ選択結果を送信
+    this.emitResultToParentComponent();
   }
 
   /**
-   * 拒否ボタンがクリックされたときに呼び出されるリスナ
+   * ツイートの拒否ボタンがクリックされたときに呼び出されるリスナ
    */
-  onItemRejected() {
-    // 親コンポーネントへイベントを送信
-    this.onItemButtonClickedEvent.emit({
-      tweetIdStr: this.tweet.idStr,
-      selected: false,
+  onTweetRejected(): void {
+    // ディープラーニング分類器を再トレーニングするための情報を設定
+    this.emitData.classifierRetrainingRequest.selected = false;
+
+    // ツイートフィルタの再トレーニングが可能かどうかを確認
+    if (this.isAvailableNextTweetFilterRetraining()) {
+      // 再トレーニングを表示
+      this.showNextTweetFilterRetraining();
+      return;
+    }
+
+    // 再トレーニング可能なツイートフィルタがなければ、ただちに親コンポーネントへ選択結果を送信
+    this.emitResultToParentComponent();
+  }
+
+  /**
+   * ツイートフィルタの再トレーニングが可能か否かの取得
+   * @return 再トレーニング可能なツイートフィルタが存在するならば true
+   */
+  isAvailableNextTweetFilterRetraining(): boolean {
+    return this.currentFilterTrainingIndex < this.filterTrainings.length - 1;
+  }
+
+  /**
+   * 次のツイートフィルタの再トレーニング領域の表示
+   */
+  showNextTweetFilterRetraining(): void {
+    this.currentFilterTrainingIndex++;
+    this.currentFilterTraining = this.filterTrainings[this.currentFilterTrainingIndex];
+  }
+
+  /**
+   * ツイートフィルタの再トレーニングのための正解ボタン・不正解ボタンがクリックされたときに呼び出されるリスナ
+   * @param isCorrect ツイートフィルタの判断が正しかったか否か
+   */
+  onTweetFilterRetrainingAnswered(isCorrect: boolean): void {
+    // ユーザによって入力された情報を保持
+    this.emitData.filterRetrainingRequests.push({
+      filterId: this.filterTrainings[this.currentFilterTrainingIndex].filterResult.filterId,
+      isCorrect: isCorrect,
+      previousSummaryValue: this.filterTrainings[this.currentFilterTrainingIndex].filterResult.result.summary
+        .summaryValue,
     });
+
+    // 次のツイートフィルタが存在するかを確認
+    if (this.isAvailableNextTweetFilterRetraining()) {
+      // 次のツイートフィルタの再トレーニング領域を表示
+      this.showNextTweetFilterRetraining();
+      return;
+    }
+
+    // 完了
+    this.currentFilterTraining = null;
+    this.currentFilterTrainingIndex = -1;
+
+    // 親コンポーネントへ選択結果を送信
+    this.emitResultToParentComponent();
+  }
+
+  /**
+   * ツイートフィルタの再トレーニングのキャンセルボタンがクリックされたときに呼び出されるリスナ
+   */
+  onTweetFilterRetrainingCanceled(): void {
+    this.currentFilterTraining = null;
+    this.currentFilterTrainingIndex = -1;
+    this.emitData.filterRetrainingRequests = [];
+  }
+
+  /**
+   * ユーザによる選択結果 (ディープラーニングを再トレーニングするための情報) および ツイートフィルタを再トレーニングするための情報の送信
+   */
+  emitResultToParentComponent(): void {
+    // 親コンポーネントへイベントを送信
+    this.emitData.tweetIdStr = this.tweet.idStr;
+    this.tweetReclassificationRequest.emit(this.emitData);
+  }
+
+  /**
+   * 指定されたツイートフィルタの実行結果からの文字列の取得
+   * @param value ツイートフィルタの実行結果
+   * @return 整形された文字列 (例: "0.10" or "1")
+   */
+  convertFilterResultValueToString(value: number[] | number): string {
+    if (value instanceof Array) {
+      // One Hot Coding された値 (カテゴリカル変数) ならば、文字列 (例: "0") にして返す
+      const index = value.findIndex((val: number) => val === 1);
+      if (index === -1) return '-';
+      return String(index);
+    }
+
+    if (Number.isInteger(value)) {
+      // 整数ならば、そのまま文字列 (例: "100") にして返す
+      return String(value);
+    }
+
+    // 小数ならば、小数点以下2桁の文字列 (例: "0.10") にして返す
+    return value.toFixed(2);
   }
 }

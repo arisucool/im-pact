@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree } from '@angular/router';
-import { Observable } from 'rxjs';
+import { CanActivate } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 
 @Injectable({
@@ -9,10 +8,11 @@ import { AuthService } from '../auth/auth.service';
 export class AuthGuard implements CanActivate {
   constructor(private auth: AuthService) {}
 
-  async canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot) {
+  async canActivate() {
     // 現在のユーザIDを取得
-    const user_id = await this.auth.getCurrentUserId();
-    if (user_id === null) { // 未ログインならば
+    const userId = await this.auth.getCurrentUserId();
+    if (userId === null) {
+      // 未ログインならば
       return false;
     }
 

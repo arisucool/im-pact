@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { GetExampleTweetsDto } from './dto/get-example-tweets.dto';
+import { CrawlExampleTweetsDto } from './dto/crawl-example-tweets.dto';
 import * as Twitter from 'twitter';
 import { SocialAccount } from '../../social-accounts/entities/social-account.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CrawledTweet } from './entities/crawled-tweet.entity';
+import { SearchCondition } from '../entities/search-condition.interface';
 
 @Injectable()
 export class TwitterCrawlerService {
@@ -17,23 +18,40 @@ export class TwitterCrawlerService {
 
   /**
    * ツイートの収集
-   * @param socialAccountId 検索に使用するソーシャルアカウントのID
-   * @param keyword キーワード
-   * @param minNumOfTweets 検索する最低ツイート数 (このツイートを満たせるまでループする)
+   * @param socialAccountId 収集に使用するソーシャルアカウントのID
+   * @param searchCondition 検索条件
+   * @param numOfMinTweets  最低ツイート数 (このツイート数が満たされるまでループする)
    * @return 保存されたツイートの配列
    */
-  async crawlTweets(socialAccountId: number, keyword: string, minNumOfTweets: number): Promise<CrawledTweet[]> {
-    // Twitter上でツイートを検索
-    const tweets = await this.searchTweetsByKeyword(socialAccountId, keyword, minNumOfTweets);
-    console.log(`[MlService] crawlTweets - Found ${tweets.length} tweets... ${keyword}`);
-
-    // ツイートを反復
+  async crawlTweets(
+    socialAccountId: number,
+    searchCondition: SearchCondition,
+    numOfMinTweets: number,
+  ): Promise<CrawledTweet[]> {
+    // 検索キーワードを反復
     const savedTweets: CrawledTweet[] = [];
-    for (const tweet of tweets) {
-      // 当該ツイートをデータベースへ保存
-      const savedTweet = await this.saveTweet(keyword, tweet, true);
-      if (!savedTweet) continue;
-      savedTweets.push(savedTweet);
+    const keywords = searchCondition.keywords;
+    for (const keyword of keywords) {
+      // Twitter上でツイートを検索
+      const tweets = await this.searchTweetsByQuery(
+        socialAccountId,
+        this.getQueryBySearchConditionAndKeyword(searchCondition, keyword),
+        searchCondition.language,
+        Math.floor(numOfMinTweets / keywords.length),
+      );
+      console.log(`[MlService] crawlTweets - Found ${tweets.length} tweets... ${keyword}`);
+
+      // ツイートを反復
+      for (const tweet of tweets) {
+        // 当該ツイートをデータベースへ保存
+        const savedTweet = await this.saveTweet(
+          this.getQueryBySearchConditionAndKeyword(searchCondition, keyword),
+          tweet,
+          true,
+        );
+        if (!savedTweet) continue;
+        savedTweets.push(savedTweet);
+      }
     }
 
     return savedTweets;
@@ -41,58 +59,42 @@ export class TwitterCrawlerService {
 
   /**
    * 学習用サンプルツイートの取得
-   * (未収集ならば、収集もあわせて行う)
    * @param dto 学習用サンプルツイートを収集するための情報
    * @return 検索結果のツイート配列
    */
-  async getExampleTweets(dto: GetExampleTweetsDto): Promise<any[]> {
-    const NUM_OF_REQUIRED_TWEETS = 400;
-
-    // 収集されたツイートを検索
-    let crawledTweets = await this.crawledTweetRepository.find({
-      crawlKeyword: dto.keyword,
-    });
-    if (NUM_OF_REQUIRED_TWEETS <= crawledTweets.length) {
-      // データベース上に指定件数以上あれば、そのまま返す
-      return crawledTweets;
+  async getExampleTweets(dto: CrawlExampleTweetsDto): Promise<any[]> {
+    let crawledTweets = [];
+    for (const keyword of dto.searchCondition.keywords) {
+      const query = this.getQueryBySearchConditionAndKeyword(dto.searchCondition, keyword);
+      const tweets = await this.crawledTweetRepository.find({
+        crawlQuery: query,
+        crawlLanguage: dto.searchCondition.language,
+      });
+      crawledTweets = crawledTweets.concat(tweets);
     }
 
-    // 新たにツイートを収集
-    await this.crawlExampleTweets(dto.crawlSocialAccountId, dto.keyword, NUM_OF_REQUIRED_TWEETS);
-
-    // 収集されたツイートを再検索
-    crawledTweets = await this.crawledTweetRepository.find({
-      crawlKeyword: dto.keyword,
+    // 投稿日時の新しい順へソート
+    crawledTweets = crawledTweets.sort((a: CrawledTweet, b: CrawledTweet) => {
+      return a.createdAt.getTime() > b.createdAt.getTime() ? -1 : 1;
     });
+
+    // 一定件数まで減らす
+    const NUM_OF_REQUESTED_TWEETS = 1000;
+    if (NUM_OF_REQUESTED_TWEETS < crawledTweets.length) {
+      crawledTweets = crawledTweets.slice(0, NUM_OF_REQUESTED_TWEETS);
+    }
+
     return crawledTweets;
   }
 
   /**
-   * 学習用サンプルツイートの収集
-   * @param socialAccountId 検索に使用するソーシャルアカウントのID
-   * @param keyword キーワード
-   * @param minNumOfTweets 検索する最低ツイート数 (このツイートを満たせるまでループする)
-   */
-  protected async crawlExampleTweets(socialAccountId: number, keyword: string, minNumOfTweets: number) {
-    // Twitter上でツイートを検索
-    const tweets = await this.searchTweetsByKeyword(socialAccountId, keyword, minNumOfTweets);
-    console.log(`[MlService] getExampleTweets - Found ${tweets.length} tweets... ${keyword}`);
-
-    // ツイートを反復
-    for (const tweet of tweets) {
-      // 当該ツイートをデータベースへ保存
-      await this.saveTweet(keyword, tweet, true);
-    }
-  }
-
-  /**
    * ツイートの保存
-   * @param keyword 検索時のキーワード
+   * @param query 検索時のキーワード
    * @param tweet  ツイート
    * @param should_integrate_rt リツイート (引用リツイートを除く) を元ツイートへ統合するか
    * @return 保存されたツイート
    */
-  protected async saveTweet(keyword: string, tweet: any, should_integrate_rt: boolean): Promise<CrawledTweet> {
+  protected async saveTweet(query: string, tweet: any, should_integrate_rt: boolean): Promise<CrawledTweet> {
     // 当該ツイートがデータベースに存在しないか確認
     const exists_tweet =
       0 <
@@ -112,14 +114,17 @@ export class TwitterCrawlerService {
     // ツイートの情報を付加
     crawledTweet.idStr = tweet.id_str;
     crawledTweet.createdAt = tweet.created_at;
-    crawledTweet.crawlKeyword = keyword;
+    crawledTweet.crawlQuery = query;
     crawledTweet.rawJSONData = JSON.stringify(tweet);
     crawledTweet.socialAccount = null; // TODO
     crawledTweet.text = tweet.text;
     crawledTweet.url = `https://twitter.com/${tweet.user.id_str}/status/${tweet.id_str}`;
     crawledTweet.crawledRetweetIdStrs = [];
 
-    // ツイートのハッシュタグを付加
+    // ツイートの画像を抽出
+    crawledTweet.imageUrls = this.getImageUrlsByTweet(crawledTweet);
+
+    // ツイートのハッシュタグを抽出
     crawledTweet.hashtags = this.getHashTagsByTweet(crawledTweet);
 
     // リツイート (引用リツイートを除く) のための処理
@@ -127,7 +132,7 @@ export class TwitterCrawlerService {
       if (should_integrate_rt) {
         // リツイートの統合が有効ならば、元ツイートのリツイート数を増加
         // (当該ツイート自体は残さず、元ツイートのみを残す)
-        return await this.incrementRetweetCountOfOriginalTweet(keyword, tweet.id_str, tweet.retweeted_status);
+        return await this.incrementRetweetCountOfOriginalTweet(query, tweet.id_str, tweet.retweeted_status);
       } else {
         // 元ツイートの情報を付加
         crawledTweet.originalIdStr = tweet.retweeted_status.id_str;
@@ -141,7 +146,7 @@ export class TwitterCrawlerService {
     // 引用リツイートのための処理
     if (tweet.quoted_status) {
       // 元ツイートのリツイート数を増加
-      this.incrementRetweetCountOfOriginalTweet(keyword, tweet.id_str, tweet.quoted_status);
+      this.incrementRetweetCountOfOriginalTweet(query, tweet.id_str, tweet.quoted_status);
       // 元ツイートの情報を付加
       crawledTweet.originalIdStr = tweet.quoted_status.id_str;
       crawledTweet.originalCreatedAt = tweet.quoted_status.created_at;
@@ -211,29 +216,23 @@ export class TwitterCrawlerService {
   }
 
   /**
-   * 指定されたキーワードによる Twitter API 上でのツイートの検索
+   * 指定されたクエリによる Twitter API 上でのツイートの検索
    * @param socialAccountId 検索に使用するソーシャルアカウントのID
-   * @param keyword キーワード
+   * @param query 検索クエリ
+   * @param lang  検索言語
    * @param minNumOfTweets 検索する最低ツイート数 (このツイートを満たせるまでループする)
    * @return 検索結果のツイート配列
    */
-  protected async searchTweetsByKeyword(
+  protected async searchTweetsByQuery(
     socialAccountId: number,
-    keyword: string,
+    query: string,
+    lang: string,
     minNumOfTweets: number,
   ): Promise<any[]> {
-    // クエリを整形
-    let query = keyword;
-    if (query.indexOf('"') === -1) {
-      // キーワードにダブルクオートが含まれないならば
-      // キーワードをダブルクオートで囲む
-      query = `"${query}"`;
-    }
-
-    // 検索条件を設定
-    let searchCondition = {
+    // 検索パラメータを設定
+    const searchParams = {
       q: query,
-      lang: 'ja',
+      lang: lang,
       result_type: 'recent',
       count: 100,
       max_id: null,
@@ -242,7 +241,7 @@ export class TwitterCrawlerService {
     // 検索を実行
     let tweets = [];
     for (let i = 0; i < 5; i++) {
-      let tweetsofPage = await this.searchTweets(socialAccountId, searchCondition);
+      let tweetsofPage = await this.searchTweets(socialAccountId, searchParams);
       tweets = tweets.concat(tweetsofPage);
 
       if (tweetsofPage.length == 0) {
@@ -254,7 +253,7 @@ export class TwitterCrawlerService {
       }
 
       // 次ページを取得するために、最後のツイートのIDから1引いて、maxIdに指定
-      searchCondition.max_id = tweetsofPage[tweetsofPage.length - 1].id_str;
+      searchParams.max_id = tweetsofPage[tweetsofPage.length - 1].id_str;
     }
     return tweets;
   }
@@ -262,10 +261,10 @@ export class TwitterCrawlerService {
   /**
    * Twitter API 上でのツイートの検索
    * @param socialAccountId 検索に使用するソーシャルアカウントのID
-   * @param searchCondition 検索条件
+   * @param searchParams    検索パラメータ
    * @return 検索結果のツイート配列
    */
-  protected async searchTweets(socialAccountId: number, searchCondition: any): Promise<any[]> {
+  protected async searchTweets(socialAccountId: number, searchParams: any): Promise<any[]> {
     // 収集に使用するソーシャルアカウントを取得
     const socialAccount = await this.socialAccountRepository.findOne(socialAccountId);
     if (!socialAccount) {
@@ -286,7 +285,7 @@ export class TwitterCrawlerService {
 
     return new Promise((resolve, reject) => {
       // ツイートを検索
-      twitterClient.get('search/tweets', searchCondition, (error, tweets, response) => {
+      twitterClient.get('search/tweets', searchParams, (error, tweets, response) => {
         if (error) {
           return reject(error);
         }
@@ -326,5 +325,71 @@ export class TwitterCrawlerService {
 
     // ハッシュタグの配列を返す
     return hashtags;
+  }
+
+  /**
+   * 指定されたツイートからの画像URLの取得
+   * @param tweet ツイート
+   * @return 画像URLの配列
+   */
+  getImageUrlsByTweet(crawledTweet: CrawledTweet): string[] {
+    // ツイートを取得
+    const rawTweet = JSON.parse(crawledTweet.rawJSONData);
+
+    // 画像URLを抽出するための配列を初期化
+    let imageUrls = [];
+
+    // ツイートにメディアが存在するか判定
+    if (rawTweet.entities && rawTweet.entities.media) {
+      // ツイートのメディアを反復
+      for (const media of rawTweet.entities.media) {
+        if (media.type !== 'photo') {
+          // 画像でなければ
+          // スキップ
+          continue;
+        }
+
+        // 当該画像URLを配列へ追加
+        imageUrls.push(media.media_url_https);
+      }
+    }
+
+    // リツイートにメディアが存在するか判定
+    if (rawTweet.retweeted_status && rawTweet.retweeted_status.entities && rawTweet.retweeted_status.entities.media) {
+      // ツイートのメディアを反復
+      for (const media of rawTweet.retweeted_status.entities.media) {
+        if (media.type !== 'photo') {
+          // 画像でなければ
+          // スキップ
+          continue;
+        }
+
+        // 当該画像URLを配列へ追加
+        imageUrls.push(media.media_url_https);
+      }
+    }
+
+    // 重複を除去
+    imageUrls = imageUrls.filter((x, i, self) => {
+      return self.indexOf(x) === i;
+    });
+
+    // 画像URLの配列を返す
+    return imageUrls;
+  }
+
+  /**
+   * 指定された検索条件およびキーワードによるクエリ文字列の取得
+   * @param searchCondition 検索条件
+   * @param keyword 検索条件に含まれたキーワードのうちの一つ
+   * @return クエリ文字列
+   */
+  public getQueryBySearchConditionAndKeyword(searchCondition: SearchCondition, keyword: string): string {
+    // クエリを生成
+    let query = `"${keyword}"`;
+    if (searchCondition.images) {
+      query += ' filter:images';
+    }
+    return query;
   }
 }

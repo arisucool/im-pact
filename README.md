@@ -1,4 +1,5 @@
 ![Logo of im pact](https://github.com/arisucool/im-pact/blob/master/logos/im-pact-logo-e2-128.png?raw=true)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Farisucool%2Fim-pact.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Farisucool%2Fim-pact?ref=badge_shield)
 
 im pact by arisu.cool 🍓
 -- An Extensible Twitter Crawler and Bot for Producers and Everyone.
@@ -13,3 +14,7 @@ im pact by arisu.cool 🍓
 
 This repository is currently in DEVELOPMENT PHASE.
 Please look forward to the alpha release :)
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Farisucool%2Fim-pact.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Farisucool%2Fim-pact?ref=badge_large)

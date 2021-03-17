@@ -29,7 +29,7 @@ export class TweetFilterService {
     if (topic.enabledFilterPatternIndex === null || !topic.filterPatterns[topic.enabledFilterPatternIndex]) {
       throw new Error('Invalid filter pattern');
     }
-    const filterPattern = JSON.parse(topic.filterPatterns[topic.enabledFilterPatternIndex]);
+    const filterPattern = topic.filterPatterns[topic.enabledFilterPatternIndex];
 
     // ツイートフィルタを管理するモジュールを初期化
     const filterManager = new TweetFilterManager(

@@ -10,14 +10,13 @@ import { ModuleStorage } from './entities/module-storage.entity';
 import { MlModel, NormalizationConstants as NormalizationConstant } from './entities/ml-model.entity';
 import { Topic } from '../entities/topic.entity';
 import { ActionManager } from './modules/action-manager';
-import { ClassifiedTweet } from './entities/classified-tweet.entity';
 import { CrawledTweet } from './entities/crawled-tweet.entity';
 import {
   TweetFilterResultWithMultiValues,
-  TweetFilterResult,
   TweetFilterResultSummaryWithEvidenceText,
   TweetFilterResultSummaryWithEvidenceImages,
 } from './modules/tweet-filters/interfaces/tweet-filter.interface';
+import { FilterPatternSettings } from '../entities/filter-pattern.entity';
 
 @Injectable()
 export class MlService {
@@ -104,6 +103,7 @@ export class MlService {
       generatedDatasets.trainingDataset,
       generatedDatasets.validationDataset,
       numOfFeatures,
+      dto.filterPatternSettings,
     );
     const trainedModel = trainingResult.model;
 
@@ -462,12 +462,19 @@ export class MlService {
    * @param trainingDataset 学習用データセット
    * @param validationDataset 検証用データセット
    * @param numOfFeatures データセットの変数の数
+   * @param settings フィルタパターンの設定
    * @return 生成されたモデル
    */
-  protected async trainModel(trainingDataset: any, validationDataset: any, numOfFeatures: number) {
-    // トレーニングのためのパラメータ
-    const TRAIN_EPOCHS = 30;
-    const LEARNING_RATE = 0.1;
+  protected async trainModel(
+    trainingDataset: any,
+    validationDataset: any,
+    numOfFeatures: number,
+    settings: FilterPatternSettings,
+  ) {
+    // ハイパーパラメータを設定
+    const learningRate = settings.mlLearningRate || 0.1;
+    const numOfEpochs = settings.numOfMlEpochs || 30;
+    const lossFunction = settings.mlLossFunction || 'categoricalCrossentropy';
 
     // 学習モデルのトポロジを定義
     console.log(`[MlService] trainModel - Making toporogy...`);
@@ -482,19 +489,21 @@ export class MlService {
     model.add(tf.layers.dense({ units: 3, activation: 'softmax' }));
     model.summary();
 
-    console.log(`[MlService] trainModel - Compiling model...`);
-    const optimizer = tf.train.adam(LEARNING_RATE);
+    console.log(
+      `[MlService] trainModel - Compiling model... (learningRate = ${learningRate}, lossFunction = ${lossFunction})`,
+    );
+    const optimizer = tf.train.adam(learningRate);
     model.compile({
       optimizer: optimizer,
-      loss: 'categoricalCrossentropy',
+      loss: lossFunction,
       metrics: ['accuracy'],
     });
 
     // 学習の実行
-    console.log(`[MlService] trainModel - Executing fit datset...`);
+    console.log(`[MlService] trainModel - Executing fit datset... (epochs = ${numOfEpochs})`);
     const logs: tf.Logs[] = [];
     await model.fitDataset(trainingDataset, {
-      epochs: TRAIN_EPOCHS,
+      epochs: numOfEpochs,
       validationData: validationDataset,
       callbacks: {
         onEpochEnd: async (epoch, epochLog) => {

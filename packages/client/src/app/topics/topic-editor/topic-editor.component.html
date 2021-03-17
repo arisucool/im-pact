@@ -463,6 +463,7 @@
                 <th>フィルタ数</th>
                 <th>点数</th>
                 <th>&nbsp;</th>
+                <th>&nbsp;</th>
               </tr>
               <tr *ngFor="let tweetFilterPattern of topic.filterPatterns; let filterPatternIndex = index">
                 <!-- ツイートフィルタパターンのラジオボタン -->
@@ -505,6 +506,18 @@
                   >
                     トレーニング＆検証を再実行 &nbsp;&nbsp;
                     <mat-icon style="margin-top: -3px;">find_in_page</mat-icon>
+                  </button>
+                  <!---->
+                </td>
+                <td>
+                  <!-- 拡張設定ボタン -->
+                  <button
+                    (click)="openFilterPatternAdvancedSettingDialog(filterPatternIndex)"
+                    type="button"
+                    mat-stroked-button
+                    matTooltip="クリックすると、このパターンに対し、ハイパーパラメータなどの拡張設定を行います (上級者向け)"
+                  >
+                    <mat-icon style="margin-top: -3px;">tune</mat-icon>
                   </button>
                   <!---->
                 </td>

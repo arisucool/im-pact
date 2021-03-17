@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsArray, IsNumber } from 'class-validator';
+import { FilterPatternSettings } from 'src/topics/entities/filter-pattern.entity';
 
 /**
  * トレーニングおよび検証を行うための情報
@@ -23,6 +24,13 @@ export class TrainAndValidateDto {
   @IsArray()
   @IsNotEmpty()
   filters: string[];
+
+  @ApiProperty({
+    description: 'フィルタパターンの拡張設定',
+    type: FilterPatternSettings,
+  })
+  @IsNotEmpty()
+  filterPatternSettings: FilterPatternSettings;
 
   @ApiProperty({
     description:

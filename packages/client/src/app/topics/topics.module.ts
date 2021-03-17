@@ -38,6 +38,7 @@ import { TopicsRoutingModule } from './topics-routing.module';
 import { TopicEditorComponent } from './topic-editor/topic-editor.component';
 import { ModuleChooserSheetComponent } from './topic-editor/module-chooser-sheet/module-chooser-sheet.component';
 import { TrainerDialogComponent } from './topic-editor/trainer-dialog/trainer-dialog.component';
+import { FilterPatternAdvancedSettingDialogComponent } from './topic-editor/filter-pattern-advanced-setting-dialog/filter-pattern-advanced-setting-dialog.component';
 import { TweetComponent } from './shared/tweet/tweet.component';
 import { DashboardTweetComponent } from './shared/tweet/dashboard-tweet.component';
 import { TrainingAndValidationDialogComponent } from './topic-editor/training-and-validation-dialog/training-and-validation-dialog.component';
@@ -50,6 +51,7 @@ import { TopicDashboardComponent } from './topic-dashboard/topic-dashboard.compo
     TrainerDialogComponent,
     TweetComponent,
     DashboardTweetComponent,
+    FilterPatternAdvancedSettingDialogComponent,
     TrainingAndValidationDialogComponent,
     TopicDashboardComponent,
   ],

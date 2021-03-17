@@ -2,6 +2,7 @@ import { Component, OnInit, Inject } from '@angular/core';
 import { TopicsService } from '../../topics.service';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { FilterPattern, FilterPatternSettings } from 'src/.api-client';
 
 /**
  * トレーニング＆検証ダイアログのコンポーネント
@@ -37,6 +38,9 @@ export class TrainingAndValidationDialogComponent implements OnInit {
   // フィルタ設定
   filters: [];
 
+  // フィルタパターンの拡張設定 (ハイパーパラメータなど)
+  filterPatternSettings: FilterPatternSettings;
+
   // 手動分類の結果
   trainingTweets: [];
 
@@ -53,6 +57,7 @@ export class TrainingAndValidationDialogComponent implements OnInit {
     this.topicKeywords = this.data.topicKeywords;
     this.trainingTweets = this.data.trainingTweets;
     this.filters = this.data.filters;
+    this.filterPatternSettings = this.data.filterPatternSettings;
     // 初期化
     this.status = null;
     this.isLoading = true;
@@ -140,6 +145,7 @@ export class TrainingAndValidationDialogComponent implements OnInit {
         this.topicId,
         this.trainingTweets,
         this.filters,
+        this.filterPatternSettings,
         this.topicKeywords,
       );
       trainingResult = result.trainingResult;

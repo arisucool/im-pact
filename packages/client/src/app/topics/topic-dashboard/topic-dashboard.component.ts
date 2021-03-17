@@ -260,7 +260,12 @@ export class TopicDashboardComponent implements OnInit {
   async onTweetReclassificationRequested(tweetIdStr: string, event: TweetReclassificationEvent): Promise<void> {
     if (event.classifierRetrainingRequest.selected) {
       // ユーザによって承認されたならば
-      await this.moveTweetToAccepted(tweetIdStr, event.filterRetrainingRequests, event.destinationActionIndex);
+      await this.moveTweetToAccepted(
+        tweetIdStr,
+        event.filterRetrainingRequests,
+        // 遷移先のアクション番号が -1 ならばアーカイブへ移動する
+        event.destinationActionIndex === -1 ? this.actionIndexOfAllActionCompleted : event.destinationActionIndex,
+      );
     } else {
       // ユーザによって拒否されたならば
       await this.moveTweetToRejected(tweetIdStr, event.filterRetrainingRequests);
@@ -275,7 +280,7 @@ export class TopicDashboardComponent implements OnInit {
    * (あるアクションに所属する承認ツイートを別のアクションへ移動することも可能)
    * @param tweetIdStr ツイートのID文字列
    * @param tweetFilterRetrainingRequests ツイートフィルタを再トレーニングするための情報
-   * @param actionIndex アクション番号 (指定されたアクション番号の待ち行列へ入る)
+   * @param actionIndex アクション番号 (指定されたアクション番号の待ち行列へ入る) (-1 ならばアーカイブ)
    */
   async moveTweetToAccepted(
     tweetIdStr: string,
@@ -408,7 +413,7 @@ export class TopicDashboardComponent implements OnInit {
    */
   getActionColor(actionIndex: number) {
     if (actionIndex === this.actionIndexOfAllActionCompleted) {
-      // アクション全完了ならば、グレー
+      // アーカイブならば、グレー
       return '#777777';
     }
 

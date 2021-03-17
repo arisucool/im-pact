@@ -38,6 +38,7 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
 
   // ツイートメニューの選択肢
   destinationActions: string[] = null;
+  isArchived = false;
 
   // ツイートフィルタのトレーニング情報
   // (承認→拒否 または 拒否→承認にする場合は、ツイートフィルタの再トレーニングも併せて行うため、トレーニング可能なフィルタの情報を代入しておく)
@@ -72,6 +73,8 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
       return action;
     });
     if (this.isSelected) {
+      // 承認済みツイートならば、アーカイブされているか否かを代入
+      this.isArchived = completeActionIndex === this.destinationActions.length - 1;
       // 承認済みツイートならば、現在所属しているアクションを除く
       this.destinationActions = this.destinationActions.filter(
         (action: any, index: number) => completeActionIndex + 1 !== index,
@@ -117,7 +120,7 @@ export class DashboardTweetComponent extends TweetComponent implements OnInit {
 
   /**
    * ツイートの承認ボタンがクリックされたときに呼び出されるリスナ
-   * @param destinationActionIndex 当該ツイートをどのアクションへ遷移させるか
+   * @param destinationActionIndex 当該ツイートをどのアクションへ遷移させるか (-1 ならばアーカイブ)
    */
   onTweetAccepted(destinationActionIndex: number): void {
     // ディープラーニング分類器を再トレーニングするための情報を設定

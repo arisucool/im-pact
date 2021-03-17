@@ -103,10 +103,12 @@
     </div>
     <!---->
     <p class="caption">このツイートを...&nbsp;&nbsp;</p>
+
     <div class="tweet-menu">
-      <ul>
-        <!-- ツイート拒否＆再トレーニングボタン (承認ツイートの場合のみ) -->
-        <li style="margin-bottom: 1rem;" *ngIf="isSelected">
+      <!-- 各ボタン (承認ツイートの場合) -->
+      <ul *ngIf="isSelected">
+        <!-- ツイート拒否＆再トレーニングボタン -->
+        <li style="margin-bottom: 1rem;">
           <button
             (click)="onTweetRejected()"
             type="button"
@@ -119,16 +121,44 @@
         </li>
         <!---->
 
-        <!-- マージン (拒否ツイートの場合のみ) -->
-        <li *ngIf="!isSelected" style="margin-bottom: 1rem;">
+        <!-- 承認＆再トレーニングボタン (アクション遷移ボタン) -->
+        <li *ngFor="let action of destinationActions">
+          <button
+            (click)="onTweetAccepted(action.index)"
+            type="button"
+            mat-stroked-button
+            color="primary"
+            matTooltip="このツイートを承認のまま、{{ action.index + 1 }} 番のアクションを実行させます"
+          >
+            {{ action.index + 1 }}. {{ action.actionName }} へ
+          </button>
+        </li>
+        <li *ngIf="!isArchived">
+          <button
+            (click)="onTweetAccepted(-1)"
+            type="button"
+            mat-stroked-button
+            color="primary"
+            matTooltip="このツイートを承認のまま、アーカイブへ移動します"
+          >
+            X. アーカイブへ
+          </button>
+        </li>
+        <!---->
+      </ul>
+      <!---->
+
+      <!-- 各ボタン (拒否ツイートの場合) -->
+      <ul *ngIf="!isSelected">
+        <!-- マージン-->
+        <li style="margin-bottom: 1rem;">
           &nbsp;&nbsp;
         </li>
         <!---->
 
-        <!-- 承認＆再トレーニングボタン / アクション遷移ボタン -->
+        <!-- 承認＆再トレーニングボタン (アクション遷移ボタン) -->
         <li *ngFor="let action of destinationActions">
           <button
-            *ngIf="!isSelected"
             (click)="onTweetAccepted(action.index)"
             type="button"
             mat-stroked-button
@@ -139,20 +169,12 @@
           >
             承認 ＆ {{ action.index + 1 }}. {{ action.actionName }} へ
           </button>
-          <button
-            *ngIf="isSelected"
-            (click)="onTweetAccepted(action.index)"
-            type="button"
-            mat-stroked-button
-            color="primary"
-            matTooltip="このツイートを承認のまま、{{ action.index + 1 }} 番のアクションを実行させます"
-          >
-            {{ action.index + 1 }}. {{ action.actionName }} へ
-          </button>
         </li>
         <!---->
       </ul>
+      <!---->
     </div>
+
     <!-- フィルタの実行結果 (トレーニング＆検証用) -->
     <div class="filters-result" *ngIf="tweet.filtersResult">
       Filter:

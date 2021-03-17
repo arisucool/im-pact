@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "@arisucool/im-pact-core": "~0.0.1",
-    "@tensorflow/tfjs-node": "2.6.0",
+    "@tensorflow/tfjs-node": "2.8.6",
     "jimp": "^0.16.1",
     "typescript": "~4.0.2"
   },

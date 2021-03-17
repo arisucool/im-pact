@@ -1,0 +1,75 @@
+<h1 mat-dialog-title>
+  フィルタパターンの拡張設定 &nbsp;&nbsp;
+  <span style="color: #444; font-size: 0.9rem;">
+    {{ filterPattern.name }}
+  </span>
+</h1>
+<div mat-dialog-content>
+  <!-- 拡張設定領域 -->
+  <form>
+    <!-- トレーニングのエポック数入力欄 -->
+    <p>
+      <mat-form-field appearance="outline" floatLabel="always">
+        <mat-label>ディープラーニング分類器 - トレーニングのエポック数</mat-label>
+        <input
+          name="num_of_ml_epochs"
+          type="number"
+          min="1"
+          max="100"
+          matInput
+          [(ngModel)]="filterPattern.settings.numOfMlEpochs"
+        />
+      </mat-form-field>
+    </p>
+    <!---->
+
+    <!-- トレーニングの学習率入力欄 -->
+    <p>
+      <mat-form-field appearance="outline" floatLabel="always">
+        <mat-label>ディープラーニング分類器 - トレーニングの学習率</mat-label>
+        <input
+          name="ml_learning_rate"
+          type="number"
+          min="0.1"
+          max="0.9"
+          step="0.1"
+          matInput
+          [(ngModel)]="filterPattern.settings.mlLearningRate"
+        />
+      </mat-form-field>
+    </p>
+    <!---->
+
+    <!-- トレーニングの損失関数選択欄 -->
+    <p>
+      <mat-form-field appearance="outline" floatLabel="always" class="mat-form-field--no-underline">
+        <mat-label>ディープラーニング分類器 - トレーニングの損失関数</mat-label>
+        <input matInput placeholder="Input" style="display: none" />
+        &nbsp;
+        <mat-radio-group name="ml_loss_function" [(ngModel)]="filterPattern.settings.mlLossFunction">
+          <mat-radio-button value="categoricalCrossentropy">多クラス交差エントロピー</mat-radio-button>
+        </mat-radio-group>
+      </mat-form-field>
+    </p>
+    <!---->
+  </form>
+
+  <!---->
+</div>
+
+<!-- ボタン領域 -->
+<div mat-dialog-actions>
+  <!-- OK ボタン -->
+  <button
+    (click)="finish()"
+    mat-raised-button
+    mat-dialog-close
+    color="primary"
+    style="float: right;"
+    matTooltip="クリックすると、この設定を採用して、元の画面へ戻ります。"
+  >
+    OK
+  </button>
+  <!---->
+</div>
+<!---->

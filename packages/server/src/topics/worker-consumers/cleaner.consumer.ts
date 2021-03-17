@@ -174,16 +174,7 @@ export class CleanerConsumer {
     const usingMlModelIds = [];
     const topics = await this.topicsRepository.find();
     for (const topic of topics) {
-      const filterPatterns = [];
-      for (const patternJSON of topic.filterPatterns) {
-        try {
-          filterPatterns.push(JSON.parse(patternJSON));
-        } catch (e) {
-          Logger.error('Could not parse the filter pattern... ', e.stack, 'CleanerConsumer/execCleanupMlModel');
-        }
-      }
-
-      for (const pattern of filterPatterns) {
+      for (const pattern of topic.filterPatterns) {
         if (!pattern.trainedModelId) continue;
         usingMlModelIds.push(pattern.trainedModelId);
       }

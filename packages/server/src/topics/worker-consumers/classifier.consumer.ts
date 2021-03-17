@@ -63,7 +63,7 @@ export class ClassifierConsumer {
     if (!topic.filterPatterns[topic.enabledFilterPatternIndex]) {
       throw new BadRequestException('Invalid filter pattern');
     }
-    const filterPatern = JSON.parse(topic.filterPatterns[topic.enabledFilterPatternIndex]);
+    const filterPatern = topic.filterPatterns[topic.enabledFilterPatternIndex];
     const filterSettings = filterPatern.filters;
 
     // 学習モデルを取得

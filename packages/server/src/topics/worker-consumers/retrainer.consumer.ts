@@ -145,7 +145,7 @@ export class RetrainerConsumer {
     if (!topic.enabledFilterPatternIndex || !topic.filterPatterns[topic.enabledFilterPatternIndex]) {
       throw new Error('Invalid filter pattern');
     }
-    let filterPattern = JSON.parse(topic.filterPatterns[topic.enabledFilterPatternIndex]);
+    let filterPattern = topic.filterPatterns[topic.enabledFilterPatternIndex];
 
     // ジョブのステータスを更新
     job.progress(30);
@@ -157,6 +157,7 @@ export class RetrainerConsumer {
         return JSON.parse(trainingTweetJSON);
       }),
       filters: filterPattern.filters,
+      filterPatternSettings: filterPattern.settings,
       topicKeywords: topic.searchCondition.keywords,
     };
     const result = await this.mlService.trainAndValidate(trainAndValidateDto);
@@ -168,10 +169,10 @@ export class RetrainerConsumer {
     if (!topic) throw new Error('Topic is null');
 
     // トピックのツイートフィルタパターンの学習モデルIDおよびスコアを更新
-    filterPattern = JSON.parse(topic.filterPatterns[topic.enabledFilterPatternIndex]);
+    filterPattern = topic.filterPatterns[topic.enabledFilterPatternIndex];
     filterPattern.trainedModelId = result.trainingResult.trainedModelId;
     filterPattern.score = result.validationResult.score;
-    topic.filterPatterns[topic.enabledFilterPatternIndex] = JSON.stringify(filterPattern);
+    topic.filterPatterns[topic.enabledFilterPatternIndex] = filterPattern;
     await topic.save();
 
     // 当該ツイートを再分類

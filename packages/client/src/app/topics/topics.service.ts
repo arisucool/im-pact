@@ -7,6 +7,7 @@ import {
   TweetFilterRetrainingRequest,
   CrawledTweet,
   CrawlExampleTweetsDto,
+  FilterPatternSettings,
 } from 'src/.api-client';
 import * as CryptoJS from 'crypto-js';
 
@@ -24,10 +25,6 @@ export class TopicsService {
     const topic: any = await this.api.topicsControllerFindOne(topicId).toPromise();
 
     // JSON でシリアライズされた項目をパース
-    // TODO: APIクライアント側でどうにかする方法がないのかを考える
-    for (let i = 0, l = topic.filterPatterns.length; i < l; i++) {
-      topic.filterPatterns[i] = JSON.parse(topic.filterPatterns[i]);
-    }
     for (let i = 0, l = topic.trainingTweets.length; i < l; i++) {
       topic.trainingTweets[i] = JSON.parse(topic.trainingTweets[i]);
     }
@@ -287,6 +284,7 @@ export class TopicsService {
     topicId: number,
     trainingTweets: any[],
     filterSettings: any[],
+    filterPatternSettings: FilterPatternSettings,
     topicKeywords: any[],
   ): Promise<any> {
     console.log('trainAndValidate');
@@ -295,6 +293,7 @@ export class TopicsService {
       topicId: topicId,
       trainingTweets: trainingTweets,
       filters: filterSettings,
+      filterPatternSettings: filterPatternSettings,
       topicKeywords: topicKeywords,
     };
 

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsArray, IsNumber } from 'class-validator';
+import { FilterPattern } from '../entities/filter-pattern.entity';
 import { SearchCondition } from '../entities/search-condition.interface';
 
 /**
@@ -52,12 +53,12 @@ export class CreateTopicDto {
   @ApiProperty({
     description: 'フィルタパターン',
     example: [],
-    type: String,
+    type: Object,
     isArray: true,
   })
   @IsArray()
   @IsNotEmpty()
-  filterPatterns: string[];
+  filterPatterns: FilterPattern[];
 
   @ApiProperty({
     description: '使用するフィルタパターンのインデックス番号',

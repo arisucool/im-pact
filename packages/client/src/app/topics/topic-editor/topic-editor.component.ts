@@ -8,6 +8,7 @@ import { TrainingAndValidationDialogComponent } from './training-and-validation-
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTabGroup } from '@angular/material/tabs';
+import { FilterPatternAdvancedSettingDialogComponent } from './filter-pattern-advanced-setting-dialog/filter-pattern-advanced-setting-dialog.component';
 
 /**
  * トピック作成・編集画面のコンポーネント
@@ -53,6 +54,7 @@ export class TopicEditorComponent implements OnInit {
         score: null,
         trainedModelId: null,
         filters: [],
+        settings: {},
       },
     ],
     enabledFilterPatternIndex: 0,
@@ -201,6 +203,27 @@ export class TopicEditorComponent implements OnInit {
   }
 
   /**
+   * ツイートフィルタ拡張設定ダイアログの表示
+   * @param filterPatternIndex イートフィルタパターンのインデックス番号
+   */
+  openFilterPatternAdvancedSettingDialog(filterPatternIndex: number): void {
+    // ダイアログを開く
+    const dialogRef = this.dialog.open(FilterPatternAdvancedSettingDialogComponent, {
+      data: {
+        topicId: this.topic.id,
+        filterPattern: this.topic.filterPatterns[filterPatternIndex],
+      },
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      // 当該ツイートフィルタパターンに拡張設定を登録
+      if (!this.topic.filterPatterns[filterPatternIndex]) {
+        return;
+      }
+      this.topic.filterPatterns[filterPatternIndex].settings = result.settings;
+    });
+  }
+
+  /**
    * トレーニング＆検証ダイアログの表示
    * @param filterPatternIndex 使用するツイートフィルタパターンのインデックス番号
    */
@@ -239,6 +262,7 @@ export class TopicEditorComponent implements OnInit {
       data: {
         topicId: this.topic.id,
         filters: this.topic.filterPatterns[filterPatternIndex].filters,
+        filterPatternSettings: this.topic.filterPatterns[filterPatternIndex].settings,
         topicKeywords: this.topic.searchCondition.keywords,
         trainingTweets: this.topic.trainingTweets,
       },
@@ -287,6 +311,7 @@ export class TopicEditorComponent implements OnInit {
       trainedModelId: null,
       score: null,
       filters: currentFilters,
+      settings: {},
     });
 
     // ツイートフィルタパターンのタブを切り替え

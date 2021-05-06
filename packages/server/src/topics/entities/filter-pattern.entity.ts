@@ -21,6 +21,13 @@ export class FilterPatternSettings {
     type: String,
   })
   mlLossFunction: 'categoricalCrossentropy';
+
+  @ApiProperty({
+    description: 'ディープラーニング分類器をトレーニングするときのオーバーサンプリングの有効化',
+    example: true,
+    type: Boolean,
+  })
+  mlEnableOverSampling: boolean;
 }
 
 export class FilterPattern {

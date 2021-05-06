@@ -17,6 +17,8 @@ import {
   TweetFilterResultSummaryWithEvidenceImages,
 } from './modules/tweet-filters/interfaces/tweet-filter.interface';
 import { FilterPatternSettings } from '../entities/filter-pattern.entity';
+import * as Smote from 'smote';
+import { parseString } from 'cron-parser';
 
 @Injectable()
 export class MlService {
@@ -92,7 +94,12 @@ export class MlService {
 
     // データセットを生成
     Logger.log('getTrainingDatasets...', 'MlService/trainAndValidate');
-    let generatedDatasets = await this.getTrainingDatasets(trainingTweets, dto.filters, dto.topicKeywords);
+    let generatedDatasets = await this.getTrainingDatasets(
+      trainingTweets,
+      dto.filters,
+      dto.topicKeywords,
+      dto.filterPatternSettings.mlEnableOverSampling,
+    );
 
     // データセットの変数の数を取得
     const numOfFeatures = generatedDatasets.numOfFeatures;
@@ -257,9 +264,15 @@ export class MlService {
    * @param trainingTweets お手本分類の結果
    * @param filterSettings ツイートフィルタ設定
    * @param topicKeywords トピックのキーワード (実際に検索が行われるわけではない。ベイジアンフィルタ等で学習からキーワードを除いて精度を上げる場合などに使用される。)
+   * @param enableOverSampling 学習用データセットのオーバーサンプリングを有効化するか
    * @return バッチ加工された学習用データセットおよび検証用データセット
    */
-  protected async getTrainingDatasets(trainingTweets: any[], filterSettings: any[], topicKeywords: string[]) {
+  protected async getTrainingDatasets(
+    trainingTweets: any[],
+    filterSettings: any[],
+    topicKeywords: string[],
+    enableOverSampling: boolean,
+  ) {
     // 検証用にデータセットを分割する割合
     const VALIDATION_FRACTION = 0.1;
 
@@ -379,16 +392,6 @@ export class MlService {
       };
     }
 
-    // 生データセットの各行をフラットへ
-    // (One Hot Encoding された説明変数は配列になっているので、フラットへ変換)
-    rawDataset = rawDataset.map(dataRow => {
-      return [].concat(...dataRow);
-    });
-
-    // 説明変数の数を取得
-    // (NOTE:  生データセットの各行の最後の要素は、目的変数であるため、1つ減らす)
-    let numOfFeatures = rawDataset[0].length - 1;
-
     // 生データセットを複製してシャッフル
     Logger.log('Generating datasets...', 'MlService/getTrainingDatasets');
     let shuffledRawDataset = rawDataset.slice();
@@ -397,8 +400,26 @@ export class MlService {
     // データセットを学習用と検証用へ分割
     const numofValidationExamples = Math.round(rawDataset.length * VALIDATION_FRACTION);
     const numofTrainingExamples = rawDataset.length - numofValidationExamples;
-    const trainingRawDataset = shuffledRawDataset.slice(0, numofTrainingExamples);
-    const validationRawDataset = shuffledRawDataset.slice(numofTrainingExamples);
+    let trainingRawDataset = shuffledRawDataset.slice(0, numofTrainingExamples);
+    let validationRawDataset = shuffledRawDataset.slice(numofTrainingExamples);
+
+    // 学習用データセットに対してオーバーサンプリングを適用
+    if (enableOverSampling) {
+      trainingRawDataset = this.applyOverSamplingToRawDataset(trainingRawDataset, 0.8); // TODO: 適用割合を可変にする
+    }
+
+    // 各データセットの各行をフラットへ
+    // (One Hot Encoding された説明変数は配列になっているので、フラットへ変換)
+    trainingRawDataset = trainingRawDataset.map(dataRow => {
+      return [].concat(...dataRow);
+    });
+    validationRawDataset = validationRawDataset.map(dataRow => {
+      return [].concat(...dataRow);
+    });
+
+    // 説明変数の数を取得
+    // (NOTE:  生データセットの各行の最後の要素は、目的変数であるため、1つ減らす)
+    const numOfFeatures = trainingRawDataset[0].length - 1;
 
     // データセットを X および Y へ分割し、feature mapping transformations を適用
     const trainingX = tf.data.array(trainingRawDataset.map(r => r.slice(0, numOfFeatures)));
@@ -415,6 +436,7 @@ export class MlService {
     (await trainingDataset.toArray()).forEach(row => {
       console.log(row);
     });*/
+    Logger.log(`Dataset generated... (numOfFeatures = ${numOfFeatures})`, 'MlService/getTrainingDatasets');
 
     // データセットに対してバッチを実行
     const BATCH_SIZE = 8;
@@ -434,6 +456,106 @@ export class MlService {
       numOfFeatures: numOfFeatures,
       normalizationConstants: normalizationConstants,
     };
+  }
+
+  /**
+   * 少数派データセットに対するオーバーサンプリング
+   * @param dataset データセット (多数派および少数派が混ざったもの)
+   * @param rate    オーバーサンプリングで増やす割合 (多数派データセットの数に対するパーセンテージ (0.1〜1.0))
+   */
+  protected applyOverSamplingToRawDataset(dataset: number[][], rate: number): (number | number[])[] {
+    // 目的変数ごとのデータセットの数を取得
+    const numOfItemsEachClass = this.getNumOfRawDatasetEachClass(dataset);
+
+    // 多数派のデータセットを取得
+    const majorityClass = numOfItemsEachClass['0'] < numOfItemsEachClass['1'] ? 1 : 0;
+    const majorityRawDataset = dataset.filter((row: number[]) => {
+      return row[row.length - 1] == majorityClass;
+    });
+
+    // オーバーサンプリング適用後のデータセットを初期化
+    let newDataset: (number | number[])[] = [];
+    newDataset = newDataset.concat(majorityRawDataset);
+
+    // 多数派以外のデータセットにオーバーサンプリングを適用
+    for (const itemClass of Object.keys(numOfItemsEachClass)) {
+      const itemClassNum = parseInt(itemClass, 10);
+
+      if (itemClassNum == majorityClass) {
+        continue;
+      }
+
+      // 当該目的変数のデータセットを取得
+      const rawDatasetOfCurrentClass = dataset.filter((row: number[]) => {
+        return row[row.length - 1] == itemClassNum;
+      });
+
+      // オーバーサンプリングで幾つ増やすかを決定
+      const numOfItems = rawDatasetOfCurrentClass.length;
+      const numOfOverSamplingAppliedItems = Math.floor(majorityRawDataset.length * rate);
+      if (numOfOverSamplingAppliedItems <= numOfItems) {
+        // 当該目的変数のデータセットを全体のデータセットへ追加
+        newDataset = newDataset.concat(rawDatasetOfCurrentClass);
+        continue;
+      }
+
+      Logger.log(
+        `Applying Over sampling to dataset of class ${itemClass}... (${numOfItems} items -> ${numOfOverSamplingAppliedItems} items)`,
+        'MlService/applyOverSamplingToRawDataset',
+      );
+
+      // オーバーサンプリングを適用
+      const smote = new Smote(rawDatasetOfCurrentClass);
+      let newRawDatasetOfCurrentClass = smote.generate(numOfOverSamplingAppliedItems);
+
+      // オーバーサンプリングの適用結果を修復
+      // (SMOTE ライブラリがカテゴリカル変数を扱えない問題への対処)
+      newRawDatasetOfCurrentClass = newRawDatasetOfCurrentClass.map((row: (number | number[])[]) => {
+        // カテゴリカル変数な説明変数を修正
+        for (let column = 0; column < row.length; column++) {
+          if (typeof row[column] !== 'string' || !((row[column] as unknown) as string).match(/\d+NaN$/)) {
+            continue;
+          }
+
+          // 文字列から数値配列へ変換 (例: "0,1,0NaN" -> [0, 1, 0])
+          row[column] = ((row[column] as unknown) as string)
+            .replace(/NaN$/, '')
+            .split(/,/)
+            .map(value => parseInt(value, 10));
+        }
+        // 目的変数を修正
+        row[row.length - 1] = itemClassNum;
+        return row;
+      });
+
+      // 当該目的変数のデータセットを全体のデータセットへ追加
+      newDataset = newDataset.concat(newRawDatasetOfCurrentClass);
+    }
+
+    return newDataset;
+  }
+
+  /**
+   * 目的変数ごとのデータセット数の取得
+   * @param dataset データセット
+   * @return 目的変数ごとのデータセット数
+   */
+  protected getNumOfRawDatasetEachClass(dataset: number[][]): { [key: string]: number } {
+    // データセットから目的変数ごとの件数を算出
+    const numOfItems = {
+      // reject
+      '0': 0,
+      // accept
+      '1': 0,
+    };
+
+    for (const item of dataset) {
+      // 当該データセットの目的変数 (最後の要素) を取得
+      const itemClass = item[item.length - 1];
+      numOfItems[itemClass]++;
+    }
+
+    return numOfItems;
   }
 
   protected flatOneHot(index: any) {
@@ -641,12 +763,24 @@ export class MlService {
       const numOfFeatures = filterValues.length;
 
       // 指定された学習モデルにより予測を実行
-      const predictResult = trainedModel.predict(tf.tensor2d(filterValues, [1, numOfFeatures])) as tf.Tensor;
+      let predictedClass = null;
       let predictResultVectors = null;
-      if (embedding) {
-        predictResultVectors = await predictResult.data();
+      try {
+        const predictResult = trainedModel.predict(tf.tensor2d(filterValues, [1, numOfFeatures])) as tf.Tensor;
+        if (embedding) {
+          predictResultVectors = await predictResult.data();
+        }
+        predictedClass = (await predictResult.argMax(-1).data())[0];
+      } catch (e) {
+        Logger.error(
+          `Error occurred on validation... (Filter Values = ${JSON.stringify(
+            filterValues,
+          )}, numOfFeatures = ${numOfFeatures})`,
+          e.stack,
+          'MlService/validateByTrainingTweets',
+        );
+        continue;
       }
-      const predictedClass = (await predictResult.argMax(-1).data())[0];
 
       // 予測した答えを追加
       tweets[i].predictedSelect = predictedClass == 1;

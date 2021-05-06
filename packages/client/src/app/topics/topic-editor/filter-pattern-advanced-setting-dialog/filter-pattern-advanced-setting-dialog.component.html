@@ -52,6 +52,22 @@
       </mat-form-field>
     </p>
     <!---->
+
+    <!-- トレーニングにおける不均衡データセットの対策設定欄 -->
+    <p>
+      <mat-form-field appearance="outline" floatLabel="always" class="mat-form-field--no-underline">
+        <mat-label>ディープラーニング分類器 - 不均衡データセットの対策</mat-label>
+        <input matInput placeholder="Input" style="display: none" />
+        &nbsp;
+        <mat-checkbox
+          name="ml_enable_over_sampling"
+          [(ngModel)]="filterPattern.settings.mlEnableOverSampling"
+          matTooltip="学習用データセットの少数派なクラスに対して、オーバーサンプリングで補完を行います"
+          >オーバーサンプリングの有効化</mat-checkbox
+        >
+      </mat-form-field>
+    </p>
+    <!---->
   </form>
 
   <!---->

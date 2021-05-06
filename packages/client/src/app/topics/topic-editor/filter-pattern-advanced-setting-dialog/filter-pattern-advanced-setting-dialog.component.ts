@@ -27,8 +27,6 @@ export class FilterPatternAdvancedSettingDialogComponent implements OnInit {
     this.topicId = this.data.topicId;
     this.filterPattern = this.data.filterPattern;
 
-    console.log(this.filterPattern);
-
     // 設定を初期化
     if (!this.filterPattern.settings) {
       this.filterPattern.settings = {
@@ -38,6 +36,8 @@ export class FilterPatternAdvancedSettingDialogComponent implements OnInit {
         mlLearningRate: 0.1,
         // ディープラーニング分類器をトレーニングするときの損失関数
         mlLossFunction: 'categoricalCrossentropy',
+        // ディープラーニング分類器をトレーニングするときのオーバサンプリングの有効化
+        mlEnableOverSampling: true,
       };
     }
   }

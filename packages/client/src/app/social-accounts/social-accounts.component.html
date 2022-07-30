@@ -1,0 +1,20 @@
+<div class="caption">
+  <h2>
+    <mat-icon style="margin-top: -9px;">create</mat-icon>
+    &nbsp;&nbsp;&nbsp; ソーシャルアカウント
+  </h2>
+</div>
+
+<section style="margin-top: 2rem;">
+  <mat-list>
+    <div mat-subheader>Twitter</div>
+    <mat-list-item *ngFor="let socialAccount of socialAccounts">
+      <mat-icon mat-list-icon>account_circle</mat-icon>
+      <div mat-line>{{ socialAccount.displayName }}</div>
+      <div mat-line></div>
+    </mat-list-item>
+  </mat-list>
+  <p style="margin-top: 2rem;">
+    <button mat-raised-button color="primary" (click)="authTwitterAccount()">Twitter アカウントを追加</button>
+  </p>
+</section>

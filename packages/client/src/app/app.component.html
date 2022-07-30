@@ -12,9 +12,7 @@
     <!-- ログインボタン -->
     <button *ngIf="currentUserId == null" routerLink="/auth/login" class="user-btn" mat-raised-button color="primary">
       <mat-icon style="margin-top: -3px;">login</mat-icon>
-      &nbsp;
-      ログイン
-      &nbsp;
+      &nbsp; ログイン &nbsp;
     </button>
     <!---->
 
@@ -22,23 +20,27 @@
     <button *ngIf="currentUserId" [matMenuTriggerFor]="sessionMenu" class="user-btn" mat-raised-button color="primary">
       <mat-icon style="margin-top: -3px;">account_box</mat-icon>
       &nbsp;&nbsp;
-      {{currentUserId}}
+      {{ currentUserId }}
       &nbsp;
     </button>
     <!---->
 
     <!-- セッションメニュー -->
     <mat-menu #sessionMenu="matMenu">
+      <!-- ソーシャルアカウント -->
+      <button mat-menu-item routerLink="/social-accounts">
+        <mat-icon>person</mat-icon>
+        ソーシャルアカウント &nbsp;
+      </button>
+      <!---->
       <!-- ログアウトボタン -->
-      <button mat-menu-item (click)="logout();">
+      <button mat-menu-item (click)="logout()">
         <mat-icon>exit_to_app</mat-icon>
-        ログアウト
-        &nbsp;
+        ログアウト &nbsp;
       </button>
       <!---->
     </mat-menu>
     <!---->
-
   </mat-toolbar-row>
 </mat-toolbar>
 <!---->

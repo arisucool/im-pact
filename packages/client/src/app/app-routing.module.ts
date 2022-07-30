@@ -3,6 +3,7 @@ import { Routes, RouterModule } from '@angular/router';
 import { HomeComponent } from './home/home.component';
 import { LoginComponent } from './auth/login.component';
 import { AuthGuard } from './guard/auth.guard';
+import { SocialAccountsComponent } from './social-accounts/social-accounts.component';
 
 const routes: Routes = [
   // ホーム
@@ -12,10 +13,13 @@ const routes: Routes = [
   { path: 'auth/login', component: LoginComponent },
   // トピックス
   { path: 'topics', loadChildren: './topics/topics.module#TopicsModule' },
+  // ソーシャルアカウント
+  { path: 'social-accounts', component: SocialAccountsComponent },
+  { path: 'social-accounts/auth-callback/:serviceName', component: SocialAccountsComponent },
 ];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class AppRoutingModule { }
+export class AppRoutingModule {}

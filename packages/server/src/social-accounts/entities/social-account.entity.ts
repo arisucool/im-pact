@@ -3,6 +3,7 @@ import { IsNotEmpty } from 'class-validator';
 import { CrawledTweet } from 'src/topics/ml/entities/crawled-tweet.entity';
 import { Topic } from 'src/topics/entities/topic.entity';
 import { ClassifiedTweet } from 'src/topics/ml/entities/classified-tweet.entity';
+import { ApiProperty } from '@nestjs/swagger';
 
 export enum SocialService {
   TWITTER = 'twitter',
@@ -15,11 +16,13 @@ export enum SocialService {
 export class SocialAccount extends BaseEntity {
   // ID
   @PrimaryGeneratedColumn()
+  @ApiProperty()
   id: number;
 
   // 表示名 (例: "@arisucool")
   @Column()
   @IsNotEmpty()
+  @ApiProperty()
   displayName: string;
 
   // サービス名
@@ -29,6 +32,7 @@ export class SocialAccount extends BaseEntity {
     default: SocialService.TWITTER,
   })
   @IsNotEmpty()
+  @ApiProperty()
   serviceName: SocialService;
 
   // アクセストークン
@@ -40,17 +44,12 @@ export class SocialAccount extends BaseEntity {
   @Column()
   accessTokenSecret: string;
 
-  // リフレッシュトークン (あれば)
-  @Column({
-    select: false, // データベースから取得しない
-  })
-  refreshToken: string;
-
   // トピック
   @OneToMany(
     () => Topic,
     topic => topic.crawlSocialAccount,
   )
+  @ApiProperty()
   topics: Topic[];
 
   // 収集済みツイート

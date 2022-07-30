@@ -29,14 +29,17 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { HomeComponent } from './home/home.component';
 
-import { ApiModule, Configuration } from '../.api-client';
-import { HttpClientModule } from '@angular/common/http';
+import { ApiModule } from '../.api-client/api.module';
+import { ApiInterceptor } from './auth/api.interceptor';
+
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { LoginComponent } from './auth/login.component';
 import { TopicsModule } from './topics/topics.module';
 import { ConfirmDialogComponent } from './shared/confirm-dialog.component';
+import { SocialAccountsComponent } from './social-accounts/social-accounts.component';
 
 @NgModule({
-  declarations: [AppComponent, HomeComponent, LoginComponent, ConfirmDialogComponent],
+  declarations: [AppComponent, HomeComponent, LoginComponent, ConfirmDialogComponent, SocialAccountsComponent],
   imports: [
     BrowserModule,
     FormsModule,
@@ -69,14 +72,19 @@ import { ConfirmDialogComponent } from './shared/confirm-dialog.component';
 
     // API クライアント
     HttpClientModule,
-    ApiModule.forRoot(
-      () =>
-        new Configuration({
-          basePath: '',
-        }),
-    ),
+    ApiModule.forRoot({
+      rootUrl: '',
+    }),
   ],
-  providers: [],
+  providers: [
+    // API クライアントの認証情報を設定するためのインタセプタ
+    ApiInterceptor,
+    {
+      provide: HTTP_INTERCEPTORS,
+      useExisting: forwardRef(() => ApiInterceptor),
+      multi: true,
+    },
+  ],
   bootstrap: [AppComponent],
 })
 export class AppModule {}

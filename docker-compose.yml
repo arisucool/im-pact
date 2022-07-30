@@ -1,95 +1,64 @@
 # Docker Compose 定義ファイル (開発環境用)
 
-version: "3.7"
+version: '3.7'
 
 services:
+  # PostgreSQL データベースサーバ
+  db:
+    image: postgres
+    restart: always
+    networks:
+      - appnet
+    environment:
+      POSTGRES_DB: im_pact
+      POSTGRES_USER: im_pact
+      POSTGRES_PASSWORD: arisu15
+    ports:
+      - 5432:5432
+    volumes:
+      - ./db_datas:/var/lib/postgresql/data
 
-    # アプリケーションサーバ
-    app:
-        build:
-          context: ./
-          args:
-            NODE_ENV: development
-        command: npm run start:dev
-        depends_on:
-            - db
-            - redis
-        restart: always
-        networks:
-            - appnet
-        environment: 
-            AUTO_CLEANUP_MAX_DB_ROWS: 7500
-            BASE_URL: http://localhost:4200
-            TWITTER_CONSUMER_KEY:
-            TWITTER_CONSUMER_SECRET: 
-            DATABASE_URL: postgres://im_pact:arisu15@db/im_pact?sslmode=disable
-            REDIS_URL: redis://:arisu15@redis:6379
-            JWT_TOKEN_SECRET: arisu15
-        ports:
-            - 4200:4200
-        volumes:
-            - ./.utils:/opt/app/.utils
-            - ./packages/client/src/:/opt/app/packages/client/src/
-            - ./packages/server/src/:/opt/app/packages/server/src/
-            - ./packages/server/dist/:/opt/app/packages/server/dist/
-            - ./module_packages/:/opt/app/module_packages/
-    
-    # PostgreSQL データベースサーバ 
-    db:
-        image: postgres
-        restart: always
-        networks:
-            - appnet
-        environment: 
-            POSTGRES_DB: im_pact
-            POSTGRES_USER: im_pact
-            POSTGRES_PASSWORD: arisu15
-        ports:
-            - 15432:5432
-        volumes:
-            - ./db_datas:/var/lib/postgresql/data
-    
-    # Adminer サーバ (PostgreSQL データベース管理用)
-    adminer:
-        build: ./.utils/adminer/
-        depends_on:
-            - db
-        restart: always
-        networks:
-            - appnet
-        environment:
-            ADMINER_DEFAULT_SERVER: db
-        ports:
-            - 18080:8080
+  # Adminer サーバ (PostgreSQL データベース管理用)
+  adminer:
+    build: ./.utils/adminer/
+    depends_on:
+      - db
+    restart: always
+    networks:
+      - appnet
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports:
+      - 18080:8080
 
-    # Redis データベースサーバ (キュー用)
-    redis:
-        container_name: redis
-        image: redis:6.0-alpine
-        command: redis-server --appendonly yes --requirepass arisu15
-        restart: always
-        networks:
-            - appnet
-        ports:
-            - 16379:6379
-        volumes:
-            - "./redis_datas:/data"
-    
-    # Bullboard サーバ (Redis データベース管理用)
-    bullboard:
-        image: deadly0/bull-board:1.0.0-alpha.7
-        depends_on:
-            - redis
-        restart: always
-        networks:
-            - appnet
-        environment: 
-            REDIS_HOST: redis
-            REDIS_PORT: 6379
-            REDIS_PASSWORD: arisu15
-            BULL_PREFIX: bull
-        ports:
-          - 18081:3000
+  # Redis データベースサーバ (キュー用)
+  redis:
+    container_name: redis
+    image: redis:6.0-alpine
+    command: redis-server --appendonly yes --requirepass arisu15
+    restart: always
+    networks:
+      - appnet
+    ports:
+      - 6379:6379
+    volumes:
+      - './redis_datas:/data'
+
+  # Bullboard サーバ (Redis データベース管理用)
+  bullboard:
+    image: deadly0/bull-board:1.0.0-alpha.7
+    depends_on:
+      - redis
+    restart: always
+    networks:
+      - appnet
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: arisu15
+      BULL_PREFIX: bull
+    ports:
+      - 18081:3000
 
 networks:
-    appnet:
+  appnet:

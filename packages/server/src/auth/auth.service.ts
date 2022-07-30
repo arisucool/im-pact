@@ -29,7 +29,7 @@ export class AuthService {
    * ログイン
    * @param login_dto ログインするための情報
    */
-  login(login_dto: LoginDto) {
+  login(login_dto: LoginDto): { access_token: string } {
     const payload = {
       id: login_dto.id,
     };

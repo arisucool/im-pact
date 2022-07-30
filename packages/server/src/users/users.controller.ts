@@ -3,6 +3,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
+import { User } from './entities/user.entity';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -35,6 +36,9 @@ export class UsersController {
    */
   @Get(':id')
   @ApiOperation({ summary: '指定されたユーザの取得' })
+  @ApiOkResponse({
+    type: User,
+  })
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }

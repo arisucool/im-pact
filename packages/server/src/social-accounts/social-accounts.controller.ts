@@ -1,8 +1,23 @@
-import { Controller, Get, HttpCode, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  InternalServerErrorException,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+  ValidationPipe,
+} from '@nestjs/common';
 import { SocialAccountsService } from './social-accounts.service';
 import { ApiOperation, ApiOkResponse, ApiUnauthorizedResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { SocialAccount } from './entities/social-account.entity';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { Request, Response } from 'express';
+import { GetAuthURlResponse as GetAuthUrlResponse } from './dto/get-auth-url-response.dto';
+import { SaveTwitterAccountRequestDto } from './dto/save-twitter-account-request.dto';
 
 @Controller('social-accounts')
 @UseGuards(JwtAuthGuard)

@@ -4,9 +4,15 @@
  */
 
 import { Test } from '@nestjs/testing';
+import * as fs from 'fs';
+
+import * as dotenv from 'dotenv';
+dotenv.config({
+  path: `${__dirname}/../.env`,
+});
+
 import { AppModule } from './app.module';
 import { Helper } from './helper';
-import * as fs from 'fs';
 
 async function bootstrap(): Promise<void> {
   // AppModule にてインポートされているモジュールを取得

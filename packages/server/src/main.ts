@@ -3,9 +3,15 @@
  */
 
 import { NestFactory } from '@nestjs/core';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { AppModule } from './app.module';
+import { SwaggerModule } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
+
+import * as dotenv from 'dotenv';
+dotenv.config({
+  path: `${__dirname}/../.env`,
+});
+
+import { AppModule } from './app.module';
 import { Helper } from './helper';
 
 // ソースマップの対応 (コンソールのスタックトレースへ .ts ファイルの行数を表示)

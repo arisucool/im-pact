@@ -1,4 +1,4 @@
-import { TweetFilterRetrainingRequest } from 'src/.api-client';
+import { TweetFilterRetrainingRequest } from 'src/.api-client/models/tweet-filter-retraining-request';
 
 /**
  * ツイートの再分類を行うためのイベント

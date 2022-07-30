@@ -3,7 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { TopicsService } from '../topics.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TweetReclassificationEvent } from '../shared/tweet-reclassification-event.interface';
-import { TweetFilterRetrainingRequest } from 'src/.api-client';
+import { TweetFilterRetrainingRequest } from 'src/.api-client/models/tweet-filter-retraining-request';
 
 @Component({
   selector: 'app-topic-dashboard',

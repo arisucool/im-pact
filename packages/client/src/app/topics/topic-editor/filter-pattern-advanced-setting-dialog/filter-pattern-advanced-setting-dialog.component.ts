@@ -1,6 +1,6 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { FilterPattern } from 'src/.api-client';
+import { FilterPattern } from 'src/.api-client/models/filter-pattern';
 
 /**
  * フィルタパターンの拡張設定ダイアログのコンポーネント

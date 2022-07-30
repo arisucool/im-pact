@@ -1,28 +1,28 @@
 import { Injectable } from '@angular/core';
-import {
-  DefaultService,
-  CreateTopicDto,
-  UpdateTopicDto,
-  TrainAndValidateDto,
-  TweetFilterRetrainingRequest,
-  CrawledTweet,
-  CrawlExampleTweetsDto,
-  FilterPatternSettings,
-} from 'src/.api-client';
 import * as CryptoJS from 'crypto-js';
+import { AcceptTweetDto } from 'src/.api-client/models/accept-tweet-dto';
+import { CrawlExampleTweetsDto } from 'src/.api-client/models/crawl-example-tweets-dto';
+import { CrawledTweet } from 'src/.api-client/models/crawled-tweet';
+import { CreateTopicDto } from 'src/.api-client/models/create-topic-dto';
+import { FilterPatternSettings } from 'src/.api-client/models/filter-pattern-settings';
+import { Topic } from 'src/.api-client/models/topic';
+import { TrainAndValidateDto } from 'src/.api-client/models/train-and-validate-dto';
+import { TweetFilterRetrainingRequest } from 'src/.api-client/models/tweet-filter-retraining-request';
+import { UpdateTopicDto } from 'src/.api-client/models/update-topic-dto';
+import { ApiService } from 'src/.api-client/services/api.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TopicsService {
-  constructor(private api: DefaultService) {}
+  constructor(private api: ApiService) {}
 
   /**
    * 指定されたトピックの取得
    * @param topicId トピックID
    */
   async getTopic(topicId: number) {
-    const topic: any = await this.api.topicsControllerFindOne(topicId).toPromise();
+    const topic: any = await this.api.topicsControllerFindOne({ id: topicId }).toPromise();
 
     // JSON でシリアライズされた項目をパース
     for (let i = 0, l = topic.trainingTweets.length; i < l; i++) {
@@ -66,12 +66,13 @@ export class TopicsService {
         crawlSchedule: topic.crawlSchedule,
         crawlSocialAccountId: +topic.crawlSocialAccount.id,
         searchCondition: topic.searchCondition,
+        classifier: topic.classifier,
         filterPatterns: topic.filterPatterns,
         enabledFilterPatternIndex: topic.enabledFilterPatternIndex,
         actions: topic.actions,
         trainingTweets: topic.trainingTweets,
       };
-      return await this.api.topicsControllerCreate(dto).toPromise();
+      return await this.api.topicsControllerCreate({ body: dto }).toPromise();
     } else {
       // 編集
       const dto: UpdateTopicDto = {
@@ -79,12 +80,18 @@ export class TopicsService {
         name: topic.name,
         crawlSchedule: topic.crawlSchedule,
         searchCondition: topic.searchCondition,
+        classifier: topic.classifier,
         filterPatterns: topic.filterPatterns,
         enabledFilterPatternIndex: topic.enabledFilterPatternIndex,
         actions: topic.actions,
         trainingTweets: topic.trainingTweets,
       };
-      return await this.api.topicsControllerUpdate(topic.id, dto).toPromise();
+      return await this.api
+        .topicsControllerUpdate({
+          id: topic.id,
+          body: dto,
+        })
+        .toPromise();
     }
   }
 
@@ -103,7 +110,12 @@ export class TopicsService {
     lastClassifiedAt?: Date,
   ): Promise<any[]> {
     return await this.api
-      .topicsControllerGetClassifiedTweets(topicId, predictedClass, lastActionIndex, lastClassifiedAt?.getTime())
+      .topicsControllerGetClassifiedTweets({
+        id: topicId,
+        predictedClass: predictedClass,
+        pendingActionIndex: lastActionIndex,
+        lastClassifiedAt: lastClassifiedAt?.getTime(),
+      })
       .toPromise();
   }
 
@@ -118,11 +130,17 @@ export class TopicsService {
     tweet: any,
     tweetFilterRetrainingRequests: TweetFilterRetrainingRequest[],
     actionIndex?: number,
-  ) {
+  ): Promise<Topic> {
+    const dto: AcceptTweetDto = {
+      destinationActionIndex: actionIndex,
+      tweetFilterRetrainingRequests: tweetFilterRetrainingRequests,
+    };
+
     return await this.api
-      .topicsControllerAcceptTweet(topicId, tweet.id, {
-        destinationActionIndex: actionIndex,
-        tweetFilterRetrainingRequests: tweetFilterRetrainingRequests,
+      .topicsControllerAcceptTweet({
+        id: topicId,
+        classifiedTweetId: tweet.id,
+        body: dto,
       })
       .toPromise();
   }
@@ -132,10 +150,18 @@ export class TopicsService {
    * @param topicId トピックID
    * @param tweet ツイート
    */
-  async rejectTweet(topicId: number, tweet: any, tweetFilterRetrainingRequests: TweetFilterRetrainingRequest[]) {
+  async rejectTweet(
+    topicId: number,
+    tweet: any,
+    tweetFilterRetrainingRequests: TweetFilterRetrainingRequest[],
+  ): Promise<Topic> {
     return await this.api
-      .topicsControllerRejectTweet(topicId, tweet.id, {
-        tweetFilterRetrainingRequests: tweetFilterRetrainingRequests,
+      .topicsControllerRejectTweet({
+        id: topicId,
+        classifiedTweetId: tweet.id,
+        body: {
+          tweetFilterRetrainingRequests: tweetFilterRetrainingRequests,
+        },
       })
       .toPromise();
   }
@@ -145,7 +171,11 @@ export class TopicsService {
    * @param topicId トピックID
    */
   async execCrawl(topicId: number): Promise<void> {
-    const jobId: number = (await this.api.topicsControllerCrawl(topicId).toPromise()) as any;
+    const jobId: number = (await this.api
+      .topicsControllerCrawl({
+        id: topicId,
+      })
+      .toPromise()) as any;
     // TODO: 完了を通知可能に
     return null;
   }
@@ -155,7 +185,11 @@ export class TopicsService {
    * @param topicId トピックID
    */
   async execClassification(topicId: number): Promise<void> {
-    const jobId: number = (await this.api.topicsControllerClassify(topicId).toPromise()) as any;
+    const jobId: number = (await this.api
+      .topicsControllerClassify({
+        id: topicId,
+      })
+      .toPromise()) as any;
     // TODO: 完了を通知可能に
     return null;
   }
@@ -165,7 +199,11 @@ export class TopicsService {
    * @param topicId トピックID
    */
   async execActions(topicId: number): Promise<void> {
-    const jobId: number = (await this.api.topicsControllerExecActions(topicId).toPromise()) as any;
+    const jobId: number = (await this.api
+      .topicsControllerExecActions({
+        id: topicId,
+      })
+      .toPromise()) as any;
     // TODO: 完了を通知可能に
     return null;
   }
@@ -245,13 +283,19 @@ export class TopicsService {
       crawlSocialAccountId: crawlSocialAccountId,
       searchCondition: searchCondition,
     };
-    const jobId: number = (await this.api.mlControllerCrawlExampleTweets(dto).toPromise()) as any;
+    const jobId: number = (await this.api
+      .mlControllerCrawlExampleTweets({
+        body: dto,
+      })
+      .toPromise()) as any;
 
     // 収集完了まで待機
     await new Promise((resolve, reject) => {
       const interval = setInterval(() => {
         this.api
-          .mlControllerGetStatusOfCrawlExampleTweets(jobId)
+          .mlControllerGetStatusOfCrawlExampleTweets({
+            jobId: jobId,
+          })
           .toPromise()
           .then((jobStatus: any) => {
             if (jobStatus.status !== 'completed' && jobStatus.status !== 'failed') return;
@@ -265,7 +309,11 @@ export class TopicsService {
     });
 
     // 収集されたツイートを取得
-    const tweets: any[] = await this.api.mlControllerGetExampleTweets(dto).toPromise();
+    const tweets: any[] = await this.api
+      .mlControllerGetExampleTweets({
+        body: dto,
+      })
+      .toPromise();
     for (const tweet of tweets) {
       tweet.selected = false;
     }
@@ -291,18 +339,25 @@ export class TopicsService {
 
     const dto: TrainAndValidateDto = {
       topicId: topicId,
+      classifier: classifier,
       trainingTweets: trainingTweets,
       filters: filterSettings,
       filterPatternSettings: filterPatternSettings,
       topicKeywords: topicKeywords,
     };
 
-    const jobId: number = (await this.api.mlControllerTrainAndValidate(dto).toPromise()) as any;
+    const jobId: number = (await this.api
+      .mlControllerTrainAndValidate({
+        body: dto,
+      })
+      .toPromise()) as any;
 
     return new Promise((resolve, reject) => {
       const interval = setInterval(() => {
         this.api
-          .mlControllerGetStatusOfTrainAndValidate(jobId)
+          .mlControllerGetStatusOfTrainAndValidate({
+            jobId: jobId,
+          })
           .toPromise()
           .then((jobStatus: any) => {
             if (jobStatus.status !== 'completed' && jobStatus.status !== 'failed') return;

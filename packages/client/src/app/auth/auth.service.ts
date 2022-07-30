@@ -1,41 +1,36 @@
 import { Injectable } from '@angular/core';
-import { DefaultService, LoginDto } from 'src/.api-client';
+import { ApiService } from 'src/.api-client/services/api.service';
+import { LoginDto } from 'src/.api-client/models/login-dto';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  private currentAccessToken = null;
-  private currentUserId = null;
-  private currentUser = null;
+  private currentUserId: string = null;
+  private currentUser: any = null;
 
-  constructor(private api: DefaultService) {
-    // セッション情報を LocalStorage から読み出し
-    this.currentAccessToken = window.localStorage.getItem('im_pact_token');
-    this.currentUserId = window.localStorage.getItem('im_pact_user_id');
-    if (!this.currentAccessToken || !this.currentUserId) {
-      this.clearSession();
-      return;
-    }
-
-    // アクセストークンを設定
-    this.api.configuration.accessToken = this.currentAccessToken;
-  }
+  constructor(private api: ApiService) {}
 
   /**
    * 現在のユーザIDの取得
    * @return ユーザID
    */
   async getCurrentUserId(): Promise<string> {
-    if (this.currentUserId === null) {
-      return null;
+    if (!this.currentUserId) {
+      await this.loadSession();
     }
 
     if (this.currentUser === null) {
       // ユーザ情報を取得
-      this.currentUser = await this.getCurrentUser();
+      try {
+        this.currentUser = await this.getCurrentUser();
+      } catch (e) {
+        console.warn(e);
+        return null;
+      }
     }
 
+    console.log('ID = ', this.currentUserId);
     return this.currentUserId;
   }
 
@@ -43,7 +38,22 @@ export class AuthService {
    * 現在のユーザの取得
    */
   async getCurrentUser() {
-    this.currentUser = await this.api.usersControllerFindOne(this.currentUserId).toPromise();
+    if (!this.currentUserId) {
+      await this.loadSession();
+    }
+
+    this.currentUser = await this.api
+      .usersControllerFindOne({
+        id: this.currentUserId,
+      })
+      .toPromise();
+    if (!this.currentUser) {
+      this.currentUserId = null;
+      return;
+    }
+
+    console.log('ID A = ', this.currentUser);
+    this.currentUserId = this.currentUser.id;
     return this.currentUser;
   }
 
@@ -59,21 +69,14 @@ export class AuthService {
       id: userId,
       password: userPassword,
     };
-    let result: any;
-    try {
-      result = await this.api.authControllerLogin(loginDto).toPromise();
-    } catch (e) {
+    const accessToken: any = await this.api.authControllerLogin({ body: loginDto }).toPromise();
+    if (!accessToken || accessToken.access_token === undefined) {
       return false;
     }
-    if (!result || !result.access_token) {
-      return false;
-    }
-
-    const accessToken = result.access_token;
 
     // セッション情報を記憶
     window.localStorage.setItem('im_pact_user_id', userId);
-    window.localStorage.setItem('im_pact_token', accessToken);
+    window.localStorage.setItem('im_pact_token', accessToken.access_token);
 
     return true;
   }
@@ -89,10 +92,15 @@ export class AuthService {
    * セッション情報のクリア
    */
   protected clearSession() {
-    this.currentUserId = null;
     window.localStorage.removeItem('im_pact_user_id');
-
-    this.currentAccessToken = null;
     window.localStorage.removeItem('im_pact_token');
+  }
+
+  protected loadSession(): Promise<void> {
+    const userId = window.localStorage.getItem('im_pact_user_id');
+    if (!userId) {
+      return;
+    }
+    this.currentUserId = userId;
   }
 }

@@ -1,9 +1,4 @@
-# 開発環境および本番環境を構築するための Dockerfile
-
-FROM openapitools/openapi-generator-cli:latest-release AS build-openapi-generator
-
-
-FROM node:14-slim AS package-jsons
+FROM node:16-slim AS package-jsons
 
 # Extract package.json of Actions and Tweet Filters from the build context
 COPY module_packages/ /opt/app/module_packages/
@@ -11,7 +6,7 @@ RUN find /opt/app/module_packages -type f | grep -v -E 'package.json' | xargs rm
     rm -R /opt/app/module_packages/*/*/
 
 
-FROM node:14-slim
+FROM node:16-slim
 
 WORKDIR /opt/app/
 
@@ -45,10 +40,6 @@ RUN echo "Installing packages..." && \
     \
     apt-get clean
 
-# Copy files related to openapi-generator from another container
-COPY --from=build-openapi-generator /opt/openapi-generator/ /opt/openapi-generator/
-COPY --from=build-openapi-generator /usr/local/bin/docker-entrypoint.sh /opt/openapi-generator/
-
 # Install npm modules for app
 COPY lerna.json package.json ./
 COPY packages/client/package.json ./packages/client/
@@ -56,7 +47,7 @@ COPY packages/server/package.json ./packages/server/
 COPY --from=package-jsons /opt/app/module_packages/ ./module_packages/
 
 RUN echo "Installing npm modules..." && \
-    npm install || exit 1 && \
+    npm install --legacy-peer-deps || exit 1 && \
     npm run postinstall || exit 1 && \
     echo "npm modules installed." && \
     npm cache clean --force

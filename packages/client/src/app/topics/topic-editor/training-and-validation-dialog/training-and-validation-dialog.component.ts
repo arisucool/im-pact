@@ -2,7 +2,7 @@ import { Component, OnInit, Inject } from '@angular/core';
 import { TopicsService } from '../../topics.service';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { FilterPattern, FilterPatternSettings } from 'src/.api-client';
+import { FilterPatternSettings } from 'src/.api-client/models/filter-pattern-settings';
 
 /**
  * トレーニング＆検証ダイアログのコンポーネント

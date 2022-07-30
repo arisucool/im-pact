@@ -17,7 +17,7 @@ export class AuthController {
   // ドキュメントの設定
   @ApiOperation({ summary: '指定されたユーザIDおよびパスワードによるログイン' })
   @ApiOkResponse({
-    type: String,
+    type: Object,
     description: 'ログインの完了',
   })
   @ApiUnauthorizedResponse({

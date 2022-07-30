@@ -6,4 +6,5 @@ redis_datas/
 node_modules/
 packages/client/src/.api-client/
 packages/server/api.yaml
+packages/server/.env
 !.gitkeep

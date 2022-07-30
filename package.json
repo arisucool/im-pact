@@ -5,6 +5,8 @@
   "description": "\"im pact\" is Twitter crawler and bot for Producers and Everyone.",
   "scripts": {
     "build": "lerna run build --scope=@arisucool/im-pact-core --stream && lerna run build --scope=client --stream && lerna run build --scope={@arisucool/,}im-pact-{action,filter}-* --stream",
+    "ng": "lerna run ng --scope=client -- ",
+    "nest": "lerna run nest --scope=@arisucool/im-pact-core --",
     "commit": "cz",
     "postinstall": "lerna bootstrap --hoist --nohoist=@types/jasmine --loglevel=verbose",
     "start": "lerna run start:prod --scope=@arisucool/im-pact-core --stream",
